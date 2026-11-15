@@ -2,6 +2,9 @@
 name: Mac Verilerini Getir
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
   schedule:
     - cron: "0 3 * * *"

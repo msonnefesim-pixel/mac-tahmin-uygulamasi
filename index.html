@@ -10,7 +10,7 @@
 body{margin:0;padding:14px;background:#101827;color:#fff;font-family:Arial,sans-serif}
 header{text-align:center;padding:15px 5px}
 h1{color:#39e58c;font-size:25px}
-.sub,.muted{color:#aab7c8;font-size:12px}
+.sub,.muted{color:#aab7c8;font-size:12px;line-height:1.5}
 .info,.panel{background:#1d2b40;padding:14px;border-radius:13px;margin:13px 0}
 h2{font-size:18px;color:#39e58c}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:9px}
@@ -28,13 +28,18 @@ input,select{width:100%;padding:12px;margin:5px 0;background:#26374e;color:white
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:13px}
 .badge{text-align:center;color:#39e58c;font-size:11px;margin-top:10px}
 .empty{text-align:center;color:#aab7c8;padding:22px}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
+th,td{padding:11px 5px;text-align:center;border-bottom:1px solid #40516a}
+th{color:#39e58c}
+td:first-child,th:first-child{text-align:left}
+.best{color:#39e58c;font-weight:bold}
 </style>
 </head>
 <body>
 
 <header>
 <h1>⚽ YaPaYCiN Maç Analiz</h1>
-<div class="sub">Gol tahminleri • Geçmiş başarı testi</div>
+<div class="sub">Gol tahminleri • Geçmiş başarı testi • Eşik karşılaştırması</div>
 </header>
 
 <div class="info" id="info">Veriler yükleniyor...</div>
@@ -48,6 +53,12 @@ input,select{width:100%;padding:12px;margin:5px 0;background:#26374e;color:white
 <div class="stat"><span>3.5 ÜST TEST MAÇI</span><strong id="count3">-</strong></div>
 </div>
 <p class="muted" id="testnote">Test hazırlanıyor...</p>
+</div>
+
+<div class="panel">
+<h2>🎯 3.5 Üst Eşik Karşılaştırması</h2>
+<p class="muted">Farklı tahmin eşiklerinde geçmiş başarıyı karşılaştır. En yüksek oran tek başına en iyi seçim anlamına gelmez; maç sayısını da dikkate al.</p>
+<div id="thresholdTable">Hesaplanıyor...</div>
 </div>
 
 <div class="panel">
@@ -121,7 +132,11 @@ function tahmin(mac){
 function yuzde(x){return Math.round(x*100)+"%";}
 
 function basariTesti(){
- let aday6=[],aday3=[];
+ let aday6=[];
+ let esikler=[.40,.45,.50,.55,.60];
+ let sonuclar={};
+ esikler.forEach(e=>sonuclar[e]={dogru:0,toplam:0});
+
  let gecmis=HISTORY.filter(m=>
   Number.isFinite(Number(m.ft_home))&&
   Number.isFinite(Number(m.ft_away))
@@ -131,21 +146,39 @@ function basariTesti(){
   let t=tahmin(m);
   if(!t)return;
   let gol=Number(m.ft_home)+Number(m.ft_away);
+
   if(t.six>=.20)aday6.push(gol>=6);
-  if(t.three>=.50)aday3.push(gol>=4);
+
+  esikler.forEach(e=>{
+   if(t.three>=e){
+    sonuclar[e].toplam++;
+    if(gol>=4)sonuclar[e].dogru++;
+   }
+  });
  });
 
  let oran6=aday6.length?aday6.filter(Boolean).length/aday6.length:null;
- let oran3=aday3.length?aday3.filter(Boolean).length/aday3.length:null;
+ let mevcut=sonuclar[.50];
+ let oran3=mevcut.toplam?mevcut.dogru/mevcut.toplam:null;
 
  document.getElementById("test6").textContent=oran6===null?"Veri yok":yuzde(oran6);
  document.getElementById("test3").textContent=oran3===null?"Veri yok":yuzde(oran3);
  document.getElementById("count6").textContent=aday6.length;
- document.getElementById("count3").textContent=aday3.length;
+ document.getElementById("count3").textContent=mevcut.toplam;
 
  document.getElementById("testnote").textContent=
- "6+ aday eşiği %20, 3.5 üst aday eşiği %50. Yalnızca maç tarihinden önceki sonuçlar kullanılır. Sonuçlar geçmiş test performansıdır, garanti değildir.";
+ "6+ aday eşiği %20. 3.5 üst mevcut eşik %50. Her maç için yalnızca maç tarihinden önceki sonuçlar kullanıldı.";
+
+ let html="<table><thead><tr><th>Üst eşiği</th><th>Aday</th><th>Başarılı</th><th>Oran</th></tr></thead><tbody>";
+ esikler.forEach(e=>{
+  let s=sonuclar[e];
+  let oran=s.toplam?s.dogru/s.toplam:null;
+  html+=`<tr><td>${yuzde(e)}</td><td>${s.toplam}</td><td>${s.dogru}</td><td class="${e===.50?"best":""}">${oran===null?"-":yuzde(oran)}</td></tr>`;
+ });
+ html+="</tbody></table>";
+ document.getElementById("thresholdTable").innerHTML=html;
 }
+
 function macKart(m){
  let t=tahmin(m);
  let guclu=t&&(t.six>=.20||t.three>=.50);
@@ -162,7 +195,7 @@ function macKart(m){
  <div class="cell"><span>3.5 ÜST</span><b>${yuzde(t.three)}</b></div>
  <div class="cell"><span>6+ GOL</span><b>${yuzde(t.six)}</b></div>
  <div class="cell"><span>MAÇ KG</span><b>${yuzde(t.btts)}</b></div>
- <div class="cell"><span>BEKLENEN GOL</span><b>${(t.lh+t.la).toFixed(2)}</b></div>
+ <div class="cell"><span>BEKLENEN TOPLAM GOL</span><b>${(t.lh+t.la).toFixed(2)}</b></div>
  <div class="cell"><span>EV SAHİBİ GOL</span><b>${t.lh.toFixed(2)}</b></div>
  <div class="cell"><span>DEPLASMAN GOL</span><b>${t.la.toFixed(2)}</b></div>
  </div>
@@ -170,6 +203,7 @@ function macKart(m){
  `:`<div class="empty">Yeterli geçmiş veri yok. Tahmin üretilmedi.</div>`}
  </div>`;
 }
+
 function listele(){
  let arama=document.getElementById("search").value.toLocaleLowerCase("tr");
  let filtre=document.getElementById("filter").value;
@@ -185,6 +219,7 @@ function listele(){
  document.getElementById("matches").innerHTML=sonuc.length?
   sonuc.map(macKart).join(""):'<div class="empty">Bu filtrede maç bulunamadı.</div>';
 }
+
 async function baslat(){
  try{
   let cevap=await fetch("./data.json?v="+Date.now());

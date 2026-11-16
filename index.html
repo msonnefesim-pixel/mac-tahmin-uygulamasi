@@ -1,317 +1,241 @@
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#101827">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#101827;color:#f1f5f9;font-family:Arial,sans-serif}
-header{padding:22px 15px;background:#172338;text-align:center;border-bottom:1px solid #293950}
-h1{margin:0;font-size:24px;color:#60a5fa}
-header p{margin:8px 0 0;color:#aab8ca;font-size:13px}
-.container{max-width:850px;margin:auto;padding:14px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:15px}
-.stat{background:#1c2b40;padding:13px 7px;border-radius:12px;text-align:center}
-.stat b{display:block;font-size:22px;color:#60a5fa}
-.stat span{font-size:11px;color:#bdc9d8}
-.notice{background:#26354a;color:#d4e2f5;padding:12px;border-radius:10px;font-size:12px;line-height:1.5;margin-bottom:14px}
-.controls{display:flex;gap:8px;margin-bottom:14px}
-input,select{min-width:0;width:100%;padding:12px;background:#1c2b40;color:white;border:1px solid #34465e;border-radius:9px}
-.card{background:#1b293d;border:1px solid #30435b;border-radius:13px;padding:14px;margin-bottom:12px}
-.league{font-size:12px;color:#60a5fa;margin-bottom:12px}
-.match{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:center}
-.team{font-size:15px;font-weight:bold;flex:1;overflow-wrap:anywhere}
-.vs{font-size:12px;color:#93a4ba}
-.time{font-size:12px;color:#aab8ca;margin-top:9px;text-align:center}
-.tag{display:inline-block;font-size:11px;padding:5px 8px;border-radius:6px;background:#34465e;color:#dbeafe;margin:8px 4px 0 0}
-.strong{background:#14532d;color:#bbf7d0}
-.analysis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}
-.metric{background:#111e30;padding:10px;border-radius:8px}
-.metric span{display:block;color:#9eafc4;font-size:11px;margin-bottom:5px}
-.metric b{font-size:16px}
-.good{color:#4ade80}
-.medium{color:#facc15}
-.low{color:#cbd5e1}
-.result{margin-top:12px;padding:10px;background:#25364d;border-radius:8px;font-size:13px;line-height:1.7}
-footer{text-align:center;padding:20px;color:#8191a6;font-size:11px}
-@media(max-width:400px){.team{font-size:13px}.metric b{font-size:14px}}
+body{margin:0;padding:14px;background:#101827;color:#fff;font-family:Arial,sans-serif}
+header{text-align:center;padding:15px 5px}
+h1{color:#39e58c;font-size:25px;margin:5px}
+.sub{color:#aab7c8;font-size:12px}
+.info,.panel{background:#1d2b40;padding:14px;border-radius:13px;margin:13px 0}
+.info{font-size:13px;color:#cbd5e1}
+h2{font-size:18px;color:#39e58c;margin:5px 0 12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.stat{background:#26374e;border-radius:10px;padding:12px;text-align:center}
+.stat span{display:block;color:#aab7c8;font-size:11px;margin-bottom:6px}
+.stat strong{font-size:19px;color:#ffd166}
+input,select{width:100%;padding:12px;margin:5px 0;background:#26374e;color:white;border:1px solid #52647c;border-radius:9px;font-size:14px}
+.card{background:#1c2b40;border:1px solid #34445b;border-radius:14px;padding:14px;margin:12px 0}
+.league{font-size:12px;color:#39e58c;margin-bottom:10px}
+.teams{display:flex;align-items:center;justify-content:space-between;gap:6px;font-weight:bold;font-size:14px}
+.team{width:43%;text-align:center}
+.vs{color:#9baac0;font-size:11px}
+.time{text-align:center;color:#cbd5e1;font-size:12px;margin-top:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:13px}
+.cell{background:#26374e;border-radius:8px;padding:9px;text-align:center}
+.cell span{display:block;font-size:10px;color:#aab7c8;margin-bottom:5px}
+.cell b{font-size:14px;color:#ffd166}
+.good{border:1px solid #39e58c}
+.badge{font-size:11px;color:#39e58c;text-align:center;margin-top:10px}
+.muted{font-size:11px;color:#aab7c8;line-height:1.5}
+.empty{text-align:center;color:#aab7c8;padding:22px}
+button{width:100%;padding:12px;border:0;border-radius:9px;background:#39e58c;color:#102030;font-weight:bold;margin-top:8px}
 </style>
 </head>
 <body>
+
 <header>
 <h1>⚽ YaPaYCiN Maç Analiz</h1>
-<p>İstatistik tabanlı futbol tahmin sistemi</p>
+<div class="sub">Futbol fikstürü • Gol olasılıkları • Geçmiş başarı testi</div>
 </header>
 
-<div class="container">
+<div class="info" id="info">Maç verileri yükleniyor...</div>
+
+<div class="panel">
+<h2>📊 Geçmiş Tahmin Başarı Testi</h2>
 <div class="stats">
-<div class="stat"><b id="matchCount">-</b><span>Maç</span></div>
-<div class="stat"><b id="historyCount">-</b><span>Geçmiş maç</span></div>
-<div class="stat"><b id="leagueCount">-</b><span>Lig</span></div>
+<div class="stat"><span>6+ GOL ADAYI BAŞARISI</span><strong id="test6">-</strong></div>
+<div class="stat"><span>4.5+ GOL ADAYI BAŞARISI</span><strong id="test4">-</strong></div>
+<div class="stat"><span>6+ Test Maçı</span><strong id="count6">-</strong></div>
+<div class="stat"><span>4.5+ Test Maçı</span><strong id="count4">-</strong></div>
+</div>
+<p class="muted" id="testnote">Test hazırlanıyor...</p>
 </div>
 
-<div class="notice">
-📊 Tahminler geçmiş maç istatistiklerinden hesaplanır. Yeterli veri olmayan takımlarda güvenilir tahmin üretilmez. Yüzdeler garanti değildir.
-</div>
-
-<div class="controls">
+<div class="panel">
+<h2>🔎 Maçları Bul</h2>
 <input id="search" placeholder="Takım veya lig ara...">
 <select id="filter">
 <option value="all">Bütün maçlar</option>
-<option value="strong">Güçlü adaylar</option>
-<option value="goals">6+ gol adayları</option>
-<option value="halves">İki yarı KG adayları</option>
+<option value="strong">Güçlü gol adayları</option>
+<option value="six">6+ gol adayları</option>
+<option value="four">4.5+ gol adayları</option>
 </select>
 </div>
 
-<div id="status">Maç verileri yükleniyor...</div>
-<div id="matches"></div>
-</div>
-
-<footer>YaPaYCiN • İstatistiksel analiz sistemi</footer>
+<h2>⚽ Gelecek Maçlar</h2>
+<div id="matches"><div class="empty">Maçlar yükleniyor...</div></div>
 
 <script>
-const $ = id => document.getElementById(id);
-let fixtures = [];
-let history = [];
-let analyses = [];
+let DATA=null;
+let FIXTURES=[];
+let HISTORY=[];
 
-function norm(s){
- return String(s || "").trim().toLocaleLowerCase("tr-TR");
+function ort(arr){
+ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
 }
-
-function poisson(lambda,k){
- let p=Math.exp(-lambda);
- for(let i=1;i<=k;i++) p*=lambda/i;
- return p;
-}
-
-function goalProb(lambda,minimum){
- let sum=0;
- for(let i=0;i<minimum;i++) sum+=poisson(lambda,i);
- return Math.max(0,Math.min(1,1-sum));
-}
-
-function makeTeamStats(leagueId,team){
- const key=norm(team);
- const games=history.filter(m=>
-  String(m.league_id)===String(leagueId) &&
-  (norm(m.home)===key || norm(m.away)===key) &&
+function takimMaclari(lig,takim,tarih){
+ return HISTORY.filter(m=>
+  m.league_id===lig &&
+  m.date<tarih &&
+  (m.home===takim || m.away===takim) &&
   Number.isFinite(Number(m.ft_home)) &&
   Number.isFinite(Number(m.ft_away))
- ).slice(-10);
-
- if(!games.length) return null;
-
- let gf=0,ga=0,first=0,second=0,btts=0,over25=0,over45=0,over55=0;
-
- for(const m of games){
-  const home=norm(m.home)===key;
-  const scored=home?Number(m.ft_home):Number(m.ft_away);
-  const conceded=home?Number(m.ft_away):Number(m.ft_home);
-  gf+=scored;
-  ga+=conceded;
-  if(scored>0 && conceded>0)btts++;
-  if(scored+conceded>=3)over25++;
-  if(scored+conceded>=5)over45++;
-  if(scored+conceded>=6)over55++;
-
-  if(m.ht_home!==null && m.ht_away!==null &&
-     m.ht_home!==undefined && m.ht_away!==undefined){
-   const fh=Number(m.ht_home);
-   const fa=Number(m.ht_away);
-   const sh=Number(m.ft_home)-fh;
-   const sa=Number(m.ft_away)-fa;
-   if(fh>0 && fa>0)first++;
-   if(sh>0 && sa>0)second++;
+ ).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
+}
+function takimGolOrt(maclar,takim,attigi){
+ return ort(maclar.map(m=>{
+  let ev=m.home===takim;
+  if(attigi) return Number(ev?m.ft_home:m.ft_away);
+  return Number(ev?m.ft_away:m.ft_home);
+ }));
+}
+function poisson(lambda,k){
+ let p=Math.exp(-lambda),top=p;
+ for(let i=1;i<=k;i++){
+  p=p*lambda/i;
+  top+=p;
+ }
+ return top;
+}
+function golOlasilik(lh,la,min){
+ let toplam=0;
+ for(let h=0;h<=12;h++){
+  for(let a=0;a<=12;a++){
+   if(h+a>=min){
+    toplam+=
+     Math.exp(-lh)*Math.pow(lh,h)/factorial(h)*
+     Math.exp(-la)*Math.pow(la,a)/factorial(a);
+   }
   }
  }
+ return Math.min(1,toplam);
+}
+function factorial(n){
+ let x=1;
+ for(let i=2;i<=n;i++)x*=i;
+ return x;
+}
+function tahmin(mac){
+ const ev=takimMaclari(mac.league_id,mac.home,mac.date);
+ const dep=takimMaclari(mac.league_id,mac.away,mac.date);
+ if(ev.length<5 || dep.length<5)return null;
 
- const halves=games.filter(m=>m.ht_home!==null &&
-  m.ht_away!==null && m.ht_home!==undefined && m.ht_away!==undefined);
+ let evAt=takimGolOrt(ev,mac.home,true);
+ let evYe=takimGolOrt(ev,mac.home,false);
+ let depAt=takimGolOrt(dep,mac.away,true);
+ let depYe=takimGolOrt(dep,mac.away,false);
 
+ let lh=Math.max(.15,(evAt+depYe)/2);
+ let la=Math.max(.15,(depAt+evYe)/2);
  return {
-  n:games.length,
-  gf:gf/games.length,
-  ga:ga/games.length,
-  btts:btts/games.length,
-  over25:over25/games.length,
-  over45:over45/games.length,
-  over55:over55/games.length,
-  first:halves.length?first/halves.length:null,
-  second:halves.length?second/halves.length:null,
-  halfN:halves.length
+  six:golOlasilik(lh,la,6),
+  four:golOlasilik(lh,la,5),
+  five:golOlasilik(lh,la,6),
+  btts:(1-Math.exp(-lh))*(1-Math.exp(-la)),
+  lh,la,evN:ev.length,depN:dep.length
  };
 }
+function yuzde(x){return Math.round(x*100)+"%"}
+function basariTesti(){
+ let aday6=[],aday4=[];
+ let gecmis=HISTORY.filter(m=>
+  Number.isFinite(Number(m.ft_home)) &&
+  Number.isFinite(Number(m.ft_away))
+ ).sort((a,b)=>a.date.localeCompare(b.date));
 
-function pct(n){
- return Math.round(Math.max(0,Math.min(1,n))*100);
-}
-
-function analyze(f){
- const h=makeTeamStats(f.league_id,f.home);
- const a=makeTeamStats(f.league_id,f.away);
-
- if(!h || !a || h.n<3 || a.n<3){
-  return {fixture:f,h,a,ready:false};
- }
-
- const avg=2.65;
- const homeAttack=h.gf/avg;
- const awayDefense=a.ga/avg;
- const awayAttack=a.gf/avg;
- const homeDefense=h.ga/avg;
-
- const lh=Math.max(.15,Math.min(4.5,avg*.52*homeAttack*awayDefense));
- const la=Math.max(.15,Math.min(4.5,avg*.48*awayAttack*homeDefense));
- const total=lh+la;
-
- let homeWin=0,draw=0,awayWin=0;
- for(let i=0;i<=9;i++){
-  for(let j=0;j<=9;j++){
-   const p=poisson(lh,i)*poisson(la,j);
-   if(i>j)homeWin+=p;
-   else if(i===j)draw+=p;
-   else awayWin+=p;
-  }
- }
-
- const btts=(1-Math.exp(-lh))*(1-Math.exp(-la));
- const over25=goalProb(total,3);
- const over45=goalProb(total,5);
- const over55=goalProb(total,6);
-
- const first=(h.first!==null && a.first!==null)
-  ? (h.first+a.first)/2 : null;
- const second=(h.second!==null && a.second!==null)
-  ? (h.second+a.second)/2 : null;
-
- const bothHalves=first!==null && second!==null
-  ? first*second : null;
-
- const strong=(over55>=.20 || over45>=.38 ||
-  (bothHalves!==null && bothHalves>=.15));
-
- return {
-  fixture:f,h,a,ready:true,lh,la,total,
-  homeWin,draw,awayWin,btts,over25,over45,over55,
-  first,second,bothHalves,strong
- };
-}
-
-function quality(p){
- if(p>=65)return "good";
- if(p>=40)return "medium";
- return "low";
-}
-
-function metric(name,value){
- if(value===null || value===undefined)
-  return `<div class="metric"><span>${name}</span><b>Veri yetersiz</b></div>`;
- return `<div class="metric"><span>${name}</span><b class="${quality(value)}">%${pct(value)}</b></div>`;
-}
-
-function render(){
- const q=norm($("search").value);
- const filter=$("filter").value;
- let list=analyses.filter(x=>{
-  const f=x.fixture;
-  const text=norm(f.home+" "+f.away+" "+f.league);
-  if(q && !text.includes(q))return false;
-  if(filter==="strong" && !(x.ready && x.strong))return false;
-  if(filter==="goals" && !(x.ready && x.over55>=.20))return false;
-  if(filter==="halves" && !(x.ready && x.bothHalves!==null && x.bothHalves>=.15))return false;
-  return true;
+ gecmis.forEach(m=>{
+  let t=tahmin(m);
+  if(!t)return;
+  let gol=Number(m.ft_home)+Number(m.ft_away);
+  if(t.six>=.20)aday6.push(gol>=6);
+  if(t.four>=.38)aday4.push(gol>=5);
  });
 
- $("matches").innerHTML=list.map(x=>{
-  const f=x.fixture;
-  const date=f.date || "";
-  const time=f.time || "";
-  let tags="";
-  if(x.ready){
-   if(x.strong)tags+='<span class="tag strong">⭐ Güçlü aday</span>';
-   if(x.over55>=.20)tags+='<span class="tag strong">6+ gol adayı</span>';
-   if(x.bothHalves!==null && x.bothHalves>=.15)
-    tags+='<span class="tag strong">İki yarı KG adayı</span>';
-  }else{
-   tags='<span class="tag">Yeterli geçmiş veri yok</span>';
-  }
+ let oran6=aday6.length?aday6.filter(Boolean).length/aday6.length:null;
+ let oran4=aday4.length?aday4.filter(Boolean).length/aday4.length:null;
 
-  let metrics="";
-  let result="";
-  if(x.ready){
-   metrics=
-    metric("6+ gol",x.over55)+
-    metric("5.5 üst",x.over55)+
-    metric("4.5 üst",x.over45)+
-    metric("2.5 üst",x.over25)+
-    metric("Maç KG",x.btts)+
-    metric("İlk yarı KG",x.first)+
-    metric("İkinci yarı KG",x.second)+
-    metric("İki yarı KG",x.bothHalves);
+ document.getElementById("test6").textContent=oran6===null?"Veri yok":yuzde(oran6);
+ document.getElementById("test4").textContent=oran4===null?"Veri yok":yuzde(oran4);
+ document.getElementById("count6").textContent=aday6.length;
+ document.getElementById("count4").textContent=aday4.length;
 
-   const outcomes=[
-    ["1",x.homeWin],["X",x.draw],["2",x.awayWin]
-   ].sort((a,b)=>b[1]-a[1]);
-   const best=outcomes[0][0];
-   const score=Math.round(x.lh)+"-"+Math.round(x.la);
-
-   result=`<div class="result">
-   <b>1-X-2:</b> 1 %${pct(x.homeWin)} • X %${pct(x.draw)} • 2 %${pct(x.awayWin)}<br>
-   <b>İstatistiksel skor tahmini:</b> ${score}<br>
-   <b>Gol beklentisi:</b> ${x.total.toFixed(2)}<br>
-   <b>Öne çıkan sonuç:</b> ${best}<br>
-   <b>Veri:</b> ${x.h.n} ev sahibi ve ${x.a.n} deplasman geçmiş maçı
-   </div>`;
-  }else{
-   metrics='<div class="result">Bu ligde veya takımlarda yeterli geçmiş maç verisi bulunamadı. Tahmin üretilmedi.</div>';
-  }
-
-  return `<div class="card">
-   <div class="league">${f.league || "Lig bilgisi yok"}</div>
-   <div class="match">
-    <div class="team">${f.home}</div>
-    <div class="vs">VS</div>
-    <div class="team">${f.away}</div>
-   </div>
-   <div class="time">${date} • ${time}</div>
-   <div>${tags}</div>
-   <div class="analysis">${metrics}</div>
-   ${result}
-  </div>`;
- }).join("");
-
- if(!list.length)$("matches").innerHTML="<div class='notice'>Bu filtreye uygun maç bulunamadı.</div>";
- $("status").textContent=`${list.length} maç gösteriliyor • Tüm maçlar için filtreyi değiştir.`;
+ document.getElementById("testnote").textContent=
+ "Testte yalnızca maç tarihinden önceki sonuçlar kullanıldı. 6+ aday eşiği %20, 4.5+ aday eşiği %38. Bu oranlar geçmiş test sonuçlarıdır; gelecek maç garantisi değildir.";
 }
-
-async function load(){
+function macKart(mac){
+ let t=tahmin(mac);
+ let saat=mac.time||"--:--";
+ let tarih=mac.date||"";
+ let guclu=t&&(t.six>=.20||t.four>=.38);
+ return `
+ <div class="card ${guclu?"good":""}" data-search="${(mac.home+" "+mac.away+" "+mac.league).toLocaleLowerCase("tr")}">
+  <div class="league">${mac.league||"Lig bilgisi yok"}</div>
+  <div class="teams">
+   <div class="team">${mac.home}</div>
+   <div class="vs">VS</div>
+   <div class="team">${mac.away}</div>
+  </div>
+  <div class="time">📅 ${tarih} &nbsp; 🕒 ${saat}</div>
+  ${t?`
+  <div class="grid">
+   <div class="cell"><span>6+ GOL</span><b>${yuzde(t.six)}</b></div>
+   <div class="cell"><span>5.5 ÜST</span><b>${yuzde(t.five)}</b></div>
+   <div class="cell"><span>4.5 ÜST</span><b>${yuzde(t.four)}</b></div>
+   <div class="cell"><span>MAÇ KG</span><b>${yuzde(t.btts)}</b></div>
+   <div class="cell"><span>EV GOL BEKLENTİSİ</span><b>${t.lh.toFixed(2)}</b></div>
+   <div class="cell"><span>DEP GOL BEKLENTİSİ</span><b>${t.la.toFixed(2)}</b></div>
+  </div>
+  <div class="badge">${guclu?"⭐ GOL ADAYI":"Normal analiz"} • Son 10 maç verisi kullanıldı</div>
+  <p class="muted">Ev sahibi geçmiş maç: ${t.evN} • Deplasman geçmiş maç: ${t.depN}</p>
+  `:`
+  <div class="empty">Yeterli geçmiş maç verisi bulunamadı. Tahmin üretilmedi.</div>
+  `}
+ </div>`;
+}
+function listele(){
+ let arama=document.getElementById("search").value.toLocaleLowerCase("tr");
+ let filtre=document.getElementById("filter").value;
+ let sonuc=FIXTURES.filter(m=>{
+  let t=tahmin(m);
+  let metin=(m.home+" "+m.away+" "+m.league).toLocaleLowerCase("tr");
+  if(arama&&!metin.includes(arama))return false;
+  if(filtre==="strong"&&!(t&&(t.six>=.20||t.four>=.38)))return false;
+  if(filtre==="six"&&!(t&&t.six>=.20))return false;
+  if(filtre==="four"&&!(t&&t.four>=.38))return false;
+  return true;
+ });
+ document.getElementById("matches").innerHTML=sonuc.length?
+  sonuc.map(macKart).join(""):'<div class="empty">Bu filtrede maç bulunamadı.</div>';
+}
+async function baslat(){
  try{
-  const response=await fetch("data.json? t="+Date.now());
-  if(!response.ok)throw new Error("Veri dosyası bulunamadı.");
-  const data=await response.json();
+  const cevap=await fetch("./data.json?v="+Date.now());
+  if(!cevap.ok)throw new Error("data.json bulunamadı.");
+  DATA=await cevap.json();
+  FIXTURES=DATA.fixtures||[];
+  HISTORY=DATA.history||[];
 
-  fixtures=Array.isArray(data.fixtures)?data.fixtures:[];
-  history=Array.isArray(data.history)?data.history:[];
+  document.getElementById("info").textContent=
+   "Veri kaynağı: "+(DATA.source||"Bilinmiyor")+
+   " • Gelecek maç: "+FIXTURES.length+
+   " • Geçmiş maç: "+HISTORY.length+
+   " • Güncelleme: "+(DATA.updated||"-");
 
-  $("matchCount").textContent=fixtures.length;
-  $("historyCount").textContent=history.length;
-  $("leagueCount").textContent=new Set(fixtures.map(x=>x.league_id)).size;
-
-  analyses=fixtures.map(analyze);
-  render();
+  basariTesti();
+  listele();
  }catch(e){
-  $("status").textContent="Veriler yüklenemedi: "+e.message;
+  document.getElementById("info").textContent="Veri yüklenemedi: "+e.message;
+  document.getElementById("matches").innerHTML=
+   '<div class="empty">Veri dosyasını kontrol et.</div>';
  }
 }
-
-$("search").addEventListener("input",render);
-$("filter").addEventListener("change",render);
-load();
+document.getElementById("search").addEventListener("input",listele);
+document.getElementById("filter").addEventListener("change",listele);
+baslat();
 </script>
 </body>
 </html>

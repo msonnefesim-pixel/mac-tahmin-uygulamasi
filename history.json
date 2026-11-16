@@ -1,9 +1,5 @@
 {
-  "team_id": 524,
-  "get": "fixtures",
-  "errors": {
-    "plan": "Free plans do not have access to the Last parameter."
-  },
-  "results": 0,
-  "response": []
+  "teams": {
+    "524": []
+  }
 }

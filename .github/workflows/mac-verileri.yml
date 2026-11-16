@@ -46,6 +46,7 @@ jobs:
           BASLANGIC=$(TZ=Europe/Istanbul date -d "$BUGUN -60 days" +%F)
 
           echo "Takim: 524"
+          echo "Sezon: 2026"
           echo "Baslangic: $BASLANGIC"
           echo "Bitis: $BUGUN"
 
@@ -53,6 +54,7 @@ jobs:
             "https://v3.football.api-sports.io/fixtures" \
             -H "x-apisports-key: $API_KEY" \
             --data-urlencode "team=524" \
+            --data-urlencode "season=2026" \
             --data-urlencode "from=$BASLANGIC" \
             --data-urlencode "to=$BUGUN" \
             --data-urlencode "timezone=Europe/Istanbul" \

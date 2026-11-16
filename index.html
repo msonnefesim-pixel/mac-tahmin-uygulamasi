@@ -3,55 +3,93 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Maç Tahmin Merkezi</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#0b1220;color:#fff;font-family:Arial,sans-serif;padding:16px}
-h1{text-align:center;color:#42e6a4;font-size:25px}
-.sub{text-align:center;color:#94a3b8;font-size:13px}
-.card{background:#172337;border:1px solid #293b52;border-radius:16px;padding:16px;margin:16px 0}
-.teams{text-align:center;font-size:19px;font-weight:bold;margin:12px 0}
-.date{text-align:center;color:#94a3b8;font-size:12px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.stat{background:#24364e;padding:12px;border-radius:10px;text-align:center}
-.stat span{display:block;color:#aabbd0;font-size:12px;margin-bottom:7px}
-.stat b{font-size:20px;color:#42e6a4}
-.heading{color:#42e6a4;font-size:14px;margin:18px 0 10px}
-.note{font-size:12px;color:#94a3b8;line-height:1.5}
-button{background:#42e6a4;border:0;border-radius:10px;padding:12px;width:100%;font-weight:bold;margin-top:14px}
+body{margin:0;background:#101827;color:white;font-family:Arial,sans-serif;padding:18px}
+header{text-align:center;padding:18px 5px}
+h1{color:#39e58c;font-size:25px;margin:5px}
+.subtitle{color:#aab7c8;font-size:13px}
+.info{background:#1d2b40;padding:13px;border-radius:12px;margin:15px 0;color:#cbd5e1;font-size:13px}
+#matches{display:grid;gap:14px}
+.card{background:#1c2b40;border:1px solid #34445b;border-radius:15px;padding:16px}
+.league{font-size:12px;color:#39e58c;margin-bottom:12px}
+.teams{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px;font-weight:bold}
+.team{width:42%;text-align:center}
+.vs{color:#9baac0;font-size:12px}
+.time{text-align:center;color:#cbd5e1;font-size:12px;margin-top:13px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:15px}
+.stat{background:#26374e;padding:10px;border-radius:9px;text-align:center}
+.stat span{display:block;color:#aab7c8;font-size:11px;margin-bottom:5px}
+.stat strong{color:#ffd166;font-size:13px}
+.status{text-align:center;color:#39e58c;font-size:11px;margin-top:12px}
+.empty{text-align:center;color:#aab7c8;padding:25px}
 </style>
 </head>
 <body>
+<header>
 <h1>⚽ MAÇ TAHMİN MERKEZİ</h1>
-<p class="sub">Akıllı istatistik ve gol analiz sistemi</p>
+<div class="subtitle">Günlük futbol fikstürü ve analiz ekranı</div>
+</header>
 
-<div class="card">
-<div class="date">ÖRNEK ANALİZ • GERÇEK MAÇ DEĞİL</div>
-<div class="teams">🔵 Takım A - Takım B 🔴</div>
+<div class="info" id="info">Maç verileri yükleniyor...</div>
+<div id="matches"></div>
 
-<div class="heading">🔥 YÜKSEK GOL ANALİZİ</div>
-<div class="grid">
-<div class="stat"><span>6+ Gol</span><b>--%</b></div>
-<div class="stat"><span>5.5 Üst</span><b>--%</b></div>
-<div class="stat"><span>4.5 Üst</span><b>--%</b></div>
-<div class="stat"><span>2.5 Üst</span><b>--%</b></div>
-</div>
+<script>
+async function maclariGetir(){
+ const alan=document.getElementById("matches");
+ const bilgi=document.getElementById("info");
 
-<div class="heading">⚡ DEVRE ANALİZİ</div>
-<div class="grid">
-<div class="stat"><span>İlk Yarı KG</span><b>--%</b></div>
-<div class="stat"><span>İkinci Yarı KG</span><b>--%</b></div>
-</div>
+ try{
+  const cevap=await fetch("./data.json?v="+Date.now());
+  if(!cevap.ok) throw new Error("Veri dosyası bulunamadı.");
 
-<div class="heading">🎯 MAÇ SONUCU</div>
-<div class="grid">
-<div class="stat"><span>Ev Sahibi</span><b>--%</b></div>
-<div class="stat"><span>Beraberlik</span><b>--%</b></div>
-<div class="stat"><span>Deplasman</span><b>--%</b></div>
-<div class="stat"><span>İki Takım Gol</span><b>--%</b></div>
-</div>
-<p class="note">Bu ekran tasarım örneğidir. Henüz gerçek maç verisi veya tahmin hesaplaması yapılmamaktadır.</p>
-</div>
+  const veri=await cevap.json();
+  const maclar=veri.response || [];
+
+  bilgi.textContent="Toplam "+maclar.length+" maç bulundu.";
+
+  if(maclar.length===0){
+   alan.innerHTML='<div class="empty">Bugün için fikstürde maç bulunamadı.</div>';
+   return;
+  }
+
+  alan.innerHTML=maclar.map(mac=>{
+   const ev=mac.teams?.home?.name || "Ev sahibi";
+   const dep=mac.teams?.away?.name || "Deplasman";
+   const lig=mac.league?.name || "Lig bilgisi yok";
+   const tarih=mac.fixture?.date;
+   const saat=tarih ? new Date(tarih).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/Istanbul"}) : "--:--";
+   const durum=mac.fixture?.status?.long || "Programlandı";
+
+   return `
+   <div class="card">
+    <div class="league">${lig}</div>
+    <div class="teams">
+     <div class="team">${ev}</div>
+     <div class="vs">VS</div>
+     <div class="team">${dep}</div>
+    </div>
+    <div class="time">🕒 ${saat}</div>
+    <div class="stats">
+     <div class="stat"><span>6+ Gol</span><strong>Analiz bekleniyor</strong></div>
+     <div class="stat"><span>5.5 Üst</span><strong>Analiz bekleniyor</strong></div>
+     <div class="stat"><span>4.5 Üst</span><strong>Analiz bekleniyor</strong></div>
+     <div class="stat"><span>İlk Yarı KG</span><strong>Analiz bekleniyor</strong></div>
+     <div class="stat"><span>İkinci Yarı KG</span><strong>Analiz bekleniyor</strong></div>
+     <div class="stat"><span>Maç Sonucu</span><strong>Analiz bekleniyor</strong></div>
+    </div>
+    <div class="status">${durum}</div>
+   </div>`;
+  }).join("");
+
+ }catch(hata){
+  bilgi.textContent="Maç verileri yüklenemedi.";
+  alan.innerHTML='<div class="empty">'+hata.message+'</div>';
+ }
+}
+maclariGetir();
+</script>
 </body>
 </html>

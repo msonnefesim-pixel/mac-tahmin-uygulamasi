@@ -4,92 +4,314 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Maç Tahmin Merkezi</title>
+<meta name="theme-color" content="#101827">
+<title>YaPaYCiN Maç Analiz</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#101827;color:white;font-family:Arial,sans-serif;padding:18px}
-header{text-align:center;padding:18px 5px}
-h1{color:#39e58c;font-size:25px;margin:5px}
-.subtitle{color:#aab7c8;font-size:13px}
-.info{background:#1d2b40;padding:13px;border-radius:12px;margin:15px 0;color:#cbd5e1;font-size:13px}
-#matches{display:grid;gap:14px}
-.card{background:#1c2b40;border:1px solid #34445b;border-radius:15px;padding:16px}
-.league{font-size:12px;color:#39e58c;margin-bottom:12px}
-.teams{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px;font-weight:bold}
-.team{width:42%;text-align:center}
-.vs{color:#9baac0;font-size:12px}
-.time{text-align:center;color:#cbd5e1;font-size:12px;margin-top:13px}
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:15px}
-.stat{background:#26374e;padding:10px;border-radius:9px;text-align:center}
-.stat span{display:block;color:#aab7c8;font-size:11px;margin-bottom:5px}
-.stat strong{color:#ffd166;font-size:13px}
-.status{text-align:center;color:#39e58c;font-size:11px;margin-top:12px}
-.empty{text-align:center;color:#aab7c8;padding:25px}
+body{margin:0;background:#101827;color:#f1f5f9;font-family:Arial,sans-serif}
+header{padding:22px 15px;background:#172338;text-align:center;border-bottom:1px solid #293950}
+h1{margin:0;font-size:24px;color:#60a5fa}
+header p{margin:8px 0 0;color:#aab8ca;font-size:13px}
+.container{max-width:850px;margin:auto;padding:14px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:15px}
+.stat{background:#1c2b40;padding:13px 7px;border-radius:12px;text-align:center}
+.stat b{display:block;font-size:22px;color:#60a5fa}
+.stat span{font-size:11px;color:#bdc9d8}
+.notice{background:#26354a;color:#d4e2f5;padding:12px;border-radius:10px;font-size:12px;line-height:1.5;margin-bottom:14px}
+.controls{display:flex;gap:8px;margin-bottom:14px}
+input,select{min-width:0;width:100%;padding:12px;background:#1c2b40;color:white;border:1px solid #34465e;border-radius:9px}
+.card{background:#1b293d;border:1px solid #30435b;border-radius:13px;padding:14px;margin-bottom:12px}
+.league{font-size:12px;color:#60a5fa;margin-bottom:12px}
+.match{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:center}
+.team{font-size:15px;font-weight:bold;flex:1;overflow-wrap:anywhere}
+.vs{font-size:12px;color:#93a4ba}
+.time{font-size:12px;color:#aab8ca;margin-top:9px;text-align:center}
+.tag{display:inline-block;font-size:11px;padding:5px 8px;border-radius:6px;background:#34465e;color:#dbeafe;margin:8px 4px 0 0}
+.strong{background:#14532d;color:#bbf7d0}
+.analysis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}
+.metric{background:#111e30;padding:10px;border-radius:8px}
+.metric span{display:block;color:#9eafc4;font-size:11px;margin-bottom:5px}
+.metric b{font-size:16px}
+.good{color:#4ade80}
+.medium{color:#facc15}
+.low{color:#cbd5e1}
+.result{margin-top:12px;padding:10px;background:#25364d;border-radius:8px;font-size:13px;line-height:1.7}
+footer{text-align:center;padding:20px;color:#8191a6;font-size:11px}
+@media(max-width:400px){.team{font-size:13px}.metric b{font-size:14px}}
 </style>
 </head>
 <body>
 <header>
-<h1>⚽ MAÇ TAHMİN MERKEZİ</h1>
-<div class="subtitle">Günlük futbol fikstürü ve analiz ekranı</div>
+<h1>⚽ YaPaYCiN Maç Analiz</h1>
+<p>İstatistik tabanlı futbol tahmin sistemi</p>
 </header>
 
-<div class="info" id="info">Maç verileri yükleniyor...</div>
+<div class="container">
+<div class="stats">
+<div class="stat"><b id="matchCount">-</b><span>Maç</span></div>
+<div class="stat"><b id="historyCount">-</b><span>Geçmiş maç</span></div>
+<div class="stat"><b id="leagueCount">-</b><span>Lig</span></div>
+</div>
+
+<div class="notice">
+📊 Tahminler geçmiş maç istatistiklerinden hesaplanır. Yeterli veri olmayan takımlarda güvenilir tahmin üretilmez. Yüzdeler garanti değildir.
+</div>
+
+<div class="controls">
+<input id="search" placeholder="Takım veya lig ara...">
+<select id="filter">
+<option value="all">Bütün maçlar</option>
+<option value="strong">Güçlü adaylar</option>
+<option value="goals">6+ gol adayları</option>
+<option value="halves">İki yarı KG adayları</option>
+</select>
+</div>
+
+<div id="status">Maç verileri yükleniyor...</div>
 <div id="matches"></div>
+</div>
+
+<footer>YaPaYCiN • İstatistiksel analiz sistemi</footer>
 
 <script>
-async function maclariGetir(){
- const alan=document.getElementById("matches");
- const bilgi=document.getElementById("info");
+const $ = id => document.getElementById(id);
+let fixtures = [];
+let history = [];
+let analyses = [];
 
- try{
-  const cevap=await fetch("./data.json?v="+Date.now());
-  if(!cevap.ok) throw new Error("Veri dosyası bulunamadı.");
+function norm(s){
+ return String(s || "").trim().toLocaleLowerCase("tr-TR");
+}
 
-  const veri=await cevap.json();
-  const maclar=veri.response || [];
+function poisson(lambda,k){
+ let p=Math.exp(-lambda);
+ for(let i=1;i<=k;i++) p*=lambda/i;
+ return p;
+}
 
-  bilgi.textContent="Toplam "+maclar.length+" maç bulundu.";
+function goalProb(lambda,minimum){
+ let sum=0;
+ for(let i=0;i<minimum;i++) sum+=poisson(lambda,i);
+ return Math.max(0,Math.min(1,1-sum));
+}
 
-  if(maclar.length===0){
-   alan.innerHTML='<div class="empty">Bugün için fikstürde maç bulunamadı.</div>';
-   return;
+function makeTeamStats(leagueId,team){
+ const key=norm(team);
+ const games=history.filter(m=>
+  String(m.league_id)===String(leagueId) &&
+  (norm(m.home)===key || norm(m.away)===key) &&
+  Number.isFinite(Number(m.ft_home)) &&
+  Number.isFinite(Number(m.ft_away))
+ ).slice(-10);
+
+ if(!games.length) return null;
+
+ let gf=0,ga=0,first=0,second=0,btts=0,over25=0,over45=0,over55=0;
+
+ for(const m of games){
+  const home=norm(m.home)===key;
+  const scored=home?Number(m.ft_home):Number(m.ft_away);
+  const conceded=home?Number(m.ft_away):Number(m.ft_home);
+  gf+=scored;
+  ga+=conceded;
+  if(scored>0 && conceded>0)btts++;
+  if(scored+conceded>=3)over25++;
+  if(scored+conceded>=5)over45++;
+  if(scored+conceded>=6)over55++;
+
+  if(m.ht_home!==null && m.ht_away!==null &&
+     m.ht_home!==undefined && m.ht_away!==undefined){
+   const fh=Number(m.ht_home);
+   const fa=Number(m.ht_away);
+   const sh=Number(m.ft_home)-fh;
+   const sa=Number(m.ft_away)-fa;
+   if(fh>0 && fa>0)first++;
+   if(sh>0 && sa>0)second++;
+  }
+ }
+
+ const halves=games.filter(m=>m.ht_home!==null &&
+  m.ht_away!==null && m.ht_home!==undefined && m.ht_away!==undefined);
+
+ return {
+  n:games.length,
+  gf:gf/games.length,
+  ga:ga/games.length,
+  btts:btts/games.length,
+  over25:over25/games.length,
+  over45:over45/games.length,
+  over55:over55/games.length,
+  first:halves.length?first/halves.length:null,
+  second:halves.length?second/halves.length:null,
+  halfN:halves.length
+ };
+}
+
+function pct(n){
+ return Math.round(Math.max(0,Math.min(1,n))*100);
+}
+
+function analyze(f){
+ const h=makeTeamStats(f.league_id,f.home);
+ const a=makeTeamStats(f.league_id,f.away);
+
+ if(!h || !a || h.n<3 || a.n<3){
+  return {fixture:f,h,a,ready:false};
+ }
+
+ const avg=2.65;
+ const homeAttack=h.gf/avg;
+ const awayDefense=a.ga/avg;
+ const awayAttack=a.gf/avg;
+ const homeDefense=h.ga/avg;
+
+ const lh=Math.max(.15,Math.min(4.5,avg*.52*homeAttack*awayDefense));
+ const la=Math.max(.15,Math.min(4.5,avg*.48*awayAttack*homeDefense));
+ const total=lh+la;
+
+ let homeWin=0,draw=0,awayWin=0;
+ for(let i=0;i<=9;i++){
+  for(let j=0;j<=9;j++){
+   const p=poisson(lh,i)*poisson(la,j);
+   if(i>j)homeWin+=p;
+   else if(i===j)draw+=p;
+   else awayWin+=p;
+  }
+ }
+
+ const btts=(1-Math.exp(-lh))*(1-Math.exp(-la));
+ const over25=goalProb(total,3);
+ const over45=goalProb(total,5);
+ const over55=goalProb(total,6);
+
+ const first=(h.first!==null && a.first!==null)
+  ? (h.first+a.first)/2 : null;
+ const second=(h.second!==null && a.second!==null)
+  ? (h.second+a.second)/2 : null;
+
+ const bothHalves=first!==null && second!==null
+  ? first*second : null;
+
+ const strong=(over55>=.20 || over45>=.38 ||
+  (bothHalves!==null && bothHalves>=.15));
+
+ return {
+  fixture:f,h,a,ready:true,lh,la,total,
+  homeWin,draw,awayWin,btts,over25,over45,over55,
+  first,second,bothHalves,strong
+ };
+}
+
+function quality(p){
+ if(p>=65)return "good";
+ if(p>=40)return "medium";
+ return "low";
+}
+
+function metric(name,value){
+ if(value===null || value===undefined)
+  return `<div class="metric"><span>${name}</span><b>Veri yetersiz</b></div>`;
+ return `<div class="metric"><span>${name}</span><b class="${quality(value)}">%${pct(value)}</b></div>`;
+}
+
+function render(){
+ const q=norm($("search").value);
+ const filter=$("filter").value;
+ let list=analyses.filter(x=>{
+  const f=x.fixture;
+  const text=norm(f.home+" "+f.away+" "+f.league);
+  if(q && !text.includes(q))return false;
+  if(filter==="strong" && !(x.ready && x.strong))return false;
+  if(filter==="goals" && !(x.ready && x.over55>=.20))return false;
+  if(filter==="halves" && !(x.ready && x.bothHalves!==null && x.bothHalves>=.15))return false;
+  return true;
+ });
+
+ $("matches").innerHTML=list.map(x=>{
+  const f=x.fixture;
+  const date=f.date || "";
+  const time=f.time || "";
+  let tags="";
+  if(x.ready){
+   if(x.strong)tags+='<span class="tag strong">⭐ Güçlü aday</span>';
+   if(x.over55>=.20)tags+='<span class="tag strong">6+ gol adayı</span>';
+   if(x.bothHalves!==null && x.bothHalves>=.15)
+    tags+='<span class="tag strong">İki yarı KG adayı</span>';
+  }else{
+   tags='<span class="tag">Yeterli geçmiş veri yok</span>';
   }
 
-  alan.innerHTML=maclar.map(mac=>{
-   const ev=mac.teams?.home?.name || "Ev sahibi";
-   const dep=mac.teams?.away?.name || "Deplasman";
-   const lig=mac.league?.name || "Lig bilgisi yok";
-   const tarih=mac.fixture?.date;
-   const saat=tarih ? new Date(tarih).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/Istanbul"}) : "--:--";
-   const durum=mac.fixture?.status?.long || "Programlandı";
+  let metrics="";
+  let result="";
+  if(x.ready){
+   metrics=
+    metric("6+ gol",x.over55)+
+    metric("5.5 üst",x.over55)+
+    metric("4.5 üst",x.over45)+
+    metric("2.5 üst",x.over25)+
+    metric("Maç KG",x.btts)+
+    metric("İlk yarı KG",x.first)+
+    metric("İkinci yarı KG",x.second)+
+    metric("İki yarı KG",x.bothHalves);
 
-   return `
-   <div class="card">
-    <div class="league">${lig}</div>
-    <div class="teams">
-     <div class="team">${ev}</div>
-     <div class="vs">VS</div>
-     <div class="team">${dep}</div>
-    </div>
-    <div class="time">🕒 ${saat}</div>
-    <div class="stats">
-     <div class="stat"><span>6+ Gol</span><strong>Analiz bekleniyor</strong></div>
-     <div class="stat"><span>5.5 Üst</span><strong>Analiz bekleniyor</strong></div>
-     <div class="stat"><span>4.5 Üst</span><strong>Analiz bekleniyor</strong></div>
-     <div class="stat"><span>İlk Yarı KG</span><strong>Analiz bekleniyor</strong></div>
-     <div class="stat"><span>İkinci Yarı KG</span><strong>Analiz bekleniyor</strong></div>
-     <div class="stat"><span>Maç Sonucu</span><strong>Analiz bekleniyor</strong></div>
-    </div>
-    <div class="status">${durum}</div>
+   const outcomes=[
+    ["1",x.homeWin],["X",x.draw],["2",x.awayWin]
+   ].sort((a,b)=>b[1]-a[1]);
+   const best=outcomes[0][0];
+   const score=Math.round(x.lh)+"-"+Math.round(x.la);
+
+   result=`<div class="result">
+   <b>1-X-2:</b> 1 %${pct(x.homeWin)} • X %${pct(x.draw)} • 2 %${pct(x.awayWin)}<br>
+   <b>İstatistiksel skor tahmini:</b> ${score}<br>
+   <b>Gol beklentisi:</b> ${x.total.toFixed(2)}<br>
+   <b>Öne çıkan sonuç:</b> ${best}<br>
+   <b>Veri:</b> ${x.h.n} ev sahibi ve ${x.a.n} deplasman geçmiş maçı
    </div>`;
-  }).join("");
+  }else{
+   metrics='<div class="result">Bu ligde veya takımlarda yeterli geçmiş maç verisi bulunamadı. Tahmin üretilmedi.</div>';
+  }
 
- }catch(hata){
-  bilgi.textContent="Maç verileri yüklenemedi.";
-  alan.innerHTML='<div class="empty">'+hata.message+'</div>';
+  return `<div class="card">
+   <div class="league">${f.league || "Lig bilgisi yok"}</div>
+   <div class="match">
+    <div class="team">${f.home}</div>
+    <div class="vs">VS</div>
+    <div class="team">${f.away}</div>
+   </div>
+   <div class="time">${date} • ${time}</div>
+   <div>${tags}</div>
+   <div class="analysis">${metrics}</div>
+   ${result}
+  </div>`;
+ }).join("");
+
+ if(!list.length)$("matches").innerHTML="<div class='notice'>Bu filtreye uygun maç bulunamadı.</div>";
+ $("status").textContent=`${list.length} maç gösteriliyor • Tüm maçlar için filtreyi değiştir.`;
+}
+
+async function load(){
+ try{
+  const response=await fetch("data.json? t="+Date.now());
+  if(!response.ok)throw new Error("Veri dosyası bulunamadı.");
+  const data=await response.json();
+
+  fixtures=Array.isArray(data.fixtures)?data.fixtures:[];
+  history=Array.isArray(data.history)?data.history:[];
+
+  $("matchCount").textContent=fixtures.length;
+  $("historyCount").textContent=history.length;
+  $("leagueCount").textContent=new Set(fixtures.map(x=>x.league_id)).size;
+
+  analyses=fixtures.map(analyze);
+  render();
+ }catch(e){
+  $("status").textContent="Veriler yüklenemedi: "+e.message;
  }
 }
-maclariGetir();
+
+$("search").addEventListener("input",render);
+$("filter").addEventListener("change",render);
+load();
 </script>
 </body>
 </html>

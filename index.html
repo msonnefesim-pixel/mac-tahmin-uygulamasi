@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -8,49 +9,43 @@
 *{box-sizing:border-box}
 body{margin:0;padding:14px;background:#101827;color:#fff;font-family:Arial,sans-serif}
 header{text-align:center;padding:15px 5px}
-h1{color:#39e58c;font-size:25px;margin:5px}
-.sub{color:#aab7c8;font-size:12px}
+h1{color:#39e58c;font-size:25px}
+.sub,.muted{color:#aab7c8;font-size:12px}
 .info,.panel{background:#1d2b40;padding:14px;border-radius:13px;margin:13px 0}
-.info{font-size:13px;color:#cbd5e1}
-h2{font-size:18px;color:#39e58c;margin:5px 0 12px}
+h2{font-size:18px;color:#39e58c}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.stat{background:#26374e;border-radius:10px;padding:12px;text-align:center}
-.stat span{display:block;color:#aab7c8;font-size:11px;margin-bottom:6px}
-.stat strong{font-size:19px;color:#ffd166}
-input,select{width:100%;padding:12px;margin:5px 0;background:#26374e;color:white;border:1px solid #52647c;border-radius:9px;font-size:14px}
+.stat,.cell{background:#26374e;border-radius:10px;padding:12px;text-align:center}
+.stat span,.cell span{display:block;color:#aab7c8;font-size:11px;margin-bottom:6px}
+.stat strong,.cell b{font-size:17px;color:#ffd166}
+input,select{width:100%;padding:12px;margin:5px 0;background:#26374e;color:white;border:1px solid #52647c;border-radius:9px}
 .card{background:#1c2b40;border:1px solid #34445b;border-radius:14px;padding:14px;margin:12px 0}
+.good{border:1px solid #39e58c}
 .league{font-size:12px;color:#39e58c;margin-bottom:10px}
-.teams{display:flex;align-items:center;justify-content:space-between;gap:6px;font-weight:bold;font-size:14px}
+.teams{display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:14px}
 .team{width:43%;text-align:center}
-.vs{color:#9baac0;font-size:11px}
+.vs{color:#9baac0}
 .time{text-align:center;color:#cbd5e1;font-size:12px;margin-top:10px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:13px}
-.cell{background:#26374e;border-radius:8px;padding:9px;text-align:center}
-.cell span{display:block;font-size:10px;color:#aab7c8;margin-bottom:5px}
-.cell b{font-size:14px;color:#ffd166}
-.good{border:1px solid #39e58c}
-.badge{font-size:11px;color:#39e58c;text-align:center;margin-top:10px}
-.muted{font-size:11px;color:#aab7c8;line-height:1.5}
+.badge{text-align:center;color:#39e58c;font-size:11px;margin-top:10px}
 .empty{text-align:center;color:#aab7c8;padding:22px}
-button{width:100%;padding:12px;border:0;border-radius:9px;background:#39e58c;color:#102030;font-weight:bold;margin-top:8px}
 </style>
 </head>
 <body>
 
 <header>
 <h1>⚽ YaPaYCiN Maç Analiz</h1>
-<div class="sub">Futbol fikstürü • Gol olasılıkları • Geçmiş başarı testi</div>
+<div class="sub">Gol tahminleri • Geçmiş başarı testi</div>
 </header>
 
-<div class="info" id="info">Maç verileri yükleniyor...</div>
+<div class="info" id="info">Veriler yükleniyor...</div>
 
 <div class="panel">
 <h2>📊 Geçmiş Tahmin Başarı Testi</h2>
 <div class="stats">
-<div class="stat"><span>6+ GOL ADAYI BAŞARISI</span><strong id="test6">-</strong></div>
-<div class="stat"><span>4.5+ GOL ADAYI BAŞARISI</span><strong id="test4">-</strong></div>
-<div class="stat"><span>6+ Test Maçı</span><strong id="count6">-</strong></div>
-<div class="stat"><span>4.5+ Test Maçı</span><strong id="count4">-</strong></div>
+<div class="stat"><span>6+ GOL BAŞARISI</span><strong id="test6">-</strong></div>
+<div class="stat"><span>3.5 ÜST BAŞARISI</span><strong id="test3">-</strong></div>
+<div class="stat"><span>6+ TEST MAÇI</span><strong id="count6">-</strong></div>
+<div class="stat"><span>3.5 ÜST TEST MAÇI</span><strong id="count3">-</strong></div>
 </div>
 <p class="muted" id="testnote">Test hazırlanıyor...</p>
 </div>
@@ -62,7 +57,7 @@ button{width:100%;padding:12px;border:0;border-radius:9px;background:#39e58c;col
 <option value="all">Bütün maçlar</option>
 <option value="strong">Güçlü gol adayları</option>
 <option value="six">6+ gol adayları</option>
-<option value="four">4.5+ gol adayları</option>
+<option value="three">3.5 üst adayları</option>
 </select>
 </div>
 
@@ -70,80 +65,65 @@ button{width:100%;padding:12px;border:0;border-radius:9px;background:#39e58c;col
 <div id="matches"><div class="empty">Maçlar yükleniyor...</div></div>
 
 <script>
-let DATA=null;
 let FIXTURES=[];
 let HISTORY=[];
 
-function ort(arr){
- return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
-}
-function takimMaclari(lig,takim,tarih){
- return HISTORY.filter(m=>
-  m.league_id===lig &&
-  m.date<tarih &&
-  (m.home===takim || m.away===takim) &&
-  Number.isFinite(Number(m.ft_home)) &&
-  Number.isFinite(Number(m.ft_away))
- ).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
-}
-function takimGolOrt(maclar,takim,attigi){
- return ort(maclar.map(m=>{
-  let ev=m.home===takim;
-  if(attigi) return Number(ev?m.ft_home:m.ft_away);
-  return Number(ev?m.ft_away:m.ft_home);
- }));
-}
-function poisson(lambda,k){
- let p=Math.exp(-lambda),top=p;
- for(let i=1;i<=k;i++){
-  p=p*lambda/i;
-  top+=p;
- }
- return top;
-}
-function golOlasilik(lh,la,min){
- let toplam=0;
- for(let h=0;h<=12;h++){
-  for(let a=0;a<=12;a++){
-   if(h+a>=min){
-    toplam+=
-     Math.exp(-lh)*Math.pow(lh,h)/factorial(h)*
-     Math.exp(-la)*Math.pow(la,a)/factorial(a);
-   }
-  }
- }
- return Math.min(1,toplam);
+function ort(a){
+ return a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
 }
 function factorial(n){
  let x=1;
  for(let i=2;i<=n;i++)x*=i;
  return x;
 }
+function poisson(lambda,k){
+ return Math.exp(-lambda)*Math.pow(lambda,k)/factorial(k);
+}
+function golOlasilik(lh,la,min){
+ let toplam=0;
+ for(let h=0;h<=15;h++){
+  for(let a=0;a<=15;a++){
+   if(h+a>=min)toplam+=poisson(lh,h)*poisson(la,a);
+  }
+ }
+ return Math.min(1,toplam);
+}
+function takimMaclari(lig,takim,tarih){
+ return HISTORY.filter(m=>
+  String(m.league_id)===String(lig)&&
+  m.date<tarih&&
+  (m.home===takim||m.away===takim)&&
+  Number.isFinite(Number(m.ft_home))&&
+  Number.isFinite(Number(m.ft_away))
+ ).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
+}
+function takimGolOrt(maclar,takim,attigi){
+ return ort(maclar.map(m=>{
+  let ev=m.home===takim;
+  return Number(attigi?(ev?m.ft_home:m.ft_away):(ev?m.ft_away:m.ft_home));
+ }));
+}
 function tahmin(mac){
- const ev=takimMaclari(mac.league_id,mac.home,mac.date);
- const dep=takimMaclari(mac.league_id,mac.away,mac.date);
- if(ev.length<5 || dep.length<5)return null;
+ let ev=takimMaclari(mac.league_id,mac.home,mac.date);
+ let dep=takimMaclari(mac.league_id,mac.away,mac.date);
+ if(ev.length<5||dep.length<5)return null;
 
- let evAt=takimGolOrt(ev,mac.home,true);
- let evYe=takimGolOrt(ev,mac.home,false);
- let depAt=takimGolOrt(dep,mac.away,true);
- let depYe=takimGolOrt(dep,mac.away,false);
+ let lh=Math.max(.15,(takimGolOrt(ev,mac.home,true)+takimGolOrt(dep,mac.away,false))/2);
+ let la=Math.max(.15,(takimGolOrt(dep,mac.away,true)+takimGolOrt(ev,mac.home,false))/2);
 
- let lh=Math.max(.15,(evAt+depYe)/2);
- let la=Math.max(.15,(depAt+evYe)/2);
  return {
+  three:golOlasilik(lh,la,4),
   six:golOlasilik(lh,la,6),
-  four:golOlasilik(lh,la,5),
-  five:golOlasilik(lh,la,6),
   btts:(1-Math.exp(-lh))*(1-Math.exp(-la)),
   lh,la,evN:ev.length,depN:dep.length
  };
 }
-function yuzde(x){return Math.round(x*100)+"%"}
+function yuzde(x){return Math.round(x*100)+"%";}
+
 function basariTesti(){
- let aday6=[],aday4=[];
+ let aday6=[],aday3=[];
  let gecmis=HISTORY.filter(m=>
-  Number.isFinite(Number(m.ft_home)) &&
+  Number.isFinite(Number(m.ft_home))&&
   Number.isFinite(Number(m.ft_away))
  ).sort((a,b)=>a.date.localeCompare(b.date));
 
@@ -152,48 +132,42 @@ function basariTesti(){
   if(!t)return;
   let gol=Number(m.ft_home)+Number(m.ft_away);
   if(t.six>=.20)aday6.push(gol>=6);
-  if(t.four>=.38)aday4.push(gol>=5);
+  if(t.three>=.50)aday3.push(gol>=4);
  });
 
  let oran6=aday6.length?aday6.filter(Boolean).length/aday6.length:null;
- let oran4=aday4.length?aday4.filter(Boolean).length/aday4.length:null;
+ let oran3=aday3.length?aday3.filter(Boolean).length/aday3.length:null;
 
  document.getElementById("test6").textContent=oran6===null?"Veri yok":yuzde(oran6);
- document.getElementById("test4").textContent=oran4===null?"Veri yok":yuzde(oran4);
+ document.getElementById("test3").textContent=oran3===null?"Veri yok":yuzde(oran3);
  document.getElementById("count6").textContent=aday6.length;
- document.getElementById("count4").textContent=aday4.length;
+ document.getElementById("count3").textContent=aday3.length;
 
  document.getElementById("testnote").textContent=
- "Testte yalnızca maç tarihinden önceki sonuçlar kullanıldı. 6+ aday eşiği %20, 4.5+ aday eşiği %38. Bu oranlar geçmiş test sonuçlarıdır; gelecek maç garantisi değildir.";
+ "6+ aday eşiği %20, 3.5 üst aday eşiği %50. Yalnızca maç tarihinden önceki sonuçlar kullanılır. Sonuçlar geçmiş test performansıdır, garanti değildir.";
 }
-function macKart(mac){
- let t=tahmin(mac);
- let saat=mac.time||"--:--";
- let tarih=mac.date||"";
- let guclu=t&&(t.six>=.20||t.four>=.38);
+function macKart(m){
+ let t=tahmin(m);
+ let guclu=t&&(t.six>=.20||t.three>=.50);
  return `
- <div class="card ${guclu?"good":""}" data-search="${(mac.home+" "+mac.away+" "+mac.league).toLocaleLowerCase("tr")}">
-  <div class="league">${mac.league||"Lig bilgisi yok"}</div>
-  <div class="teams">
-   <div class="team">${mac.home}</div>
-   <div class="vs">VS</div>
-   <div class="team">${mac.away}</div>
-  </div>
-  <div class="time">📅 ${tarih} &nbsp; 🕒 ${saat}</div>
-  ${t?`
-  <div class="grid">
-   <div class="cell"><span>6+ GOL</span><b>${yuzde(t.six)}</b></div>
-   <div class="cell"><span>5.5 ÜST</span><b>${yuzde(t.five)}</b></div>
-   <div class="cell"><span>4.5 ÜST</span><b>${yuzde(t.four)}</b></div>
-   <div class="cell"><span>MAÇ KG</span><b>${yuzde(t.btts)}</b></div>
-   <div class="cell"><span>EV GOL BEKLENTİSİ</span><b>${t.lh.toFixed(2)}</b></div>
-   <div class="cell"><span>DEP GOL BEKLENTİSİ</span><b>${t.la.toFixed(2)}</b></div>
-  </div>
-  <div class="badge">${guclu?"⭐ GOL ADAYI":"Normal analiz"} • Son 10 maç verisi kullanıldı</div>
-  <p class="muted">Ev sahibi geçmiş maç: ${t.evN} • Deplasman geçmiş maç: ${t.depN}</p>
-  `:`
-  <div class="empty">Yeterli geçmiş maç verisi bulunamadı. Tahmin üretilmedi.</div>
-  `}
+ <div class="card ${guclu?"good":""}">
+ <div class="league">${m.league||"Lig bilgisi yok"}</div>
+ <div class="teams">
+ <div class="team">${m.home}</div><div class="vs">VS</div>
+ <div class="team">${m.away}</div>
+ </div>
+ <div class="time">📅 ${m.date||""} • 🕒 ${m.time||"--:--"}</div>
+ ${t?`
+ <div class="grid">
+ <div class="cell"><span>3.5 ÜST</span><b>${yuzde(t.three)}</b></div>
+ <div class="cell"><span>6+ GOL</span><b>${yuzde(t.six)}</b></div>
+ <div class="cell"><span>MAÇ KG</span><b>${yuzde(t.btts)}</b></div>
+ <div class="cell"><span>BEKLENEN GOL</span><b>${(t.lh+t.la).toFixed(2)}</b></div>
+ <div class="cell"><span>EV SAHİBİ GOL</span><b>${t.lh.toFixed(2)}</b></div>
+ <div class="cell"><span>DEPLASMAN GOL</span><b>${t.la.toFixed(2)}</b></div>
+ </div>
+ <div class="badge">${guclu?"⭐ GOL ADAYI":"Normal analiz"} • Geçmiş maç: ${t.evN}+${t.depN}</div>
+ `:`<div class="empty">Yeterli geçmiş veri yok. Tahmin üretilmedi.</div>`}
  </div>`;
 }
 function listele(){
@@ -203,9 +177,9 @@ function listele(){
   let t=tahmin(m);
   let metin=(m.home+" "+m.away+" "+m.league).toLocaleLowerCase("tr");
   if(arama&&!metin.includes(arama))return false;
-  if(filtre==="strong"&&!(t&&(t.six>=.20||t.four>=.38)))return false;
+  if(filtre==="strong"&&!(t&&(t.six>=.20||t.three>=.50)))return false;
   if(filtre==="six"&&!(t&&t.six>=.20))return false;
-  if(filtre==="four"&&!(t&&t.four>=.38))return false;
+  if(filtre==="three"&&!(t&&t.three>=.50))return false;
   return true;
  });
  document.getElementById("matches").innerHTML=sonuc.length?
@@ -213,24 +187,22 @@ function listele(){
 }
 async function baslat(){
  try{
-  const cevap=await fetch("./data.json?v="+Date.now());
-  if(!cevap.ok)throw new Error("data.json bulunamadı.");
-  DATA=await cevap.json();
-  FIXTURES=DATA.fixtures||[];
-  HISTORY=DATA.history||[];
+  let cevap=await fetch("./data.json?v="+Date.now());
+  if(!cevap.ok)throw new Error("data.json bulunamadı");
+  let data=await cevap.json();
+  FIXTURES=data.fixtures||[];
+  HISTORY=data.history||[];
 
   document.getElementById("info").textContent=
-   "Veri kaynağı: "+(DATA.source||"Bilinmiyor")+
+   "Kaynak: "+(data.source||"Bilinmiyor")+
    " • Gelecek maç: "+FIXTURES.length+
    " • Geçmiş maç: "+HISTORY.length+
-   " • Güncelleme: "+(DATA.updated||"-");
+   " • Güncelleme: "+(data.updated||"-");
 
   basariTesti();
   listele();
  }catch(e){
   document.getElementById("info").textContent="Veri yüklenemedi: "+e.message;
-  document.getElementById("matches").innerHTML=
-   '<div class="empty">Veri dosyasını kontrol et.</div>';
  }
 }
 document.getElementById("search").addEventListener("input",listele);

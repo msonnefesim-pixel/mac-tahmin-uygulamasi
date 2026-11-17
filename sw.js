@@ -1,10 +1,11 @@
-const CACHE_NAME = "yapaycin-mac-analiz-v1";
+
+const CACHE_NAME = "yapaycin-mac-analiz-v2";
 
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
   "./manifest.json",
-  "./icon.svg"
+  "./icon.png"
 ];
 
 self.addEventListener("install", event => {

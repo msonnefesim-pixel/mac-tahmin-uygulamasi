@@ -60,20 +60,33 @@ jobs:
               with open(file, encoding="utf-8-sig", newline="") as f:
                   for row in csv.DictReader(f):
                       try:
-                          kickoff = datetime.strptime(
-                              row["date"] + " " + (row.get("time") or "00:00"),
-                              "%Y-%m-%d %H:%M"
-                          ) + timedelta(hours=2)
+                          raw_time = (row.get("time") or "").strip()
+                          base_date = datetime.strptime(
+                              row["date"], "%Y-%m-%d"
+                          ).date()
 
-                          if today <= kickoff.date() <= end_date:
+                          if raw_time:
+                              kickoff = datetime.strptime(
+                                  row["date"] + " " + raw_time,
+                                  "%Y-%m-%d %H:%M"
+                              ) + timedelta(hours=2)
+
+                              match_date = kickoff.date()
+                              match_time = kickoff.strftime("%H:%M")
+                          else:
+                              match_date = base_date
+                              match_time = "Saat açıklanmadı"
+
+                          if today <= match_date <= end_date:
                               fixtures.append({
                                   "league_id": league_id,
                                   "league": league,
-                                  "date": kickoff.strftime("%Y-%m-%d"),
-                                  "time": kickoff.strftime("%H:%M"),
+                                  "date": match_date.strftime("%Y-%m-%d"),
+                                  "time": match_time,
                                   "home": row["home"],
                                   "away": row["away"]
                               })
+
                       except (ValueError, KeyError):
                           continue
 
@@ -98,6 +111,7 @@ jobs:
                               "ht_home": int(row["ht_home"]) if row.get("ht_home", "").strip() else None,
                               "ht_away": int(row["ht_away"]) if row.get("ht_away", "").strip() else None
                           })
+
                       except (ValueError, KeyError):
                           continue
 
@@ -129,8 +143,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add data.json
-
           git diff --cached --quiet || (
-            git commit -m "Yeni futbol mac verileri"
+            git commit -m "Mac saatleri duzeltildi"
             git push
           )

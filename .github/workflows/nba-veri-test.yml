@@ -1,0 +1,51 @@
+
+name: NBA Veri Testi
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  nba-verisini-kontrol-et:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Depoyu indir
+        uses: actions/checkout@v4
+
+      - name: Python ortamını hazırla
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas pyarrow requests
+
+      - name: NBA verisini indir ve kontrol et
+        run: |
+          python - <<'PY'
+          import pandas as pd
+          import requests
+
+          url = "https://github.com/WalrusQuant/sportsleader-data/releases/download/nba_games/2027.parquet"
+
+          print("NBA verisi indiriliyor...")
+
+          response = requests.get(url, timeout=60)
+          response.raise_for_status()
+
+          with open("nba_test.parquet", "wb") as f:
+              f.write(response.content)
+
+          df = pd.read_parquet("nba_test.parquet")
+
+          print("\nDosya boyutu:", len(response.content), "bayt")
+          print("Toplam kayıt:", len(df))
+          print("Sütunlar:", list(df.columns))
+          print("\nİlk 5 kayıt:")
+          print(df.head().to_string())
+
+          if df.empty:
+              raise SystemExit("HATA: NBA verisi boş!")
+
+          print("\nNBA VERİ TESTİ BAŞARILI!")
+          PY

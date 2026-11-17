@@ -1,4 +1,7 @@
-
+<head>
+ <link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#c8102e">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -780,6 +783,14 @@ async function baslat(force=false){
 
 $("tarih").value=today();
 baslat();
+</script>
+ <script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js")
+      .catch(error => console.error("Uygulama kaydı:", error));
+  });
+}
 </script>
 </body>
 </html>

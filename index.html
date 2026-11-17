@@ -12,6 +12,7 @@ body{margin:0;background:var(--bg);color:#fff;font-family:Arial,sans-serif;paddi
 h1{font-size:27px;color:var(--yellow);margin:5px 0}
 h2{font-size:21px;color:var(--yellow);margin:22px 0 10px}
 h3{font-size:18px;color:var(--yellow);margin:20px 0 9px}
+h4{font-size:16px;color:var(--yellow);margin:15px 0 8px}
 p{color:var(--muted);font-size:15px;line-height:1.45}
 .panel,.match{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:13px;padding:14px;margin:11px 0}
 input,select,button{width:100%;padding:14px;margin:6px 0;border-radius:9px;font-size:16px}
@@ -34,6 +35,11 @@ th,td{padding:10px 5px;text-align:center;border-bottom:1px solid #444}
 th{color:var(--yellow)}
 .hidden{display:none}
 .analysis-note{background:#242000;border:1px solid #665400;border-radius:9px;padding:11px;margin-top:10px}
+.period-panel{background:#202020;border:1px solid #494949;border-radius:10px;padding:12px;margin:14px 0}
+.period-title{font-size:17px;color:var(--yellow);font-weight:bold}
+.period-date{font-size:13px;color:var(--muted);margin-top:5px}
+.analysis-grid{display:grid;grid-template-columns:1fr;gap:8px}
+.analysis-box{overflow-x:auto;background:#181818;border:1px solid #383838;border-radius:9px;padding:9px;margin-top:9px}
 @media(max-width:420px){body{padding:10px}.controls{grid-template-columns:1fr}.teams{font-size:18px}}
 </style>
 </head>
@@ -89,25 +95,14 @@ th{color:var(--yellow)}
 
 <h2>Bağımsız Geçmiş Başarı Analizi</h2>
 <div class="panel">
- <p>Her tahmin türü diğerlerinden bağımsız olarak geçmiş maçlarda test edilir. Bir tahminin başarılı olması için başka bir tahminin de tutması gerekmez.</p>
+ <p>Geçmiş performans dört ayrı tarih döneminde ölçülür. Her tahmin türü kendi başına değerlendirilir; başka bir tahminin tutması gerekmez.</p>
 
- <button class="secondary" onclick="testleriHesapla()">Geçmiş analizleri hesapla</button>
+ <button class="secondary" onclick="testleriHesapla()">Dönem analizlerini hesapla</button>
  <div id="analizDurum" class="small"></div>
-
- <h3>6+ Gol Başarı Testi</h3>
- <div id="altiTablo"></div>
-
- <h3>KG Var Başarı Testi</h3>
- <div id="kgTablo"></div>
-
- <h3>İlk Yarı KG Başarı Testi</h3>
- <div id="ilkTablo"></div>
-
- <h3>İkinci Yarı KG Başarı Testi</h3>
- <div id="ikinciTablo"></div>
+ <div id="donemAnalizleri"></div>
 
  <div class="analysis-note">
-  <p class="small">Her tablo yalnızca kendi tahmin türünü ölçer. Aday sayısı, tutan maç sayısı ve başarı oranı ayrı hesaplanır. Eşiklerdeki adaylar birbirleriyle örtüşebilir.</p>
+  <p class="small">Dönemler, geçmiş verideki en son maç tarihinden geriye doğru 90'ar günlük dilimler olarak hesaplanır. Tüm geçmiş tablosu ayrıca gösterilir. Tahminler her maç için yalnızca o maçtan önceki verilerle oluşturulur. Eşiklerdeki adaylar birbirleriyle örtüşebilir.</p>
  </div>
 </div>
 
@@ -420,94 +415,156 @@ function esikTablosu(veri,esikler){
   </tr>`;
  });
 
- return h+"</table><p class='small'>Bu tablo yalnızca kendi tahmin türünün geçmiş sonuçlarını gösterir.</p>";
+ return h+"</table>";
 }
 
-/* Dört tahmin türünü birbirinden bağımsız test eder */
+/* Tarih yardımcıları */
+function tarihEkle(tarih,gun){
+ const d=new Date(tarih+"T12:00:00");
+ d.setDate(d.getDate()+gun);
+ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+function tarihYaz(t){
+ return new Date(t+"T12:00:00").toLocaleDateString("tr-TR",{
+  day:"2-digit",month:"long",year:"numeric"
+ });
+}
+
+function sonGecmisTarihi(){
+ const tarihler=HISTORY
+  .filter(m=>m.date&&skorVar(m.ft_home)&&skorVar(m.ft_away))
+  .map(m=>String(m.date))
+  .sort();
+
+ return tarihler.length?tarihler[tarihler.length-1]:null;
+}
+
+/* Dört bağımsız tahmin türünü tek dönem için hesaplar */
+function donemVerisiBaslat(){
+ return {alti:[],kg:[],ilk:[],ikinci:[]};
+}
+
+function donemSonucEkle(d,m,t){
+ if(!skorVar(m.ft_home)||!skorVar(m.ft_away)||!t)return;
+
+ d.alti.push({p:t.six,ok:sonucAlti(m)});
+ d.kg.push({p:t.btts,ok:sonucKG(m)});
+
+ const yariGecerli=
+  skorVar(m.ht_home)&&
+  skorVar(m.ht_away)&&
+  Number(m.ft_home)>=Number(m.ht_home)&&
+  Number(m.ft_away)>=Number(m.ht_away);
+
+ if(!yariGecerli)return;
+
+ if(t.ilk)d.ilk.push({p:t.ilk.kg,ok:sonucIlk(m)});
+ if(t.ikinci)d.ikinci.push({p:t.ikinci.kg,ok:sonucIkinci(m)});
+}
+
+/* Dönem raporunu ekrana basar */
+function donemHTML(baslik,baslangic,bitis,veri){
+ let h=`<div class="period-panel">
+  <div class="period-title">${baslik}</div>
+  <div class="period-date">${baslangic} – ${bitis}</div>
+  <div class="analysis-grid">`;
+
+ h+=`<div class="analysis-box"><h4>6+ Gol</h4>
+  ${esikTablosu(veri.alti,[10,15,20,25,30,40,50])}</div>`;
+
+ h+=`<div class="analysis-box"><h4>KG Var</h4>
+  ${esikTablosu(veri.kg,[40,45,50,55,60,65,70])}</div>`;
+
+ h+=`<div class="analysis-box"><h4>İlk Yarı KG</h4>
+  ${esikTablosu(veri.ilk,[30,40,50,60,70])}</div>`;
+
+ h+=`<div class="analysis-box"><h4>İkinci Yarı KG</h4>
+  ${esikTablosu(veri.ikinci,[30,40,50,60,70])}</div>`;
+
+ return h+"</div></div>";
+}
+
+/* Dört dönemi ayrı ayrı test eder */
 async function testleriHesapla(){
  if(analysisRunning)return;
 
- analysisRunning=true;
- $("analizDurum").innerText="Geçmiş maçlar parça parça inceleniyor...";
+ if(!HISTORY.length){
+  $("analizDurum").innerText="Geçmiş maç verisi bulunamadı.";
+  return;
+ }
 
- const alti=[],kg=[],ilk=[],ikinci=[];
+ analysisRunning=true;
+ $("donemAnalizleri").innerHTML="";
+ $("analizDurum").innerText="Dönem analizleri hazırlanıyor...";
+
+ const son=sonGecmisTarihi();
+
+ if(!son){
+  $("analizDurum").innerText="Geçerli geçmiş maç tarihi bulunamadı.";
+  analysisRunning=false;
+  return;
+ }
+
+ const d1Bas=tarihEkle(son,-89);
+ const d1Bit=son;
+
+ const d2Bit=tarihEkle(d1Bas,-1);
+ const d2Bas=tarihEkle(d2Bit,-89);
+
+ const d3Bit=tarihEkle(d2Bas,-1);
+ const d3Bas=tarihEkle(d3Bit,-89);
+
+ const donemler=[
+  {id:"son90",bas:d1Bas,bit:d1Bit,baslik:"Son 90 Gün",veri:donemVerisiBaslat()},
+  {id:"onceki90",bas:d2Bas,bit:d2Bit,baslik:"Önceki 90 Gün",veri:donemVerisiBaslat()},
+  {id:"eski90",bas:d3Bas,bit:d3Bit,baslik:"Daha Önceki 90 Gün",veri:donemVerisiBaslat()},
+  {id:"tum",bas:null,bit:son,baslik:"Tüm Geçmiş",veri:donemVerisiBaslat()}
+ ];
+
+ const sirali=HISTORY.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
  let idx=0;
 
  function batch(){
-  const end=Math.min(idx+80,HISTORY.length);
+  const end=Math.min(idx+60,sirali.length);
 
   for(;idx<end;idx++){
-   const m=HISTORY[idx];
+   const m=sirali[idx];
 
-   if(!skorVar(m.ft_home)||!skorVar(m.ft_away))continue;
+   if(!m.date||!skorVar(m.ft_home)||!skorVar(m.ft_away))continue;
 
    const t=tahmin(m);
    if(!t)continue;
 
-   /* 6+ Gol: yalnızca toplam gol sonucuna bakılır */
-   alti.push({
-    p:t.six,
-    ok:sonucAlti(m)
-   });
+   donemSonucEkle(donemler[3].veri,m,t);
 
-   /* KG Var: yalnızca iki takımın da gol atmasına bakılır */
-   kg.push({
-    p:t.btts,
-    ok:sonucKG(m)
-   });
-
-   /* Yarı analizleri için devre skorları gerekir */
-   const yariGecerli=
-    skorVar(m.ht_home)&&
-    skorVar(m.ht_away)&&
-    Number(m.ft_home)>=Number(m.ht_home)&&
-    Number(m.ft_away)>=Number(m.ht_away);
-
-   if(!yariGecerli)continue;
-
-   /* İlk yarı KG bağımsız */
-   if(t.ilk){
-    ilk.push({
-     p:t.ilk.kg,
-     ok:sonucIlk(m)
-    });
-   }
-
-   /* İkinci yarı KG bağımsız */
-   if(t.ikinci){
-    ikinci.push({
-     p:t.ikinci.kg,
-     ok:sonucIkinci(m)
-    });
+   for(let i=0;i<3;i++){
+    const donem=donemler[i];
+    if(String(m.date)>=donem.bas&&String(m.date)<=donem.bit){
+     donemSonucEkle(donem.veri,m,t);
+    }
    }
   }
 
   $("analizDurum").innerText=
-   `Geçmiş analiz: ${idx} / ${HISTORY.length}`;
+   `Geçmiş maçlar inceleniyor: ${idx} / ${sirali.length}`;
 
-  if(idx<HISTORY.length){
+  if(idx<sirali.length){
    setTimeout(batch,10);
    return;
   }
 
-  $("altiTablo").innerHTML=esikTablosu(
-   alti,[10,15,20,25,30,40,50]
-  );
+  let html="";
 
-  $("kgTablo").innerHTML=esikTablosu(
-   kg,[40,45,50,55,60,65,70]
-  );
+  for(const d of donemler){
+   const bas=d.bas?tarihYaz(d.bas):"İlk kayıt";
+   const bit=tarihYaz(d.bit);
+   html+=donemHTML(d.baslik,bas,bit,d.veri);
+  }
 
-  $("ilkTablo").innerHTML=esikTablosu(
-   ilk,[30,40,50,60,70]
-  );
-
-  $("ikinciTablo").innerHTML=esikTablosu(
-   ikinci,[30,40,50,60,70]
-  );
-
+  $("donemAnalizleri").innerHTML=html;
   $("analizDurum").innerText=
-   "Analiz tamamlandı. Dört tahmin ayrı ayrı test edildi.";
+   "Analiz tamamlandı. Dört dönem ve dört tahmin türü ayrı ayrı test edildi.";
 
   analysisRunning=false;
  }

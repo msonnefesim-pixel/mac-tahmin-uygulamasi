@@ -6,47 +6,63 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
+:root{--red:#c8102e;--yellow:#f5c400;--bg:#101010;--panel:#1b1b1b;--line:#383838;--muted:#c2c2c2}
 *{box-sizing:border-box}
-body{margin:0;background:#101827;color:#eef2ff;font-family:Arial;padding:15px}
-h1{font-size:25px;color:#55d6a0}
-h2{font-size:19px;color:#55d6a0;margin-top:24px}
-p{color:#aab7cc;font-size:13px}
-.panel,.match{background:#1b293d;border:1px solid #30435d;border-radius:12px;padding:13px;margin:10px 0}
-input,select,button{width:100%;padding:12px;margin:5px 0;border-radius:8px}
-input,select{background:#101827;color:white;border:1px solid #40536d}
-button{background:#55d6a0;color:#10251d;border:0;font-weight:bold}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{padding:9px 4px;text-align:center;border-bottom:1px solid #34445a}
-th{color:#55d6a0}
-.good{color:#55d6a0;font-weight:bold}
-.small{font-size:12px;color:#aab7cc}
-.pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.pill{background:#263b54;padding:7px;border-radius:7px;font-size:12px}
+body{margin:0;background:var(--bg);color:#fff;font-family:Arial,sans-serif;padding:14px;font-size:16px}
+h1{font-size:27px;color:var(--yellow);margin:5px 0}
+h2{font-size:21px;color:var(--yellow);margin:22px 0 10px}
+p{color:var(--muted);font-size:15px;line-height:1.45}
+.panel,.match{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:13px;padding:14px;margin:11px 0}
+input,select,button{width:100%;padding:14px;margin:6px 0;border-radius:9px;font-size:16px}
+input,select{background:#101010;color:#fff;border:1px solid #666}
+button{background:var(--yellow);color:#171000;border:0;font-weight:bold}
+button.secondary{background:#333;color:#fff;border:1px solid #666}
+.good{color:#7ee081;font-weight:bold}
+.small{font-size:14px;color:var(--muted)}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.match{border-left-color:var(--yellow);padding:15px}
+.teams{font-size:19px;font-weight:bold;line-height:1.35}
+.meta{font-size:15px;color:#ddd;margin-top:7px}
+.kickoff{display:inline-block;background:var(--red);color:#fff;font-size:17px;font-weight:bold;padding:6px 10px;border-radius:7px;margin-top:9px}
+.pills{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.pill{background:#303030;border:1px solid #555;padding:8px 9px;border-radius:8px;font-size:14px}
+.day-title{background:#292000;color:var(--yellow);border:1px solid #6c5700;border-radius:9px;padding:11px 12px;margin:17px 0 7px;font-size:18px;font-weight:bold}
+.result{font-size:17px;color:var(--yellow);font-weight:bold;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px 5px;text-align:center;border-bottom:1px solid #444}
+th{color:var(--yellow)}
+.hidden{display:none}
+@media(max-width:420px){body{padding:10px}.controls{grid-template-columns:1fr}.teams{font-size:18px}}
 </style>
 </head>
 <body>
-
 <h1>YaPaYCiN Maç Analiz</h1>
 <p>Bağımsız maç tahmin ve analiz sistemi</p>
 
 <div class="panel">
  <div id="durum">Veriler yükleniyor...</div>
- <div id="sayilar"></div>
- <button onclick="baslat()">Verileri Yenile</button>
+ <div id="sayilar" class="small"></div>
+ <button onclick="baslat(true)">Verileri Yenile</button>
 </div>
 
-<h2>Geçmiş Başarı Analizi</h2>
-<div class="panel" id="birlesik"></div>
-
-<h2>İlk Yarı KG Eşik Testi</h2>
-<div class="panel" id="ilkTablo"></div>
-
-<h2>İkinci Yarı KG Eşik Testi</h2>
-<div class="panel" id="ikinciTablo"></div>
-
-<h2>Maçları İncele</h2>
+<h2>Maç Takvimi</h2>
 <div class="panel">
+ <label for="tarih"><b>Tarih seç</b></label>
+ <input type="date" id="tarih" onchange="listele()">
+ <div class="controls">
+  <button class="secondary" onclick="tarihKaydir(-1)">◀ Önceki gün</button>
+  <button class="secondary" onclick="tarihKaydir(1)">Sonraki gün ▶</button>
+ </div>
+ <label for="ligSec"><b>Lig seç</b></label>
+ <select id="ligSec" onchange="listele()"><option value="all">Bütün ligler</option></select>
+ <button class="secondary" onclick="yonetimAc()">Ligleri Yönet / Gizle</button>
+ <div id="ligYonetim" class="hidden">
+  <p>Görmek istemediğin liglerin işaretini kaldır. Ayar bu cihazda saklanır.</p>
+  <div id="ligCheckboxlar"></div>
+  <button onclick="ligleriKaydet()">Seçimi Kaydet</button>
+ </div>
  <input id="arama" placeholder="Takım veya lig ara..." oninput="listele()">
+ <label for="filtre"><b>Tahmin filtresi</b></label>
  <select id="filtre" onchange="listele()">
   <option value="all">Bütün maçlar</option>
   <option value="strong">Öne çıkanlar</option>
@@ -55,254 +71,180 @@ th{color:#55d6a0}
   <option value="first">İlk Yarı KG</option>
   <option value="second">İkinci Yarı KG</option>
  </select>
- <p class="small">6+ Gol ve KG Var filtreleri birbirinden bağımsızdır. Birinin gerçekleşmesi için diğerinin gerçekleşmesi gerekmez.</p>
- <div id="maclar"></div>
+ <p class="small">Maçlar önce güne, her günün içinde başlama saatine göre sıralanır. 6+ Gol ve KG Var tahminleri birbirinden bağımsızdır.</p>
+ <div id="maclar">Maçlar hazırlanıyor...</div>
+</div>
+
+<h2>Geçmiş Başarı Analizi</h2>
+<div class="panel">
+ <p>Bu bölüm açılışı hızlandırmak için isteğe bağlı hesaplanır. Ana maç tahminlerini etkilemez.</p>
+ <button class="secondary" onclick="testleriHesapla()">Geçmiş analizleri hesapla</button>
+ <div id="analizDurum" class="small"></div>
+ <div id="birlesik"></div>
+ <h3>İlk Yarı KG Eşik Testi</h3><div id="ilkTablo"></div>
+ <h3>İkinci Yarı KG Eşik Testi</h3><div id="ikinciTablo"></div>
 </div>
 
 <script>
-let FIXTURES=[],HISTORY=[];
-
+let FIXTURES=[],HISTORY=[],teamIndex=new Map(),leagueIndex=new Map(),predictionCache=new Map();
+let hiddenLeagues=new Set(),analysisRunning=false;
+const $=id=>document.getElementById(id);
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+function skorVar(v){return v!==null&&v!==undefined&&v!==""&&Number.isFinite(Number(v))}
 function ort(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}
 function factorial(n){let x=1;for(let i=2;i<=n;i++)x*=i;return x}
 function poisson(k,l){return Math.exp(-l)*Math.pow(l,k)/factorial(k)}
-function skorVar(v){return v!==null&&v!==undefined&&v!==""&&Number.isFinite(Number(v))}
 function yuzde(v){return v===null||v===undefined?"-":(v*100).toFixed(1)+"%"}
 function basari(a,b){return a?Math.round(b/a*100)+"%":"-"}
-
-function golOlasilik(a,b){
- let p=0;
- for(let i=0;i<9;i++)for(let j=0;j<9;j++)
-  if(i+j>=6)p+=poisson(i,a)*poisson(j,b);
- return Math.min(1,p);
+function golOlasilik(a,b){let p=0;for(let i=0;i<9;i++)for(let j=0;j<9;j++)if(i+j>=6)p+=poisson(i,a)*poisson(j,b);return Math.min(1,p)}
+function kgOlasilik(a,b){return (1-Math.exp(-a))*(1-Math.exp(-b))}
+function lowerBound(arr,date){let l=0,r=arr.length;while(l<r){let m=(l+r)>>1;if(String(arr[m].date)<String(date))l=m+1;else r=m}return l}
+function hazirlaIndex(){
+ teamIndex.clear();leagueIndex.clear();predictionCache.clear();
+ for(const m of HISTORY){
+  const lid=String(m.league_id);
+  if(!leagueIndex.has(lid))leagueIndex.set(lid,[]);
+  leagueIndex.get(lid).push(m);
+  for(const team of [m.home,m.away]){
+   const key=lid+"|"+team;
+   if(!teamIndex.has(key))teamIndex.set(key,[]);
+   teamIndex.get(key).push(m);
+  }
+ }
+ for(const a of leagueIndex.values())a.sort((x,y)=>String(x.date).localeCompare(String(y.date)));
+ for(const a of teamIndex.values())a.sort((x,y)=>String(x.date).localeCompare(String(y.date)));
 }
-function kgOlasilik(a,b){
- return (1-Math.exp(-a))*(1-Math.exp(-b));
+function oncekiMaclar(arr,date,limit=10){
+ if(!arr)return [];
+ const n=lowerBound(arr,date);
+ return arr.slice(Math.max(0,n-limit),n).filter(m=>skorVar(m.ft_home)&&skorVar(m.ft_away));
 }
-
-function takimMaclari(lig,takim,tarih){
- return HISTORY.filter(m=>
-  String(m.league_id)===String(lig)&&
-  String(m.date)<String(tarih)&&
-  (m.home===takim||m.away===takim)&&
-  skorVar(m.ft_home)&&skorVar(m.ft_away)
- ).sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,10);
-}
-
-function yariMaclari(ms){
- return ms.filter(m=>
-  skorVar(m.ht_home)&&skorVar(m.ht_away)&&
-  Number(m.ft_home)>=Number(m.ht_home)&&
-  Number(m.ft_away)>=Number(m.ht_away)
- );
-}
-
+function takimMaclari(lig,takim,tarih){return oncekiMaclar(teamIndex.get(String(lig)+"|"+takim),tarih,10)}
+function yariMaclari(ms){return ms.filter(m=>skorVar(m.ht_home)&&skorVar(m.ht_away)&&Number(m.ft_home)>=Number(m.ht_home)&&Number(m.ft_away)>=Number(m.ht_away))}
 function golOrt(ms,takim,attigi,alan){
  return ort(ms.map(m=>{
-  const ev=m.home===takim;
-  let kendi=ev?Number(m.ft_home):Number(m.ft_away);
-  let rakip=ev?Number(m.ft_away):Number(m.ft_home);
-
-  if(alan==="ilk"){
-   kendi=ev?Number(m.ht_home):Number(m.ht_away);
-   rakip=ev?Number(m.ht_away):Number(m.ht_home);
-  }
-  if(alan==="ikinci"){
-   kendi=ev?Number(m.ft_home)-Number(m.ht_home):Number(m.ft_away)-Number(m.ht_away);
-   rakip=ev?Number(m.ft_away)-Number(m.ht_away):Number(m.ft_home)-Number(m.ht_home);
-  }
+  const ev=m.home===takim;let kendi=ev?Number(m.ft_home):Number(m.ft_away),rakip=ev?Number(m.ft_away):Number(m.ft_home);
+  if(alan==="ilk"){kendi=ev?Number(m.ht_home):Number(m.ht_away);rakip=ev?Number(m.ht_away):Number(m.ht_home)}
+  if(alan==="ikinci"){kendi=ev?Number(m.ft_home)-Number(m.ht_home):Number(m.ft_away)-Number(m.ht_away);rakip=ev?Number(m.ft_away)-Number(m.ht_away):Number(m.ft_home)-Number(m.ht_home)}
   return attigi?kendi:rakip;
  }));
 }
-
+function ligMaclari(lig,tarih,half=false){
+ return oncekiMaclar(leagueIndex.get(String(lig)),tarih,100000).filter(m=>!half||(skorVar(m.ht_home)&&skorVar(m.ht_away)));
+}
 function yariTahmin(ev,dep,mac,alan){
- const e=yariMaclari(takimMaclari(mac.league_id,ev,mac.date));
- const d=yariMaclari(takimMaclari(mac.league_id,dep,mac.date));
+ const e=yariMaclari(takimMaclari(mac.league_id,ev,mac.date)),d=yariMaclari(takimMaclari(mac.league_id,dep,mac.date));
  if(e.length<5||d.length<5)return null;
-
- const lig=HISTORY.filter(m=>
-  String(m.league_id)===String(mac.league_id)&&
-  String(m.date)<String(mac.date)&&
-  skorVar(m.ht_home)&&skorVar(m.ht_away)&&
-  skorVar(m.ft_home)&&skorVar(m.ft_away)
- );
- if(lig.length<10)return null;
-
+ const lig=ligMaclari(mac.league_id,mac.date,true);if(lig.length<10)return null;
  let toplam=0;
- lig.forEach(m=>{
-  toplam+=alan==="ilk"?
-   Number(m.ht_home)+Number(m.ht_away):
-   Number(m.ft_home)-Number(m.ht_home)+Number(m.ft_away)-Number(m.ht_away);
- });
- const ligOrt=toplam/(lig.length*2);
- if(ligOrt<=0)return null;
-
+ for(const m of lig)toplam+=alan==="ilk"?Number(m.ht_home)+Number(m.ht_away):Number(m.ft_home)-Number(m.ht_home)+Number(m.ft_away)-Number(m.ht_away);
+ const ligOrt=toplam/(lig.length*2);if(ligOrt<=0)return null;
  const lh=golOrt(e,ev,true,alan)*golOrt(d,dep,false,alan)/ligOrt;
  const la=golOrt(d,dep,true,alan)*golOrt(e,ev,false,alan)/ligOrt;
  return {kg:kgOlasilik(lh,la),lh,la};
 }
-
 function tahmin(m){
- const e=takimMaclari(m.league_id,m.home,m.date);
- const d=takimMaclari(m.league_id,m.away,m.date);
- if(e.length<5||d.length<5)return null;
-
- const lig=HISTORY.filter(x=>
-  String(x.league_id)===String(m.league_id)&&
-  String(x.date)<String(m.date)&&
-  skorVar(x.ft_home)&&skorVar(x.ft_away)
- );
- if(lig.length<10)return null;
-
- const ligOrt=lig.reduce((s,x)=>
-  s+Number(x.ft_home)+Number(x.ft_away),0)/(lig.length*2);
- if(ligOrt<=0)return null;
-
+ const key=String(m.league_id)+"|"+m.home+"|"+m.away+"|"+m.date;
+ if(predictionCache.has(key))return predictionCache.get(key);
+ const e=takimMaclari(m.league_id,m.home,m.date),d=takimMaclari(m.league_id,m.away,m.date);
+ if(e.length<5||d.length<5){predictionCache.set(key,null);return null}
+ const lig=ligMaclari(m.league_id,m.date,false);if(lig.length<10){predictionCache.set(key,null);return null}
+ const ligOrt=lig.reduce((s,x)=>s+Number(x.ft_home)+Number(x.ft_away),0)/(lig.length*2);
+ if(ligOrt<=0){predictionCache.set(key,null);return null}
  const lh=golOrt(e,m.home,true,"tam")*golOrt(d,m.away,false,"tam")/ligOrt;
  const la=golOrt(d,m.away,true,"tam")*golOrt(e,m.home,false,"tam")/ligOrt;
-
- let uc=0;
- for(let i=0;i<=3;i++)
-  for(let j=0;j<=3-i;j++)
-   uc+=poisson(i,lh)*poisson(j,la);
-
- return {
-  six:golOlasilik(lh,la),
-  three:1-uc,
-  btts:kgOlasilik(lh,la),
-  ilk:yariTahmin(m.home,m.away,m,"ilk"),
-  ikinci:yariTahmin(m.home,m.away,m,"ikinci")
- };
+ let uc=0;for(let i=0;i<=3;i++)for(let j=0;j<=3-i;j++)uc+=poisson(i,lh)*poisson(j,la);
+ const result={six:golOlasilik(lh,la),three:1-uc,btts:kgOlasilik(lh,la),ilk:yariTahmin(m.home,m.away,m,"ilk"),ikinci:yariTahmin(m.home,m.away,m,"ikinci")};
+ predictionCache.set(key,result);return result;
 }
-
-function sonucIlk(m){
- return Number(m.ht_home)>0&&Number(m.ht_away)>0;
-}
-function sonucIkinci(m){
- return Number(m.ft_home)-Number(m.ht_home)>0&&
- Number(m.ft_away)-Number(m.ht_away)>0;
-}
-function sonucAlti(m){
- return Number(m.ft_home)+Number(m.ft_away)>=6;
-}
-function sonucKG(m){
- return Number(m.ft_home)>0&&Number(m.ft_away)>0;
-}
-
+function sonucIlk(m){return Number(m.ht_home)>0&&Number(m.ht_away)>0}
+function sonucIkinci(m){return Number(m.ft_home)-Number(m.ht_home)>0&&Number(m.ft_away)-Number(m.ht_away)>0}
+function sonucAlti(m){return Number(m.ft_home)+Number(m.ft_away)>=6}
 function esikTablosu(veri){
  let h="<table><tr><th>Eşik</th><th>Aday</th><th>Başarılı</th><th>Oran</th></tr>";
- [40,50,60,70].forEach(esik=>{
-  const a=veri.filter(x=>x.p>=esik/100);
-  const b=a.filter(x=>x.ok).length;
-  h+=`<tr><td>%${esik}</td><td>${a.length}</td><td>${b}</td><td>${basari(a.length,b)}</td></tr>`;
- });
- return h+"</table><p class='small'>Geçmiş maç sonuçlarıdır. Az adaylı eşiklerde belirsizlik yüksektir.</p>";
+ [40,50,60,70].forEach(esik=>{const a=veri.filter(x=>x.p>=esik/100),b=a.filter(x=>x.ok).length;h+=`<tr><td>%${esik}</td><td>${a.length}</td><td>${b}</td><td>${basari(a.length,b)}</td></tr>`});
+ return h+"</table><p class='small'>Geçmiş maç sonuçlarıdır; az adaylı eşiklerde belirsizlik yüksektir.</p>";
 }
-
-function testleriHesapla(){
- const kombinasyon=[
-  {ad:"6+ gol + İlk yarı KG",aday:0,basarili:0},
-  {ad:"6+ gol + İkinci yarı KG",aday:0,basarili:0},
-  {ad:"6+ gol + İki yarıda da KG",aday:0,basarili:0}
- ];
- const ilk=[],ikinci=[];
-
- HISTORY.forEach(m=>{
-  if(!skorVar(m.ft_home)||!skorVar(m.ft_away)||
-     !skorVar(m.ht_home)||!skorVar(m.ht_away))return;
-
-  const t=tahmin(m);
-  if(!t)return;
-
-  const a=t.six>=.20;
-  const i=t.ilk&&t.ilk.kg>=.30;
-  const s=t.ikinci&&t.ikinci.kg>=.50;
-  const ga=sonucAlti(m),gi=sonucIlk(m),gs=sonucIkinci(m);
-
-  if(a&&i){kombinasyon[0].aday++;if(ga&&gi)kombinasyon[0].basarili++}
-  if(a&&s){kombinasyon[1].aday++;if(ga&&gs)kombinasyon[1].basarili++}
-  if(a&&i&&s){kombinasyon[2].aday++;if(ga&&gi&&gs)kombinasyon[2].basarili++}
-
-  if(t.ilk)ilk.push({p:t.ilk.kg,ok:gi});
-  if(t.ikinci)ikinci.push({p:t.ikinci.kg,ok:gs});
- });
-
- let h="<table><tr><th>Kombinasyon</th><th>Aday</th><th>Tutan</th><th>Başarı</th></tr>";
- kombinasyon.forEach(x=>{
-  h+=`<tr><td>${x.ad}</td><td>${x.aday}</td><td>${x.basarili}</td><td>${basari(x.aday,x.basarili)}</td></tr>`;
- });
- document.getElementById("birlesik").innerHTML=
- h+"</table><p class='small'>Bu tablo yalnızca birleşik geçmiş analiz içindir. Ana maç filtreleri bağımsızdır.</p>";
-
- document.getElementById("ilkTablo").innerHTML=esikTablosu(ilk);
- document.getElementById("ikinciTablo").innerHTML=esikTablosu(ikinci);
+async function testleriHesapla(){
+ if(analysisRunning)return;analysisRunning=true;$("analizDurum").innerText="Geçmiş maçlar parça parça inceleniyor...";
+ const kombinasyon=[{ad:"6+ gol + İlk yarı KG",aday:0,basarili:0},{ad:"6+ gol + İkinci yarı KG",aday:0,basarili:0},{ad:"6+ gol + İki yarıda da KG",aday:0,basarili:0}],ilk=[],ikinci=[];
+ let idx=0;
+ function batch(){
+  const end=Math.min(idx+80,HISTORY.length);
+  for(;idx<end;idx++){
+   const m=HISTORY[idx];if(!skorVar(m.ft_home)||!skorVar(m.ft_away)||!skorVar(m.ht_home)||!skorVar(m.ht_away))continue;
+   const t=tahmin(m);if(!t)continue;
+   const a=t.six>=.20,i=t.ilk&&t.ilk.kg>=.30,s=t.ikinci&&t.ikinci.kg>=.50,ga=sonucAlti(m),gi=sonucIlk(m),gs=sonucIkinci(m);
+   if(a&&i){kombinasyon[0].aday++;if(ga&&gi)kombinasyon[0].basarili++}
+   if(a&&s){kombinasyon[1].aday++;if(ga&&gs)kombinasyon[1].basarili++}
+   if(a&&i&&s){kombinasyon[2].aday++;if(ga&&gi&&gs)kombinasyon[2].basarili++}
+   if(t.ilk)ilk.push({p:t.ilk.kg,ok:gi});if(t.ikinci)ikinci.push({p:t.ikinci.kg,ok:gs});
+  }
+  $("analizDurum").innerText=`Geçmiş analiz: ${idx} / ${HISTORY.length}`;
+  if(idx<HISTORY.length){setTimeout(batch,10);return}
+  let h="<table><tr><th>Kombinasyon</th><th>Aday</th><th>Tutan</th><th>Başarı</th></tr>";
+  kombinasyon.forEach(x=>h+=`<tr><td>${x.ad}</td><td>${x.aday}</td><td>${x.basarili}</td><td>${basari(x.aday,x.basarili)}</td></tr>`);
+  $("birlesik").innerHTML=h+"</table><p class='small'>Bu tablo yalnızca birleşik geçmiş analiz içindir. Ana maç filtreleri bağımsızdır.</p>";
+  $("ilkTablo").innerHTML=esikTablosu(ilk);$("ikinciTablo").innerHTML=esikTablosu(ikinci);
+  $("analizDurum").innerText="Geçmiş analiz tamamlandı.";analysisRunning=false;
+ }
+ setTimeout(batch,10);
 }
-
-function macKart(m,t){
- return `<div class="match">
- <strong>${m.home} - ${m.away}</strong>
- <div class="small">${m.league||""} · ${m.date||""} ${m.time||""}</div>
- <div class="pills">
- <span class="pill">6+ Gol: ${yuzde(t.six)}</span>
- <span class="pill">KG Var: ${yuzde(t.btts)}</span>
- <span class="pill">3.5+ Gol: ${yuzde(t.three)}</span>
- <span class="pill">İlk Yarı KG: ${yuzde(t.ilk?.kg)}</span>
- <span class="pill">İkinci Yarı KG: ${yuzde(t.ikinci?.kg)}</span>
- </div></div>`;
+function tarihKaydir(n){const d=new Date($("tarih").value+"T12:00:00");d.setDate(d.getDate()+n);$("tarih").value=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");listele()}
+function adTarih(t){const d=new Date(t+"T12:00:00");return d.toLocaleDateString("tr-TR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})}
+function saatSirala(a,b){return String(a.time||"99:99").localeCompare(String(b.time||"99:99"))}
+function macKart(m,t,gecmis){
+ return `<div class="match"><div class="teams">${m.home} - ${m.away}</div><div class="meta">${m.league||"Lig bilgisi yok"}</div><div class="kickoff">${m.time||"Saat belirtilmemiş"}</div>${gecmis?`<div class="result">Maç sonucu: ${m.ft_home}-${m.ft_away}</div>`:`<div class="pills"><span class="pill">6+ Gol: ${yuzde(t?.six)}</span><span class="pill">KG Var: ${yuzde(t?.btts)}</span><span class="pill">3.5+ Gol: ${yuzde(t?.three)}</span><span class="pill">İlk Yarı KG: ${yuzde(t?.ilk?.kg)}</span><span class="pill">İkinci Yarı KG: ${yuzde(t?.ikinci?.kg)}</span></div>`}</div>`;
 }
-
+function doldurLigler(){
+ const names=[...new Set([...FIXTURES,...HISTORY].map(m=>m.league||"Diğer").filter(Boolean))].sort((a,b)=>a.localeCompare(b,"tr"));
+ const sel=$("ligSec"),old=sel.value;sel.innerHTML='<option value="all">Bütün görünür ligler</option>'+names.filter(n=>!hiddenLeagues.has(n)).map(n=>`<option value="${encodeURIComponent(n)}">${n}</option>`).join("");
+ if([...sel.options].some(o=>o.value===old))sel.value=old;
+ $("ligCheckboxlar").innerHTML=names.map(n=>`<label style="display:block;padding:7px;border-bottom:1px solid #444"><input style="width:auto;margin-right:8px" type="checkbox" data-lig="${encodeURIComponent(n)}" ${hiddenLeagues.has(n)?"":"checked"}>${n}</label>`).join("");
+}
+function yonetimAc(){$("ligYonetim").classList.toggle("hidden")}
+function ligleriKaydet(){
+ hiddenLeagues=new Set([...document.querySelectorAll("#ligCheckboxlar input:not(:checked)")].map(x=>decodeURIComponent(x.dataset.lig)));
+ try{localStorage.setItem("yapaycinHiddenLeagues",JSON.stringify([...hiddenLeagues]))}catch(e){}
+ doldurLigler();$("ligSec").value="all";listele();$("ligYonetim").classList.add("hidden");
+}
 function listele(){
- const arama=(document.getElementById("arama").value||"").toLocaleLowerCase("tr");
- const filtre=document.getElementById("filtre").value;
-
- let liste=FIXTURES.filter(m=>{
-  const t=tahmin(m);
-  if(!t)return false;
-
-  const metin=(m.home+" "+m.away+" "+(m.league||"")).toLocaleLowerCase("tr");
-  if(arama&&!metin.includes(arama))return false;
-
-  if(filtre==="strong"&&!(
-   t.six>=.20||t.btts>=.50||t.ilk?.kg>=.40||t.ikinci?.kg>=.50
-  ))return false;
-
-  if(filtre==="six"&&t.six<.20)return false;
-  if(filtre==="btts"&&t.btts<.50)return false;
-  if(filtre==="first"&&(!t.ilk||t.ilk.kg<.40))return false;
-  if(filtre==="second"&&(!t.ikinci||t.ikinci.kg<.50))return false;
-
+ const date=$("tarih").value||today(),past=date<today();
+ const source=past?HISTORY:FIXTURES;
+ const arama=($("arama").value||"").toLocaleLowerCase("tr"),filtre=$("filtre").value,lig=$("ligSec").value;
+ let list=source.filter(m=>{
+  if(String(m.date)!==date)return false;
+  const ln=m.league||"Diğer";if(hiddenLeagues.has(ln))return false;
+  if(lig!=="all"&&encodeURIComponent(ln)!==lig)return false;
+  const text=(m.home+" "+m.away+" "+ln).toLocaleLowerCase("tr");if(arama&&!text.includes(arama))return false;
+  if(past)return true;
+  const t=tahmin(m);if(!t)return false;
+  if(filtre==="strong"&&!(t.six>=.20||t.btts>=.50||t.ilk?.kg>=.40||t.ikinci?.kg>=.50))return false;
+  if(filtre==="six"&&t.six<.20)return false;if(filtre==="btts"&&t.btts<.50)return false;
+  if(filtre==="first"&&(!t.ilk||t.ilk.kg<.40))return false;if(filtre==="second"&&(!t.ikinci||t.ikinci.kg<.50))return false;
   return true;
  });
-
- liste.sort((a,b)=>(tahmin(b)?.six||0)-(tahmin(a)?.six||0));
-
- document.getElementById("maclar").innerHTML=liste.length?
-  liste.map(m=>macKart(m,tahmin(m))).join(""):
-  "Bu filtrede uygun maç bulunamadı.";
+ list.sort((a,b)=>saatSirala(a,b));
+ if(!list.length){$("maclar").innerHTML=past?"Bu tarihte kayıtlı geçmiş maç bulunamadı.":"Bu tarihte bu filtreye uygun maç bulunamadı.";return}
+ let h="",last="";
+ for(const m of list){if(m.date!==last){h+=`<div class="day-title">${adTarih(m.date)}</div>`;last=m.date}h+=macKart(m,past?null:tahmin(m),past)}
+ $("maclar").innerHTML=h;
 }
-
-async function baslat(){
- document.getElementById("durum").innerText="Veriler yükleniyor...";
+async function baslat(force=false){
+ $("durum").innerText="Veriler yükleniyor...";
  try{
-  const r=await fetch("./data.json?v="+Date.now());
-  if(!r.ok)throw new Error("Veri dosyası yüklenemedi");
-  const data=await r.json();
-
-  FIXTURES=data.fixtures||[];
-  HISTORY=data.history||[];
-
-  document.getElementById("durum").innerHTML=
-   "<span class='good'>Veriler başarıyla yüklendi</span>";
-
-  document.getElementById("sayilar").innerHTML=
-   `<p>Gelecek maç: ${FIXTURES.length} · Geçmiş maç: ${HISTORY.length}<br>Son güncelleme: ${data.updated||"-"}</p>`;
-
-  testleriHesapla();
+  const url="./data.json"+(force?"?v="+Date.now():"");
+  const r=await fetch(url,{cache:force?"no-store":"default"});if(!r.ok)throw new Error("Veri dosyası yüklenemedi");
+  const data=await r.json();FIXTURES=data.fixtures||[];HISTORY=data.history||[];
+  hazirlaIndex();
+  try{hiddenLeagues=new Set(JSON.parse(localStorage.getItem("yapaycinHiddenLeagues")||"[]"))}catch(e){hiddenLeagues=new Set()}
+  doldurLigler();
+  $("durum").innerHTML="<span class='good'>Veriler başarıyla yüklendi</span>";
+  $("sayilar").innerHTML=`Gelecek maç: ${FIXTURES.length} · Geçmiş maç: ${HISTORY.length}<br>Son güncelleme: ${data.updated||"-"}`;
   listele();
- }catch(e){
-  document.getElementById("durum").innerText="Hata: "+e.message;
- }
+ }catch(e){$("durum").innerText="Hata: "+e.message}
 }
-
+$("tarih").value=today();
 baslat();
 </script>
 </body>

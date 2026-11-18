@@ -643,7 +643,9 @@ async function iymsBaslat(){
 
  durum.innerText="İY/MS analiz ve başarı testi hazırlanıyor...";
  ozet.innerHTML="";
- macAlan.innerHTML="";
+macAlan.innerHTML=macHtml;
+ozet.innerHTML=html;
+ 
 
  try{
   const r=await fetch("./iyms-veri.json",{cache:"default"});

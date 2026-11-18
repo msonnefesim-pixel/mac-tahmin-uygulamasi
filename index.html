@@ -934,8 +934,8 @@ async function iymsBaslat(){
    macHtml+="<b>"+m.home+" - "+m.away+"</b><br>";
 
    if(!t){
-    macHtml+="⚠️ Yeterli takım verisi yok.";
-   }else{
+ return;
+}else{
     const siraliOran=secenekler
      .map(k=>({kod:k,oran:t.oran[k]}))
      .sort((a,b)=>b.oran-a.oran);

@@ -925,43 +925,47 @@ async function iymsBaslat(){
 
   let macHtml="<h3>🎯 GELECEK MAÇLAR - İY/MS</h3>";
 
+  
+  let macHtml="<h3>🎯 GELECEK MAÇLAR - İY/MS</h3>";
+
   gelecek.forEach(m=>{
    const t=tahmin(m.home,m.away);
+
+   // Yeterli veri yoksa maçı hiç gösterme.
+   if(!t)return;
 
    macHtml+="<div class='panel'>";
    macHtml+="<b>"+m.date+" · "+m.time+"</b><br>";
    macHtml+="<small>"+(m.league||"")+"</small><br>";
    macHtml+="<b>"+m.home+" - "+m.away+"</b><br>";
 
-   if(!t){
- continue;
-}else{
-    const siraliOran=secenekler
-     .map(k=>({kod:k,oran:t.oran[k]}))
-     .sort((a,b)=>b.oran-a.oran);
+   const siraliOran=secenekler
+    .map(k=>({kod:k,oran:t.oran[k]}))
+    .sort((a,b)=>b.oran-a.oran);
 
-    macHtml+="⭐ En güçlü seçenek: <b>"+
-     siraliOran[0].kod+" (%"+
-     siraliOran[0].oran.toFixed(1)+")</b><br>";
+   macHtml+="⭐ En güçlü seçenek: <b>"+
+    siraliOran[0].kod+" (%"+
+    siraliOran[0].oran.toFixed(1)+")</b><br>";
 
-    macHtml+="<small>Ev sahibi: "+t.evMac+
-     " maç · Deplasman: "+t.depMac+" maç</small>";
+   macHtml+="<small>Ev sahibi: "+t.evMac+
+    " maç · Deplasman: "+t.depMac+" maç</small>";
 
-    macHtml+="<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px'>";
+   macHtml+="<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px'>";
 
-    siraliOran.forEach(x=>{
-     macHtml+="<div style='background:#222;padding:9px;border-radius:8px;text-align:center'>";
-     macHtml+="<b>"+x.kod+"</b><br>%"+x.oran.toFixed(1);
-     macHtml+="</div>";
-    });
-
+   siraliOran.forEach(x=>{
+    macHtml+="<div style='background:#222;padding:9px;border-radius:8px;text-align:center'>";
+    macHtml+="<b>"+x.kod+"</b><br>%"+x.oran.toFixed(1);
     macHtml+="</div>";
-   }
+   });
 
-   macHtml+="</div>";
+   macHtml+="</div></div>";
   });
 
   macAlan.innerHTML=macHtml+html;
+  ozet.innerHTML="";
+  iymsYuklendi=true;
+  durum.innerHTML+="<br>Analiz ve başarı testi tamamlandı.";
+
 ozet.innerHTML="";
 iymsYuklendi=true;
 durum.innerHTML+="<br>Analiz ve başarı testi tamamlandı.";

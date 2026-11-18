@@ -934,7 +934,7 @@ async function iymsBaslat(){
    macHtml+="<b>"+m.home+" - "+m.away+"</b><br>";
 
    if(!t){
- return;
+ continue;
 }else{
     const siraliOran=secenekler
      .map(k=>({kod:k,oran:t.oran[k]}))

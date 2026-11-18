@@ -8,7 +8,11 @@
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#c8102e">
 <link rel="icon" href="./icon.png" type="image/png">
-
+.tabbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:15px 0}
+.tab-button{background:#292929;color:#fff;border:1px solid #555;padding:13px;border-radius:9px;font-weight:bold}
+.tab-button.active{background:var(--yellow);color:#171000;border-color:var(--yellow)}
+.tab-content.hidden{display:none}
+.nba-card{background:#202020;border:1px solid #444;border-left:4px solid #7ee081;border-radius:10px;padding:12px;margin:8px 0}
 <style>
 :root{
  --red:#c8102e;--yellow:#f5c400;
@@ -77,7 +81,10 @@ th{color:var(--yellow)}
 <body>
 <h1>YaPaYCiN Maç Analiz</h1>
 <p>Bağımsız maç tahmin ve analiz sistemi</p>
-
+<div class="tabbar">
+ <button id="futbolButon" class="tab-button active" onclick="sekmeAc('futbol')">⚽ FUTBOL</button>
+ <button id="nbaButon" class="tab-button" onclick="sekmeAc('nba')">🏀 NBA</button>
+</div>
 <div class="panel">
  <div id="durum">Veriler yükleniyor...</div>
  <div id="sayilar" class="small"></div>

@@ -1,0 +1,100 @@
+
+name: IYMS Ilk Yari Verilerini Getir
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "45 6 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  iyms-veri:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Depoyu indir
+        uses: actions/checkout@v5
+
+      - name: Python hazirla
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Ilk yari verilerini olustur
+        run: |
+          git clone --depth 1 https://github.com/oladeeayo/open-matchday.git upstream
+
+          python - <<'PY'
+          import csv
+          import json
+          from pathlib import Path
+          from datetime import datetime, timezone
+
+          matches = []
+          total = 0
+
+          files = sorted(Path("upstream/data").glob("*/results_2627.csv"))
+
+          for file in files:
+              league_id = file.parent.name
+
+              with file.open(encoding="utf-8-sig", newline="") as f:
+                  for row in csv.DictReader(f):
+                      try:
+                          ft_home = int(row["ft_home"])
+                          ft_away = int(row["ft_away"])
+                          total += 1
+                      except (ValueError, TypeError):
+                          continue
+
+                      try:
+                          ht_home = int(row["ht_home"])
+                          ht_away = int(row["ht_away"])
+                      except (ValueError, TypeError):
+                          continue
+
+                      matches.append({
+                          "league_id": league_id,
+                          "date": row.get("date", ""),
+                          "time": row.get("time", ""),
+                          "home": row.get("home", ""),
+                          "away": row.get("away", ""),
+                          "ht_home": ht_home,
+                          "ht_away": ht_away,
+                          "ft_home": ft_home,
+                          "ft_away": ft_away,
+                          "source": row.get("source", "")
+                      })
+
+          if not matches:
+              raise SystemExit("Ilk yari skorlu mac bulunamadi!")
+
+          data = {
+              "updated_at": datetime.now(timezone.utc).isoformat(),
+              "total_matches": total,
+              "halftime_available": len(matches),
+              "coverage_percent": round(len(matches) / total * 100, 1) if total else 0,
+              "matches": matches
+          }
+
+          with open("iyms-veri.json", "w", encoding="utf-8") as f:
+              json.dump(data, f, ensure_ascii=False)
+
+          print("Toplam mac:", total)
+          print("Ilk yari skoru bulunan:", len(matches))
+          print("Kapsama:", data["coverage_percent"], "%")
+          PY
+
+      - name: Veriyi kaydet
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add iyms-veri.json
+          if git diff --cached --quiet; then
+            echo "Yeni veri yok"
+          else
+            git commit -m "IYMS ilk yari verilerini guncelle"
+            git push
+          fi

@@ -53,19 +53,29 @@ jobs:
       - name: NBA veri dosyasını hazırla
         run: |
           python - <<'PY'
+          import pandas as pd
           import json
           from datetime import datetime, timezone
+
+          df = pd.read_parquet("nba_test.parquet")
+
+          df = df.astype(object).where(pd.notna(df), None)
+
+          games = df.to_dict(orient="records")
+
+          games.sort(key=lambda x: str(x.get("game_date") or ""))
 
           data = {
               "source": "WalrusQuant",
               "updated": datetime.now(timezone.utc).isoformat(),
-              "games": []
+              "total": len(games),
+              "games": games
           }
 
           with open("nba.json", "w", encoding="utf-8") as f:
               json.dump(data, f, ensure_ascii=False, indent=2)
 
-          print("nba.json hazırlandı.")
+          print("NBA maçları aktarıldı:", len(games))
           PY
 
       - name: Değişiklikleri kaydet

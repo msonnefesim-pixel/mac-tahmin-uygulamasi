@@ -1,4 +1,4 @@
-
+60
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -775,9 +775,7 @@ function sekmeAc(sekme){
 
 $("tarih").value=today();
 baslat();
-</script>
-
-async function nbaBaslat(){
+ async function nbaBaslat(){
  $("nbaDurum").innerText="NBA verileri yükleniyor...";
  $("nbaMaclar").innerHTML="";
  try{
@@ -848,6 +846,9 @@ async function nbaBaslat(){
   $("nbaDurum").innerText="NBA veri hatası: "+e.message;
  }
 }
+</script>
+
+
 
 <script>
 if("serviceWorker" in navigator){

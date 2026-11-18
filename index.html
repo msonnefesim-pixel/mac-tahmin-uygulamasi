@@ -768,12 +768,19 @@ async function baslat(force=false){
 
 function sekmeAc(sekme){
  const futbol=sekme==="futbol";
+ const iyms=sekme==="iyms";
+ const nba=sekme==="nba";
+
  $("futbolBolumu").classList.toggle("hidden",!futbol);
- $("nbaBolumu").classList.toggle("hidden",futbol);
+ $("nbaBolumu").classList.toggle("hidden",!nba);
+
  $("futbolButon").classList.toggle("active",futbol);
- $("nbaButon").classList.toggle("active",!futbol);
- if(!futbol)nbaBaslat();
+ $("iymsButon").classList.toggle("active",iyms);
+ $("nbaButon").classList.toggle("active",nba);
+
+ if(nba)nbaBaslat();
 }
+
 
 
 $("tarih").value=today();

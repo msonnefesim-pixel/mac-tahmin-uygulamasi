@@ -642,7 +642,7 @@ async function iymsBaslat(){
  const macAlan=$("iymsMaclar");
 
  durum.innerText="İY/MS analiz ve başarı testi hazırlanıyor...";
- ozet.innerHTML=html;
+ ozet.innerHTML="";
  
 
  try{
@@ -962,9 +962,9 @@ async function iymsBaslat(){
   });
 
   macAlan.innerHTML=macHtml;
-  iymsYuklendi=true;
-  durum.innerHTML+="<br>Analiz ve başarı testi tamamlandı.";
-
+ozet.innerHTML=html;
+iymsYuklendi=true;
+durum.innerHTML+="<br>Analiz ve başarı testi tamamlandı.";
  }catch(e){
   durum.innerText="Hata: "+e.message;
  }

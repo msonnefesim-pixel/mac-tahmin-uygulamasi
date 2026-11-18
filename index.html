@@ -8,12 +8,14 @@
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#c8102e">
 <link rel="icon" href="./icon.png" type="image/png">
+
+<style>
 .tabbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:15px 0}
 .tab-button{background:#292929;color:#fff;border:1px solid #555;padding:13px;border-radius:9px;font-weight:bold}
 .tab-button.active{background:var(--yellow);color:#171000;border-color:var(--yellow)}
 .tab-content.hidden{display:none}
 .nba-card{background:#202020;border:1px solid #444;border-left:4px solid #7ee081;border-radius:10px;padding:12px;margin:8px 0}
-<style>
+
 :root{
  --red:#c8102e;--yellow:#f5c400;
  --bg:#101010;--panel:#1b1b1b;
@@ -81,11 +83,13 @@ th{color:var(--yellow)}
 <body>
 <h1>YaPaYCiN Maç Analiz</h1>
 <p>Bağımsız maç tahmin ve analiz sistemi</p>
+
 <div class="tabbar">
  <button id="futbolButon" class="tab-button active" onclick="sekmeAc('futbol')">⚽ FUTBOL</button>
  <button id="nbaButon" class="tab-button" onclick="sekmeAc('nba')">🏀 NBA</button>
 </div>
- <div id="futbolBolumu" class="tab-content">
+
+<div id="futbolBolumu" class="tab-content">
 <div class="panel">
  <div id="durum">Veriler yükleniyor...</div>
  <div id="sayilar" class="small"></div>
@@ -147,6 +151,7 @@ th{color:var(--yellow)}
  <div class="analysis-note">
   <p class="small">Her maçın tahmini yalnızca o maçtan önceki veriler kullanılarak oluşturulur. Aynı maçta birden fazla tahminin tutması şart değildir.</p>
  </div>
+</div>
 </div>
 
 <script>
@@ -264,7 +269,6 @@ function kgOlasilik(a,b){
  return (1-Math.exp(-a))*(1-Math.exp(-b));
 }
 
-/* 1-X-2 ve 3,5 üst olasılıkları */
 function macSonucOlasilik(a,b){
  let ev=0,x=0,dep=0,toplam=0;
  for(let i=0;i<=10;i++){
@@ -418,7 +422,6 @@ function tahmin(m){
  return result;
 }
 
-/* Gerçekleşen sonuçlar */
 function sonucBir(m){return Number(m.ft_home)>Number(m.ft_away)}
 function sonucX(m){return Number(m.ft_home)===Number(m.ft_away)}
 function sonucIki(m){return Number(m.ft_home)<Number(m.ft_away)}
@@ -593,7 +596,6 @@ function macKart(m,t,gecmis,sira){
  </div>`;
 }
 
-/* Ligleri ülke adına göre gruplandır */
 function doldurLigler(){
  const ligMap=new Map();
 
@@ -760,6 +762,7 @@ async function baslat(force=false){
   $("durum").innerText="Hata: "+e.message;
  }
 }
+
 function sekmeAc(sekme){
  const futbol=sekme==="futbol";
  $("futbolBolumu").classList.toggle("hidden",!futbol);
@@ -793,6 +796,7 @@ async function nbaBaslat(){
   $("nbaDurum").innerText="NBA veri hatası: "+e.message;
  }
 }
+
 $("tarih").value=today();
 baslat();
 </script>
@@ -805,7 +809,6 @@ if("serviceWorker" in navigator){
  });
 }
 </script>
-  </div>
 
 <div id="nbaBolumu" class="tab-content hidden">
  <h2>🏀 NBA Maç Analizi</h2>
@@ -815,5 +818,6 @@ if("serviceWorker" in navigator){
   <button onclick="nbaBaslat()">NBA Verilerini Yenile</button>
  </div>
 </div>
+
 </body>
 </html>

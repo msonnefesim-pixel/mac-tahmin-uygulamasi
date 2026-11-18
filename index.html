@@ -760,7 +760,39 @@ async function baslat(force=false){
   $("durum").innerText="Hata: "+e.message;
  }
 }
+function sekmeAc(sekme){
+ const futbol=sekme==="futbol";
+ $("futbolBolumu").classList.toggle("hidden",!futbol);
+ $("nbaBolumu").classList.toggle("hidden",futbol);
+ $("futbolButon").classList.toggle("active",futbol);
+ $("nbaButon").classList.toggle("active",!futbol);
+ if(!futbol)nbaBaslat();
+}
 
+async function nbaBaslat(){
+ $("nbaDurum").innerText="NBA verileri yükleniyor...";
+ $("nbaMaclar").innerHTML="";
+ try{
+  const r=await fetch("./nba.json?v="+Date.now(),{cache:"no-store"});
+  if(!r.ok)throw new Error("nba.json dosyası bulunamadı");
+  const data=await r.json();
+  const games=Array.isArray(data.games)?data.games:[];
+  $("nbaDurum").innerText=
+   "NBA veri dosyası okundu"+
+   " | Kaynak: "+(data.source||"Belirtilmemiş")+
+   " | Maç sayısı: "+games.length;
+
+  if(!games.length){
+   $("nbaMaclar").innerHTML=
+    "<div class='nba-card'>Henüz NBA maç verisi yok. Veri kaynağını bağladığımızda maçlar burada görünecek.</div>";
+  }else{
+   $("nbaMaclar").innerHTML=
+    "<div class='nba-card'>"+games.length+" NBA maçı bulundu. Analiz bağlantısını hazırlayacağız.</div>";
+  }
+ }catch(e){
+  $("nbaDurum").innerText="NBA veri hatası: "+e.message;
+ }
+}
 $("tarih").value=today();
 baslat();
 </script>

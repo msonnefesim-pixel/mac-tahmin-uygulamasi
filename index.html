@@ -10,12 +10,6 @@
 <link rel="icon" href="./icon.png" type="image/png">
 
 <style>
-.tabbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:15px 0}
-.tab-button{background:#292929;color:#fff;border:1px solid #555;padding:13px;border-radius:9px;font-weight:bold}
-.tab-button.active{background:var(--yellow);color:#171000;border-color:var(--yellow)}
-.tab-content.hidden{display:none}
-.nba-card{background:#202020;border:1px solid #444;border-left:4px solid #7ee081;border-radius:10px;padding:12px;margin:8px 0}
-
 :root{
  --red:#c8102e;--yellow:#f5c400;
  --bg:#101010;--panel:#1b1b1b;
@@ -38,6 +32,11 @@ button.secondary{background:#333;color:#fff;border:1px solid #666}
 .good{color:#7ee081;font-weight:bold}
 .small{font-size:12px;color:var(--muted)}
 .controls{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tabbar{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:15px 0}
+.tab-button{background:#292929;color:#fff;border:1px solid #555;padding:13px 4px;border-radius:9px;font-weight:bold}
+.tab-button.active{background:var(--yellow);color:#171000;border-color:var(--yellow)}
+.tab-content.hidden,.hidden{display:none!important}
+.nba-card{background:#202020;border:1px solid #444;border-left:4px solid #7ee081;border-radius:10px;padding:12px;margin:8px 0}
 .day-title{background:#292000;color:var(--yellow);border:1px solid #6c5700;border-radius:8px;padding:9px;margin:12px 0 6px;font-size:15px;font-weight:bold}
 .match{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--yellow);border-radius:10px;padding:9px;margin:6px 0}
 .match-top{display:flex;justify-content:space-between;align-items:center;gap:6px}
@@ -64,7 +63,6 @@ button.secondary{background:#333;color:#fff;border:1px solid #666}
 .period-panel{background:#202020;border:1px solid #494949;border-radius:9px;padding:10px;margin:12px 0}
 .period-title{font-size:16px;color:var(--yellow);font-weight:bold}
 .period-date{font-size:12px;color:var(--muted);margin-top:4px}
-.hidden{display:none}
 #maclar{margin-top:8px}
 table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}
 th,td{padding:7px 5px;text-align:center;border-bottom:1px solid #444}
@@ -76,6 +74,7 @@ th{color:var(--yellow)}
  .pred-value{font-size:12px}
  .predictions{gap:3px}
  .pred{padding:5px 1px}
+ .tab-button{font-size:12px}
 }
 </style>
 </head>
@@ -84,77 +83,87 @@ th{color:var(--yellow)}
 <h1>YaPaYCiN Maç Analiz</h1>
 <p>Bağımsız maç tahmin ve analiz sistemi</p>
 
-
 <div class="tabbar">
  <button id="futbolButon" class="tab-button active" onclick="sekmeAc('futbol')">⚽ FUTBOL</button>
  <button id="iymsButon" class="tab-button" onclick="sekmeAc('iyms')">🎯 İY/MS</button>
  <button id="nbaButon" class="tab-button" onclick="sekmeAc('nba')">🏀 NBA</button>
 </div>
 
-
 <div id="futbolBolumu" class="tab-content">
-<div class="panel">
- <div id="durum">Veriler yükleniyor...</div>
- <div id="sayilar" class="small"></div>
- <button onclick="baslat(true)">Verileri Yenile</button>
-</div>
-
-<h2>Maç Takvimi</h2>
-<div class="panel">
- <label><b>Tarih seç</b></label>
- <input type="date" id="tarih" onchange="listele()">
-
- <div class="controls">
-  <button class="secondary" onclick="tarihKaydir(-1)">◀ Önceki gün</button>
-  <button class="secondary" onclick="tarihKaydir(1)">Sonraki gün ▶</button>
+ <div class="panel">
+  <div id="durum">Veriler yükleniyor...</div>
+  <div id="sayilar" class="small"></div>
+  <button onclick="baslat(true)">Verileri Yenile</button>
  </div>
 
- <label><b>Ülke / Lig seç</b></label>
- <select id="ligSec" onchange="listele()">
-  <option value="all">Bütün görünür ligler</option>
- </select>
-
- <button class="secondary" onclick="yonetimAc()">Ligleri Yönet / Gizle</button>
- <div id="ligYonetim" class="hidden">
-  <p>Görmek istemediğin liglerin işaretini kaldır.</p>
-  <div id="ligCheckboxlar"></div>
-  <button onclick="ligleriKaydet()">Seçimi Kaydet</button>
+ <h2>Maç Takvimi</h2>
+ <div class="panel">
+  <label><b>Tarih seç</b></label>
+  <input type="date" id="tarih" onchange="listele()">
+  <div class="controls">
+   <button class="secondary" onclick="tarihKaydir(-1)">◀ Önceki gün</button>
+   <button class="secondary" onclick="tarihKaydir(1)">Sonraki gün ▶</button>
+  </div>
+  <label><b>Ülke / Lig seç</b></label>
+  <select id="ligSec" onchange="listele()">
+   <option value="all">Bütün görünür ligler</option>
+  </select>
+  <button class="secondary" onclick="yonetimAc()">Ligleri Yönet / Gizle</button>
+  <div id="ligYonetim" class="hidden">
+   <p>Görmek istemediğin liglerin işaretini kaldır.</p>
+   <div id="ligCheckboxlar"></div>
+   <button onclick="ligleriKaydet()">Seçimi Kaydet</button>
+  </div>
+  <input id="arama" placeholder="Takım, ülke veya lig ara..." oninput="listele()">
+  <label><b>Tahmin filtresi</b></label>
+  <select id="filtre" onchange="listele()">
+   <option value="all">Bütün maçlar</option>
+   <option value="strong">Öne çıkanlar</option>
+   <option value="one">1 - Ev sahibi</option>
+   <option value="draw">X - Beraberlik</option>
+   <option value="two">2 - Deplasman</option>
+   <option value="over35">3,5 Üst</option>
+   <option value="six">6+ Gol</option>
+   <option value="btts">KG Var</option>
+   <option value="first">İlk Yarı KG</option>
+   <option value="second">İkinci Yarı KG</option>
+  </select>
+  <div class="analysis-note">
+   <p class="small">Sekiz bağımsız tahmin ayrı ayrı gösterilir. Tahmin bulunan maçlar en yüksek olasılığa göre sıralanır.</p>
+  </div>
+  <div id="macOzet" class="summary"></div>
+  <div id="maclar">Maçlar hazırlanıyor...</div>
  </div>
 
- <input id="arama" placeholder="Takım, ülke veya lig ara..." oninput="listele()">
-
- <label><b>Tahmin filtresi</b></label>
- <select id="filtre" onchange="listele()">
-  <option value="all">Bütün maçlar</option>
-  <option value="strong">Öne çıkanlar</option>
-  <option value="one">1 - Ev sahibi</option>
-  <option value="draw">X - Beraberlik</option>
-  <option value="two">2 - Deplasman</option>
-  <option value="over35">3,5 Üst</option>
-  <option value="six">6+ Gol</option>
-  <option value="btts">KG Var</option>
-  <option value="first">İlk Yarı KG</option>
-  <option value="second">İkinci Yarı KG</option>
- </select>
-
- <div class="analysis-note">
-  <p class="small">Bütün maçlar listelenir. Sekiz bağımsız tahmin ayrı ayrı gösterilir. Tahmin bulunan maçlar en yüksek olasılığa göre sıralanır.</p>
- </div>
-
- <div id="macOzet" class="summary"></div>
- <div id="maclar">Maçlar hazırlanıyor...</div>
-</div>
-
-<h2>Bağımsız Geçmiş Başarı Analizi</h2>
-<div class="panel">
- <p>Sekiz tahmin türü birbirinden bağımsız olarak geçmiş maçlarda test edilir.</p>
- <button class="secondary" onclick="testleriHesapla()">Dönem analizlerini hesapla</button>
- <div id="analizDurum" class="small"></div>
- <div id="donemAnalizleri"></div>
- <div class="analysis-note">
-  <p class="small">Her maçın tahmini yalnızca o maçtan önceki veriler kullanılarak oluşturulur. Aynı maçta birden fazla tahminin tutması şart değildir.</p>
+ <h2>Bağımsız Geçmiş Başarı Analizi</h2>
+ <div class="panel">
+  <p>Sekiz tahmin türü birbirinden bağımsız olarak geçmiş maçlarda test edilir.</p>
+  <button class="secondary" onclick="testleriHesapla()">Dönem analizlerini hesapla</button>
+  <div id="analizDurum" class="small"></div>
+  <div id="donemAnalizleri"></div>
+  <div class="analysis-note">
+   <p class="small">Her maçın tahmini yalnızca o maçtan önceki veriler kullanılarak oluşturulur. Aynı maçta birden fazla tahminin tutması şart değildir.</p>
+  </div>
  </div>
 </div>
+
+<div id="iymsBolumu" class="tab-content hidden">
+ <h2>🎯 İLK YARI / MAÇ SONU ANALİZİ</h2>
+ <div class="panel">
+  <div id="iymsDurum">İY/MS verileri yüklenmeye hazır.</div>
+  <div id="iymsOzet"></div>
+  <div id="iymsMaclar"></div>
+  <p class="small">Bu bölüm geçmiş verilerin dağılımını gösterir. Tek başına gelecek maç tahmini veya garanti başarı oranı değildir.</p>
+ </div>
+</div>
+
+<div id="nbaBolumu" class="tab-content hidden">
+ <h2>🏀 NBA Maç Analizi</h2>
+ <div class="panel">
+  <div id="nbaDurum">NBA verileri kontrol ediliyor...</div>
+  <div id="nbaMaclar"></div>
+  <button onclick="nbaBaslat()">NBA Verilerini Yenile</button>
+ </div>
 </div>
 
 <script>
@@ -162,9 +171,9 @@ let FIXTURES=[],HISTORY=[];
 let teamIndex=new Map(),leagueIndex=new Map();
 let leagueStats=new Map(),predictionCache=new Map();
 let hiddenLeagues=new Set(),analysisRunning=false;
+let iymsYuklendi=false,nbaYuklendi=false;
 
 const $=id=>document.getElementById(id);
-
 const today=()=>{
  const d=new Date();
  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -173,64 +182,44 @@ const today=()=>{
 const countries={
  ENG:["🇬🇧","İngiltere"],SCO:["🏴","İskoçya"],WAL:["🏴","Galler"],
  NIR:["🇬🇧","Kuzey İrlanda"],IRL:["🇮🇪","İrlanda"],
- NED:["🇳🇱","Hollanda"],HOL:["🇳🇱","Hollanda"],
- GER:["🇩🇪","Almanya"],ESP:["🇪🇸","İspanya"],
- ITA:["🇮🇹","İtalya"],FRA:["🇫🇷","Fransa"],
- POR:["🇵🇹","Portekiz"],TUR:["🇹🇷","Türkiye"],
- GRE:["🇬🇷","Yunanistan"],BEL:["🇧🇪","Belçika"],
- AUT:["🇦🇹","Avusturya"],SUI:["🇨🇭","İsviçre"],
- DEN:["🇩🇰","Danimarka"],SWE:["🇸🇪","İsveç"],
- NOR:["🇳🇴","Norveç"],FIN:["🇫🇮","Finlandiya"],
- POL:["🇵🇱","Polonya"],CZE:["🇨🇿","Çekya"],
- SVK:["🇸🇰","Slovakya"],SVN:["🇸🇮","Slovenya"],
- CRO:["🇭🇷","Hırvatistan"],SRB:["🇷🇸","Sırbistan"],
- BIH:["🇧🇦","Bosna Hersek"],MKD:["🇲🇰","Kuzey Makedonya"],
- UKR:["🇺🇦","Ukrayna"],RUS:["🇷🇺","Rusya"],
- ROU:["🇷🇴","Romanya"],BUL:["🇧🇬","Bulgaristan"],
- HUN:["🇭🇺","Macaristan"],ISL:["🇮🇸","İzlanda"],
- CYP:["🇨🇾","Kıbrıs"],ISR:["🇮🇱","İsrail"],
- GEO:["🇬🇪","Gürcistan"],ARM:["🇦🇲","Ermenistan"],
- AZE:["🇦🇿","Azerbaycan"],KAZ:["🇰🇿","Kazakistan"],
- USA:["🇺🇸","ABD"],MEX:["🇲🇽","Meksika"],
- BRA:["🇧🇷","Brezilya"],ARG:["🇦🇷","Arjantin"],
- CHI:["🇨🇱","Şili"],COL:["🇨🇴","Kolombiya"],
- PER:["🇵🇪","Peru"],PAR:["🇵🇾","Paraguay"],
- URU:["🇺🇾","Uruguay"],ECU:["🇪🇨","Ekvador"],
- VEN:["🇻🇪","Venezuela"],BOL:["🇧🇴","Bolivya"],
- JPN:["🇯🇵","Japonya"],KOR:["🇰🇷","Güney Kore"],
- CHN:["🇨🇳","Çin"],AUS:["🇦🇺","Avustralya"],
- NZL:["🇳🇿","Yeni Zelanda"],IND:["🇮🇳","Hindistan"],
- IDN:["🇮🇩","Endonezya"],THA:["🇹🇭","Tayland"],
- MAS:["🇲🇾","Malezya"],SGP:["🇸🇬","Singapur"],
- KSA:["🇸🇦","Suudi Arabistan"],UAE:["🇦🇪","BAE"],
- QAT:["🇶🇦","Katar"],IRN:["🇮🇷","İran"],
- IRQ:["🇮🇶","Irak"],EGY:["🇪🇬","Mısır"],
- MAR:["🇲🇦","Fas"],TUN:["🇹🇳","Tunus"],
- ALG:["🇩🇿","Cezayir"],RSA:["🇿🇦","Güney Afrika"],
- NGA:["🇳🇬","Nijerya"],GHA:["🇬🇭","Gana"],
- KEN:["🇰🇪","Kenya"],CIV:["🇨🇮","Fildişi Sahili"],
+ NED:["🇳🇱","Hollanda"],HOL:["🇳🇱","Hollanda"],GER:["🇩🇪","Almanya"],
+ ESP:["🇪🇸","İspanya"],ITA:["🇮🇹","İtalya"],FRA:["🇫🇷","Fransa"],
+ POR:["🇵🇹","Portekiz"],TUR:["🇹🇷","Türkiye"],GRE:["🇬🇷","Yunanistan"],
+ BEL:["🇧🇪","Belçika"],AUT:["🇦🇹","Avusturya"],SUI:["🇨🇭","İsviçre"],
+ DEN:["🇩🇰","Danimarka"],SWE:["🇸🇪","İsveç"],NOR:["🇳🇴","Norveç"],
+ FIN:["🇫🇮","Finlandiya"],POL:["🇵🇱","Polonya"],CZE:["🇨🇿","Çekya"],
+ SVK:["🇸🇰","Slovakya"],SVN:["🇸🇮","Slovenya"],CRO:["🇭🇷","Hırvatistan"],
+ SRB:["🇷🇸","Sırbistan"],BIH:["🇧🇦","Bosna Hersek"],MKD:["🇲🇰","Kuzey Makedonya"],
+ UKR:["🇺🇦","Ukrayna"],RUS:["🇷🇺","Rusya"],ROU:["🇷🇴","Romanya"],
+ BUL:["🇧🇬","Bulgaristan"],HUN:["🇭🇺","Macaristan"],ISL:["🇮🇸","İzlanda"],
+ CYP:["🇨🇾","Kıbrıs"],ISR:["🇮🇱","İsrail"],GEO:["🇬🇪","Gürcistan"],
+ ARM:["🇦🇲","Ermenistan"],AZE:["🇦🇿","Azerbaycan"],KAZ:["🇰🇿","Kazakistan"],
+ USA:["🇺🇸","ABD"],MEX:["🇲🇽","Meksika"],BRA:["🇧🇷","Brezilya"],
+ ARG:["🇦🇷","Arjantin"],CHI:["🇨🇱","Şili"],COL:["🇨🇴","Kolombiya"],
+ PER:["🇵🇪","Peru"],PAR:["🇵🇾","Paraguay"],URU:["🇺🇾","Uruguay"],
+ ECU:["🇪🇨","Ekvador"],VEN:["🇻🇪","Venezuela"],BOL:["🇧🇴","Bolivya"],
+ JPN:["🇯🇵","Japonya"],KOR:["🇰🇷","Güney Kore"],CHN:["🇨🇳","Çin"],
+ AUS:["🇦🇺","Avustralya"],NZL:["🇳🇿","Yeni Zelanda"],IND:["🇮🇳","Hindistan"],
+ IDN:["🇮🇩","Endonezya"],THA:["🇹🇭","Tayland"],MAS:["🇲🇾","Malezya"],
+ SGP:["🇸🇬","Singapur"],KSA:["🇸🇦","Suudi Arabistan"],UAE:["🇦🇪","BAE"],
+ QAT:["🇶🇦","Katar"],IRN:["🇮🇷","İran"],IRQ:["🇮🇶","Irak"],
+ EGY:["🇪🇬","Mısır"],MAR:["🇲🇦","Fas"],TUN:["🇹🇳","Tunus"],
+ ALG:["🇩🇿","Cezayir"],RSA:["🇿🇦","Güney Afrika"],NGA:["🇳🇬","Nijerya"],
+ GHA:["🇬🇭","Gana"],KEN:["🇰🇪","Kenya"],CIV:["🇨🇮","Fildişi Sahili"],
  SEN:["🇸🇳","Senegal"],CMR:["🇨🇲","Kamerun"]
 };
 
 const leagueNames=[
- ["Northern Premier League","Northern Premier League"],
- ["Premier League","Premier League"],
- ["Championship","Championship"],
- ["League One","League One"],
- ["League Two","League Two"],
- ["La Liga","La Liga"],
- ["Primera Division","Primera División"],
- ["Primera División","Primera División"],
- ["Serie A","Serie A"],["Serie B","Serie B"],
- ["Bundesliga","Bundesliga"],
+ ["Premier League","Premier League"],["Championship","Championship"],
+ ["League One","League One"],["League Two","League Two"],
+ ["La Liga","La Liga"],["Primera Division","Primera División"],
+ ["Primera División","Primera División"],["Serie A","Serie A"],
+ ["Serie B","Serie B"],["Bundesliga","Bundesliga"],
  ["Ligue 1","Ligue 1"],["Ligue 2","Ligue 2"],
- ["Eredivisie","Eredivisie"],
- ["Primeira Liga","Primeira Liga"],
+ ["Eredivisie","Eredivisie"],["Primeira Liga","Primeira Liga"],
  ["Super Lig","Süper Lig"],["Super League","Süper Lig"],
- ["Süper Lig","Süper Lig"],
- ["FA Cup","FA Cup"],["EFL Cup","EFL Cup"],
- ["First Division","First Division"],
- ["Second Division","Second Division"],
+ ["Süper Lig","Süper Lig"],["FA Cup","FA Cup"],["EFL Cup","EFL Cup"],
+ ["First Division","First Division"],["Second Division","Second Division"],
  ["Cup","Kupası"]
 ];
 
@@ -241,7 +230,6 @@ function ligAdiTR(ad){
  }
  return sonuc;
 }
-
 function ulkeBilgisi(m){
  const id=String(m.league_id||"");
  const kod=id.split("_")[0].toUpperCase();
@@ -252,7 +240,6 @@ function ligGorunumu(m){
  const u=ulkeBilgisi(m);
  return `${u.flag} ${u.name} · ${ligAdiTR(m.league||"Lig bilgisi yok")}`;
 }
-
 function skorVar(v){
  return v!==null&&v!==undefined&&v!==""&&Number.isFinite(Number(v));
 }
@@ -271,78 +258,59 @@ function golOlasilik(a,b){
 function kgOlasilik(a,b){
  return (1-Math.exp(-a))*(1-Math.exp(-b));
 }
-
 function macSonucOlasilik(a,b){
  let ev=0,x=0,dep=0,toplam=0;
- for(let i=0;i<=10;i++){
-  for(let j=0;j<=10;j++){
-   const p=poisson(i,a)*poisson(j,b);
-   toplam+=p;
-   if(i>j)ev+=p;
-   else if(i===j)x+=p;
-   else dep+=p;
-  }
+ for(let i=0;i<=10;i++)for(let j=0;j<=10;j++){
+  const p=poisson(i,a)*poisson(j,b);
+  toplam+=p;
+  if(i>j)ev+=p;else if(i===j)x+=p;else dep+=p;
  }
  if(toplam<=0)return {one:0,draw:0,two:0};
  return {one:ev/toplam,draw:x/toplam,two:dep/toplam};
 }
 function ust35Olasilik(a,b){
  let p=0;
- for(let i=0;i<=3;i++){
-  for(let j=0;j<=3-i;j++){
-   p+=poisson(i,a)*poisson(j,b);
-  }
- }
+ for(let i=0;i<=3;i++)for(let j=0;j<=3-i;j++)p+=poisson(i,a)*poisson(j,b);
  return Math.max(0,Math.min(1,1-p));
 }
-
 function lowerBound(arr,date){
  let l=0,r=arr.length;
  while(l<r){
   const m=(l+r)>>1;
-  if(String(arr[m].date)<String(date))l=m+1;
-  else r=m;
+  if(String(arr[m].date)<String(date))l=m+1;else r=m;
  }
  return l;
 }
 
 function hazirlaIndex(){
  teamIndex.clear();leagueIndex.clear();leagueStats.clear();predictionCache.clear();
-
  for(const m of HISTORY){
   const lid=String(m.league_id);
   if(!leagueIndex.has(lid))leagueIndex.set(lid,[]);
   leagueIndex.get(lid).push(m);
-
   for(const team of [m.home,m.away]){
    const key=lid+"|"+team;
    if(!teamIndex.has(key))teamIndex.set(key,[]);
    teamIndex.get(key).push(m);
   }
  }
-
  const sirala=(a,b)=>String(a.date).localeCompare(String(b.date));
-
  for(const [lid,arr] of leagueIndex.entries()){
   arr.sort(sirala);
   const ftCount=[0],ftTotal=[0],halfCount=[0],firstTotal=[0],secondTotal=[0];
-
   for(const m of arr){
    const validFT=skorVar(m.ft_home)&&skorVar(m.ft_away);
    const validHT=validFT&&skorVar(m.ht_home)&&skorVar(m.ht_away);
-
    ftCount.push(ftCount.at(-1)+(validFT?1:0));
    ftTotal.push(ftTotal.at(-1)+(validFT?Number(m.ft_home)+Number(m.ft_away):0));
    halfCount.push(halfCount.at(-1)+(validHT?1:0));
    firstTotal.push(firstTotal.at(-1)+(validHT?Number(m.ht_home)+Number(m.ht_away):0));
-   secondTotal.push(secondTotal.at(-1)+(validHT?
-    Number(m.ft_home)-Number(m.ht_home)+Number(m.ft_away)-Number(m.ht_away):0));
+   secondTotal.push(secondTotal.at(-1)+(validHT?Number(m.ft_home)-Number(m.ht_home)+Number(m.ft_away)-Number(m.ht_away):0));
   }
   leagueStats.set(lid,{arr,ftCount,ftTotal,halfCount,firstTotal,secondTotal});
  }
  for(const arr of teamIndex.values())arr.sort(sirala);
 }
-
 function oncekiMaclar(arr,date,limit=10){
  if(!arr)return [];
  const n=lowerBound(arr,date);
@@ -352,8 +320,7 @@ function takimMaclari(lig,takim,tarih){
  return oncekiMaclar(teamIndex.get(String(lig)+"|"+takim),tarih,10);
 }
 function yariMaclari(ms){
- return ms.filter(m=>skorVar(m.ht_home)&&skorVar(m.ht_away)&&
-  Number(m.ft_home)>=Number(m.ht_home)&&Number(m.ft_away)>=Number(m.ht_away));
+ return ms.filter(m=>skorVar(m.ht_home)&&skorVar(m.ht_away)&&Number(m.ft_home)>=Number(m.ht_home)&&Number(m.ft_away)>=Number(m.ht_away));
 }
 function ligOrtalamasi(lig,tarih,alan){
  const stats=leagueStats.get(String(lig));
@@ -394,29 +361,20 @@ function yariTahmin(ev,dep,mac,alan){
  const la=golOrt(d,dep,true,alan)*golOrt(e,ev,false,alan)/ligOrt;
  return {kg:kgOlasilik(lh,la),lh,la};
 }
-
 function tahmin(m){
  const key=String(m.league_id)+"|"+m.home+"|"+m.away+"|"+m.date;
  if(predictionCache.has(key))return predictionCache.get(key);
-
  const e=takimMaclari(m.league_id,m.home,m.date);
  const d=takimMaclari(m.league_id,m.away,m.date);
- if(e.length<5||d.length<5){
-  predictionCache.set(key,null);return null;
- }
+ if(e.length<5||d.length<5){predictionCache.set(key,null);return null}
  const ligOrt=ligOrtalamasi(m.league_id,m.date,"tam");
  if(ligOrt<=0){predictionCache.set(key,null);return null}
-
  const lh=golOrt(e,m.home,true,"tam")*golOrt(d,m.away,false,"tam")/ligOrt;
  const la=golOrt(d,m.away,true,"tam")*golOrt(e,m.home,false,"tam")/ligOrt;
-
  const sonuc=macSonucOlasilik(lh,la);
  const result={
-  one:sonuc.one,
-  draw:sonuc.draw,
-  two:sonuc.two,
-  over35:ust35Olasilik(lh,la),
-  six:golOlasilik(lh,la),
+  one:sonuc.one,draw:sonuc.draw,two:sonuc.two,
+  over35:ust35Olasilik(lh,la),six:golOlasilik(lh,la),
   btts:kgOlasilik(lh,la),
   ilk:yariTahmin(m.home,m.away,m,"ilk"),
   ikinci:yariTahmin(m.home,m.away,m,"ikinci")
@@ -430,9 +388,7 @@ function sonucX(m){return Number(m.ft_home)===Number(m.ft_away)}
 function sonucIki(m){return Number(m.ft_home)<Number(m.ft_away)}
 function sonucUst35(m){return Number(m.ft_home)+Number(m.ft_away)>=4}
 function sonucIlk(m){return Number(m.ht_home)>0&&Number(m.ht_away)>0}
-function sonucIkinci(m){
- return Number(m.ft_home)-Number(m.ht_home)>0&&Number(m.ft_away)-Number(m.ht_away)>0;
-}
+function sonucIkinci(m){return Number(m.ft_home)-Number(m.ht_home)>0&&Number(m.ft_away)-Number(m.ht_away)>0}
 function sonucAlti(m){return Number(m.ft_home)+Number(m.ft_away)>=6}
 function sonucKG(m){return Number(m.ft_home)>0&&Number(m.ft_away)>0}
 
@@ -445,7 +401,6 @@ function esikTablosu(veri,esikler){
  });
  return h+"</table>";
 }
-
 function tarihEkle(tarih,gun){
  const d=new Date(tarih+"T12:00:00");d.setDate(d.getDate()+gun);
  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -462,22 +417,17 @@ function donemVerisiBaslat(){
 }
 function donemSonucEkle(d,m,t){
  if(!skorVar(m.ft_home)||!skorVar(m.ft_away)||!t)return;
-
  d.bir.push({p:t.one,ok:sonucBir(m)});
  d.x.push({p:t.draw,ok:sonucX(m)});
  d.iki.push({p:t.two,ok:sonucIki(m)});
  d.ust35.push({p:t.over35,ok:sonucUst35(m)});
  d.alti.push({p:t.six,ok:sonucAlti(m)});
  d.kg.push({p:t.btts,ok:sonucKG(m)});
-
- const valid=skorVar(m.ht_home)&&skorVar(m.ht_away)&&
-  Number(m.ft_home)>=Number(m.ht_home)&&Number(m.ft_away)>=Number(m.ht_away);
+ const valid=skorVar(m.ht_home)&&skorVar(m.ht_away)&&Number(m.ft_home)>=Number(m.ht_home)&&Number(m.ft_away)>=Number(m.ht_away);
  if(!valid)return;
-
  if(t.ilk)d.ilk.push({p:t.ilk.kg,ok:sonucIlk(m)});
  if(t.ikinci)d.ikinci.push({p:t.ikinci.kg,ok:sonucIkinci(m)});
 }
-
 function donemHTML(baslik,baslangic,bitis,veri){
  let h=`<div class="period-panel"><div class="period-title">${baslik}</div><div class="period-date">${baslangic} – ${bitis}</div>`;
  h+=`<div class="analysis-box"><h4>1 - Ev Sahibi</h4>${esikTablosu(veri.bir,[30,40,50,60,70])}</div>`;
@@ -490,35 +440,25 @@ function donemHTML(baslik,baslangic,bitis,veri){
  h+=`<div class="analysis-box"><h4>İkinci Yarı KG</h4>${esikTablosu(veri.ikinci,[30,40,50,60,70])}</div>`;
  return h+"</div>";
 }
-
 async function testleriHesapla(){
  if(analysisRunning)return;
  if(!HISTORY.length){$("analizDurum").innerText="Geçmiş maç verisi bulunamadı.";return}
-
  analysisRunning=true;
  $("donemAnalizleri").innerHTML="";
  $("analizDurum").innerText="Dönem analizleri hazırlanıyor...";
-
  const son=sonGecmisTarihi();
- if(!son){
-  $("analizDurum").innerText="Geçerli geçmiş maç tarihi bulunamadı.";
-  analysisRunning=false;return;
- }
-
+ if(!son){$("analizDurum").innerText="Geçerli geçmiş maç tarihi bulunamadı.";analysisRunning=false;return}
  const d1Bas=tarihEkle(son,-89),d1Bit=son;
  const d2Bit=tarihEkle(d1Bas,-1),d2Bas=tarihEkle(d2Bit,-89);
  const d3Bit=tarihEkle(d2Bas,-1),d3Bas=tarihEkle(d3Bit,-89);
-
  const donemler=[
   {bas:d1Bas,bit:d1Bit,baslik:"Son 90 Gün",veri:donemVerisiBaslat()},
   {bas:d2Bas,bit:d2Bit,baslik:"Önceki 90 Gün",veri:donemVerisiBaslat()},
   {bas:d3Bas,bit:d3Bit,baslik:"Daha Önceki 90 Gün",veri:donemVerisiBaslat()},
   {bas:null,bit:son,baslik:"Tüm Geçmiş",veri:donemVerisiBaslat()}
  ];
-
  const sirali=HISTORY.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
  let idx=0;
-
  function batch(){
   const end=Math.min(idx+60,sirali.length);
   for(;idx<end;idx++){
@@ -526,23 +466,15 @@ async function testleriHesapla(){
    if(!m.date||!skorVar(m.ft_home)||!skorVar(m.ft_away))continue;
    const t=tahmin(m);
    if(!t)continue;
-
    donemSonucEkle(donemler[3].veri,m,t);
    for(let i=0;i<3;i++){
     const d=donemler[i];
-    if(String(m.date)>=d.bas&&String(m.date)<=d.bit)
-     donemSonucEkle(d.veri,m,t);
+    if(String(m.date)>=d.bas&&String(m.date)<=d.bit)donemSonucEkle(d.veri,m,t);
    }
   }
-
   $("analizDurum").innerText=`Geçmiş maçlar inceleniyor: ${idx} / ${sirali.length}`;
   if(idx<sirali.length){setTimeout(batch,10);return}
-
-  let html="";
-  for(const d of donemler)
-   html+=donemHTML(d.baslik,d.bas?tarihYaz(d.bas):"İlk kayıt",tarihYaz(d.bit),d.veri);
-
-  $("donemAnalizleri").innerHTML=html;
+  $("donemAnalizleri").innerHTML=donemler.map(d=>donemHTML(d.baslik,d.bas?tarihYaz(d.bas):"İlk kayıt",tarihYaz(d.bit),d.veri)).join("");
   $("analizDurum").innerText="Analiz tamamlandı. Sekiz tahmin türü ayrı ayrı test edildi.";
   analysisRunning=false;
  }
@@ -550,41 +482,29 @@ async function testleriHesapla(){
 }
 
 function tarihKaydir(n){
- const d=new Date($("tarih").value+"T12:00:00");
- d.setDate(d.getDate()+n);
+ const d=new Date($("tarih").value+"T12:00:00");d.setDate(d.getDate()+n);
  $("tarih").value=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
  listele();
 }
 function adTarih(t){
  return new Date(t+"T12:00:00").toLocaleDateString("tr-TR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
 }
-function saatSirala(a,b){
- return String(a.time||"99:99").localeCompare(String(b.time||"99:99"));
-}
+function saatSirala(a,b){return String(a.time||"99:99").localeCompare(String(b.time||"99:99"))}
 function enYuksekTahmin(t){
  if(!t)return -1;
  const d=[t.one,t.draw,t.two,t.over35,t.six,t.btts,t.ilk?.kg,t.ikinci?.kg].filter(v=>Number.isFinite(v));
  return d.length?Math.max(...d):-1;
 }
-
 function tahminKutusu(ad,deger,ek=""){
- return `<div class="pred ${ek}">
-  <span class="pred-name">${ad}</span>
-  <span class="pred-value ${deger==null?"unknown":""}">${yuzde(deger)}</span>
- </div>`;
+ return `<div class="pred ${ek}"><span class="pred-name">${ad}</span><span class="pred-value ${deger==null?"unknown":""}">${yuzde(deger)}</span></div>`;
 }
-
 function macKart(m,t,gecmis,sira){
  const enYuksek=enYuksekTahmin(t);
  return `<div class="match">
-  <div class="match-top">
-   <div class="teams">${m.home} - ${m.away}</div>
+  <div class="match-top"><div class="teams">${m.home} - ${m.away}</div>
    ${!gecmis&&enYuksek>=0?`<span class="rank">#${sira} · ${yuzde(enYuksek)}</span>`:!gecmis?`<span class="rank">Tahmin yok</span>`:""}
   </div>
-  <div class="meta-row">
-   <div class="meta">${ligGorunumu(m)}</div>
-   <div class="kickoff">${m.time||"Saat belirtilmemiş"}</div>
-  </div>
+  <div class="meta-row"><div class="meta">${ligGorunumu(m)}</div><div class="kickoff">${m.time||"Saat belirtilmemiş"}</div></div>
   ${gecmis?`<div class="result">Maç sonucu: ${m.ft_home}-${m.ft_away}</div>`:
   `<div class="predictions">
    ${tahminKutusu("1",t?.one,"one")}
@@ -598,71 +518,44 @@ function macKart(m,t,gecmis,sira){
   </div>`}
  </div>`;
 }
-
 function doldurLigler(){
  const ligMap=new Map();
-
  for(const m of [...FIXTURES,...HISTORY]){
-  const ln=m.league||"Diğer";
-  const u=ulkeBilgisi(m);
-  const key=u.name;
+  const ln=m.league||"Diğer",u=ulkeBilgisi(m),key=u.name;
   if(!ligMap.has(key))ligMap.set(key,{flag:u.flag,name:u.name,leagues:new Set()});
   ligMap.get(key).leagues.add(ln);
  }
-
  const ulkeler=[...ligMap.values()].sort((a,b)=>a.name.localeCompare(b.name,"tr"));
  const sel=$("ligSec"),old=sel.value;
  sel.innerHTML='<option value="all">🌍 Bütün görünür ligler</option>';
-
  for(const u of ulkeler){
-  const optgroup=document.createElement("optgroup");
-  optgroup.label=u.flag+" "+u.name;
-
-  [...u.leagues].sort((a,b)=>ligAdiTR(a).localeCompare(ligAdiTR(b),"tr"))
-   .forEach(ln=>{
-    if(hiddenLeagues.has(ln))return;
-    const op=document.createElement("option");
-    op.value=encodeURIComponent(ln);
-    op.textContent=ligAdiTR(ln);
-    optgroup.appendChild(op);
-   });
-
+  const optgroup=document.createElement("optgroup");optgroup.label=u.flag+" "+u.name;
+  [...u.leagues].sort((a,b)=>ligAdiTR(a).localeCompare(ligAdiTR(b),"tr")).forEach(ln=>{
+   if(hiddenLeagues.has(ln))return;
+   const op=document.createElement("option");op.value=encodeURIComponent(ln);
+   op.textContent=ligAdiTR(ln);optgroup.appendChild(op);
+  });
   if(optgroup.children.length)sel.appendChild(optgroup);
  }
-
  if([...sel.options].some(o=>o.value===old))sel.value=old;
-
  const allLeagues=[...new Set([...FIXTURES,...HISTORY].map(m=>m.league||"Diğer"))];
  $("ligCheckboxlar").innerHTML=allLeagues.sort((a,b)=>a.localeCompare(b,"tr")).map(ln=>{
-  const m=[...FIXTURES,...HISTORY].find(x=>(x.league||"Diğer")===ln);
-  const u=ulkeBilgisi(m||{});
+  const m=[...FIXTURES,...HISTORY].find(x=>(x.league||"Diğer")===ln),u=ulkeBilgisi(m||{});
   return `<label style="display:block;padding:7px;border-bottom:1px solid #444">
    <input style="width:auto;margin-right:8px" type="checkbox" data-lig="${encodeURIComponent(ln)}" ${hiddenLeagues.has(ln)?"":"checked"}>
-   ${u.flag} ${u.name} · ${ligAdiTR(ln)}
-  </label>`;
+   ${u.flag} ${u.name} · ${ligAdiTR(ln)}</label>`;
  }).join("");
 }
-function yonetimAc(){
- $("ligYonetim").classList.toggle("hidden");
-}
+function yonetimAc(){$("ligYonetim").classList.toggle("hidden")}
 function ligleriKaydet(){
- hiddenLeagues=new Set(
-  [...document.querySelectorAll("#ligCheckboxlar input:not(:checked)")].map(x=>decodeURIComponent(x.dataset.lig))
- );
+ hiddenLeagues=new Set([...document.querySelectorAll("#ligCheckboxlar input:not(:checked)")].map(x=>decodeURIComponent(x.dataset.lig)));
  try{localStorage.setItem("yapaycinHiddenLeagues",JSON.stringify([...hiddenLeagues]))}catch(e){}
- doldurLigler();
- $("ligSec").value="all";
- listele();
- $("ligYonetim").classList.add("hidden");
+ doldurLigler();$("ligSec").value="all";listele();$("ligYonetim").classList.add("hidden");
 }
-
 function filtreUygun(t,filtre){
  if(filtre==="all")return true;
  if(!t)return false;
- if(filtre==="strong")
-  return t.one>=.50||t.draw>=.30||t.two>=.50||
-   t.over35>=.55||t.six>=.20||t.btts>=.50||
-   t.ilk?.kg>=.40||t.ikinci?.kg>=.50;
+ if(filtre==="strong")return t.one>=.50||t.draw>=.30||t.two>=.50||t.over35>=.55||t.six>=.20||t.btts>=.50||t.ilk?.kg>=.40||t.ikinci?.kg>=.50;
  if(filtre==="one")return t.one>=.40;
  if(filtre==="draw")return t.draw>=.25;
  if(filtre==="two")return t.two>=.40;
@@ -673,63 +566,36 @@ function filtreUygun(t,filtre){
  if(filtre==="second")return !!(t.ikinci&&t.ikinci.kg>=.50);
  return true;
 }
-
 function listele(){
  if(!FIXTURES.length&&!HISTORY.length)return;
-
- const date=$("tarih").value||today();
- const past=date<today();
+ const date=$("tarih").value||today(),past=date<today();
  const source=past?HISTORY:FIXTURES;
  const arama=($("arama").value||"").toLocaleLowerCase("tr");
- const filtre=$("filtre").value,lig=$("ligSec").value;
- const list=[];
-
+ const filtre=$("filtre").value,lig=$("ligSec").value,list=[];
  for(const m of source){
   if(String(m.date)!==date)continue;
   const ln=m.league||"Diğer";
   if(hiddenLeagues.has(ln))continue;
   if(lig!=="all"&&encodeURIComponent(ln)!==lig)continue;
-
   const u=ulkeBilgisi(m);
   const text=(m.home+" "+m.away+" "+ln+" "+u.name+" "+ligAdiTR(ln)).toLocaleLowerCase("tr");
   if(arama&&!text.includes(arama))continue;
-
-  if(past){
-   list.push({m,t:null,puan:-1});
-   continue;
-  }
-
+  if(past){list.push({m,t:null,puan:-1});continue}
   const t=tahmin(m);
   if(!filtreUygun(t,filtre))continue;
   list.push({m,t,puan:enYuksekTahmin(t)});
  }
-
- list.sort((a,b)=>{
-  if(past)return saatSirala(a.m,b.m);
-  if(a.puan!==b.puan)return b.puan-a.puan;
-  return saatSirala(a.m,b.m);
- });
-
- const tahminli=list.filter(x=>x.puan>=0).length;
- const tahminsiz=list.length-tahminli;
-
+ list.sort((a,b)=>past?saatSirala(a.m,b.m):a.puan!==b.puan?b.puan-a.puan:saatSirala(a.m,b.m));
+ const tahminli=list.filter(x=>x.puan>=0).length,tahminsiz=list.length-tahminli;
  $("macOzet").innerHTML=past?"":`
   <div class="summary-item"><span class="summary-number">${list.length}</span><span class="summary-label">Toplam maç</span></div>
   <div class="summary-item"><span class="summary-number">${tahminli}</span><span class="summary-label">Tahmin üretilen</span></div>
   <div class="summary-item"><span class="summary-number">${tahminsiz}</span><span class="summary-label">Tahmin bulunmayan</span></div>`;
-
- if(!list.length){
-  $("maclar").innerHTML=past?"Bu tarihte kayıtlı geçmiş maç bulunamadı.":"Bu tarihte gösterilecek maç bulunamadı.";
-  return;
- }
-
+ if(!list.length){$("maclar").innerHTML=past?"Bu tarihte kayıtlı geçmiş maç bulunamadı.":"Bu tarihte gösterilecek maç bulunamadı.";return}
  let h="",last="",sira=0;
  for(const item of list){
   const m=item.m;
-  if(m.date!==last){
-   h+=`<div class="day-title">${adTarih(m.date)}</div>`;
-   last=m.date;
-  }
+  if(m.date!==last){h+=`<div class="day-title">${adTarih(m.date)}</div>`;last=m.date}
   if(item.puan>=0)sira++;
   h+=macKart(m,item.t,past,sira);
  }
@@ -739,116 +605,87 @@ function listele(){
 async function baslat(force=false){
  $("durum").innerText="Veriler yükleniyor...";
  try{
-  const url="./data.json"+(force?"?v="+Date.now():"");
-  const r=await fetch(url,{cache:force?"no-store":"default"});
+  const r=await fetch("./data.json"+(force?"?v="+Date.now():""),{cache:force?"no-store":"default"});
   if(!r.ok)throw new Error("Veri dosyası yüklenemedi");
   const data=await r.json();
-
-  FIXTURES=data.fixtures||[];
-  HISTORY=data.history||[];
-
+  FIXTURES=data.fixtures||[];HISTORY=data.history||[];
   $("durum").innerText="Veriler alındı, indeksler hazırlanıyor...";
   await new Promise(resolve=>requestAnimationFrame(resolve));
-
   hazirlaIndex();
-
-  try{
-   hiddenLeagues=new Set(JSON.parse(localStorage.getItem("yapaycinHiddenLeagues")||"[]"));
-  }catch(e){hiddenLeagues=new Set()}
-
+  try{hiddenLeagues=new Set(JSON.parse(localStorage.getItem("yapaycinHiddenLeagues")||"[]"))}catch(e){hiddenLeagues=new Set()}
   doldurLigler();
   $("durum").innerHTML="<span class='good'>Veriler başarıyla yüklendi</span>";
   $("sayilar").innerHTML=`Gelecek maç: ${FIXTURES.length} · Geçmiş maç: ${HISTORY.length}<br>Son güncelleme: ${data.updated||"-"}`;
   listele();
-
- }catch(e){
-  $("durum").innerText="Hata: "+e.message;
- }
+ }catch(e){$("durum").innerText="Hata: "+e.message}
 }
 
 function sekmeAc(sekme){
- const futbol=sekme==="futbol";
- const iyms=sekme==="iyms";
- const nba=sekme==="nba";
-
+ const futbol=sekme==="futbol",iyms=sekme==="iyms",nba=sekme==="nba";
  $("futbolBolumu").classList.toggle("hidden",!futbol);
-<div id="iymsBolumu" class="tab-content hidden">
- <h2>🎯 İLK YARI / MAÇ SONU ANALİZİ</h2>
- <div class="panel">
-  <div id="iymsDurum">İY/MS verileri yüklenmeye hazır.</div>
-  <div id="iymsOzet"></div>
-  <div id="iymsMaclar"></div>
- </div>
-</div>
+ $("iymsBolumu").classList.toggle("hidden",!iyms);
  $("nbaBolumu").classList.toggle("hidden",!nba);
-
  $("futbolButon").classList.toggle("active",futbol);
  $("iymsButon").classList.toggle("active",iyms);
  $("nbaButon").classList.toggle("active",nba);
+ if(iyms&&!iymsYuklendi)iymsBaslat();
+ if(nba&&!nbaYuklendi)nbaBaslat();
+}
 
- if(nba)nbaBaslat();
-if(iyms)iymsBaslat();
+/* İLK YARI / MAÇ SONU */
+async function iymsBaslat(){
+ const durum=$("iymsDurum"),ozet=$("iymsOzet");
+ durum.innerText="İY/MS geçmiş verileri yükleniyor...";
+ ozet.innerHTML="";
+ try{
+  const r=await fetch("./iyms-veri.json?v="+Date.now(),{cache:"no-store"});
+  if(!r.ok)throw new Error("iyms-veri.json bulunamadı");
+  const data=await r.json(),maclar=Array.isArray(data.matches)?data.matches:[];
+  const sayac={"1/1":0,"1/X":0,"1/2":0,"X/1":0,"X/X":0,"X/2":0,"2/1":0,"2/X":0,"2/2":0};
+  maclar.forEach(m=>{
+   const iyEv=Number(m.ht_home),iyDep=Number(m.ht_away),msEv=Number(m.ft_home),msDep=Number(m.ft_away);
+   if(![iyEv,iyDep,msEv,msDep].every(Number.isFinite))return;
+   const iy=iyEv>iyDep?"1":iyEv<iyDep?"2":"X";
+   const ms=msEv>msDep?"1":msEv<msDep?"2":"X";
+   sayac[iy+"/"+ms]++;
+  });
+  const toplam=Object.values(sayac).reduce((a,b)=>a+b,0);
+  durum.innerHTML="Geçmiş maç sayısı: <b>"+toplam+"</b><br>İlk yarı skoru bulunan veri kapsamı: <b>"+(data.coverage_percent??0)+"%</b>";
+  ozet.innerHTML=Object.entries(sayac).map(([ad,sayi])=>{
+   const oran=toplam?(sayi/toplam*100).toFixed(1):"0.0";
+   return "<div class='panel'><b>"+ad+"</b> — "+sayi+" maç (%"+oran+")</div>";
+  }).join("");
+  iymsYuklendi=true;
+ }catch(e){durum.innerText="Veri yüklenemedi: "+e.message}
+}
 
-
-
-$("tarih").value=today();
-baslat();
- 
+/* NBA */
 function nbaTamamlandi(g){
- return g.completed===true || String(g.completed).toLowerCase()==="true";
+ return g.completed===true||String(g.completed).toLowerCase()==="true";
 }
-
-function nbaTarih(g){
- return new Date(g.start_time || g.game_date || 0);
-}
-
+function nbaTarih(g){return new Date(g.start_time||g.game_date||0)}
 function nbaTakimAnahtari(g,ev){
- return String(ev ? (g.home_team_id || g.home_team_abbr || g.home_team_name) : (g.away_team_id || g.away_team_abbr || g.away_team_name));
+ return String(ev?(g.home_team_id||g.home_team_abbr||g.home_team_name):(g.away_team_id||g.away_team_abbr||g.away_team_name));
 }
-
 function nbaTakimAdi(g,ev){
- return g[ev ? "home_team_name" : "away_team_name"] ||
-        g[ev ? "home_team_abbr" : "away_team_abbr"] ||
-        (ev ? "Ev sahibi" : "Deplasman");
+ return g[ev?"home_team_name":"away_team_name"]||g[ev?"home_team_abbr":"away_team_abbr"]||(ev?"Ev sahibi":"Deplasman");
 }
-
-function nbaOrtalama(liste){
- return liste.length ? liste.reduce((a,b)=>a+b,0)/liste.length : 0;
-}
-
+function nbaOrtalama(liste){return liste.length?liste.reduce((a,b)=>a+b,0)/liste.length:0}
 function nbaTakimFormu(key,tarih,games,evSahibi){
- const onceki=games.filter(g=>{
-  if(!nbaTamamlandi(g) || nbaTarih(g)>=tarih) return false;
-  return nbaTakimAnahtari(g,true)===key || nbaTakimAnahtari(g,false)===key;
- }).sort((a,b)=>nbaTarih(b)-nbaTarih(a));
-
+ const onceki=games.filter(g=>nbaTamamlandi(g)&&nbaTarih(g)<tarih&&(nbaTakimAnahtari(g,true)===key||nbaTakimAnahtari(g,false)===key)).sort((a,b)=>nbaTarih(b)-nbaTarih(a));
  const son10=onceki.slice(0,10);
- const evMaclari=son10.filter(g=>nbaTakimAnahtari(g,true)===key);
- const depMaclari=son10.filter(g=>nbaTakimAnahtari(g,false)===key);
-
+ const sahaMaclari=son10.filter(g=>evSahibi?nbaTakimAnahtari(g,true)===key:nbaTakimAnahtari(g,false)===key);
  const sayilar=son10.map(g=>{
   const ev=nbaTakimAnahtari(g,true)===key;
-  return {
-   atilan:Number(ev?g.home_score:g.away_score),
-   yenilen:Number(ev?g.away_score:g.home_score)
-  };
+  return {atilan:Number(ev?g.home_score:g.away_score),yenilen:Number(ev?g.away_score:g.home_score)};
  });
-
- const sahaMaclari=evSahibi?evMaclari:depMaclari;
  const sahaSayilari=sahaMaclari.map(g=>{
   const ev=nbaTakimAnahtari(g,true)===key;
-  return {
-   atilan:Number(ev?g.home_score:g.away_score),
-   yenilen:Number(ev?g.away_score:g.home_score)
-  };
+  return {atilan:Number(ev?g.home_score:g.away_score),yenilen:Number(ev?g.away_score:g.home_score)};
  });
-
  return {
-  adet:son10.length,
-  atilan:nbaOrtalama(sayilar.map(x=>x.atilan)),
-  yenilen:nbaOrtalama(sayilar.map(x=>x.yenilen)),
-  sahaAdet:sahaSayilari.length,
-  sahaAtilan:nbaOrtalama(sahaSayilari.map(x=>x.atilan)),
+  adet:son10.length,atilan:nbaOrtalama(sayilar.map(x=>x.atilan)),yenilen:nbaOrtalama(sayilar.map(x=>x.yenilen)),
+  sahaAdet:sahaSayilari.length,sahaAtilan:nbaOrtalama(sahaSayilari.map(x=>x.atilan)),
   sahaYenilen:nbaOrtalama(sahaSayilari.map(x=>x.yenilen)),
   galibiyet:son10.filter(g=>{
    const ev=nbaTakimAnahtari(g,true)===key;
@@ -856,248 +693,107 @@ function nbaTakimFormu(key,tarih,games,evSahibi){
   }).length
  };
 }
-
 function nbaTahmin(g,games){
- const tarih=nbaTarih(g);
- const evKey=nbaTakimAnahtari(g,true);
- const depKey=nbaTakimAnahtari(g,false);
-
- const ev=nbaTakimFormu(evKey,tarih,games,true);
- const dep=nbaTakimFormu(depKey,tarih,games,false);
-
+ const tarih=nbaTarih(g),evKey=nbaTakimAnahtari(g,true),depKey=nbaTakimAnahtari(g,false);
+ const ev=nbaTakimFormu(evKey,tarih,games,true),dep=nbaTakimFormu(depKey,tarih,games,false);
  const onceki=games.filter(x=>nbaTamamlandi(x)&&nbaTarih(x)<tarih);
- const ligSayilari=onceki.flatMap(x=>[
-  Number(x.home_score),Number(x.away_score)
- ]).filter(Number.isFinite);
-
+ const ligSayilari=onceki.flatMap(x=>[Number(x.home_score),Number(x.away_score)]).filter(Number.isFinite);
  const ligOrt=nbaOrtalama(ligSayilari)||112;
-
- const evHucum=ev.adet?ev.atilan:ligOrt;
- const evSavunma=ev.adet?ev.yenilen:ligOrt;
- const depHucum=dep.adet?dep.atilan:ligOrt;
- const depSavunma=dep.adet?dep.yenilen:ligOrt;
-
- let evSkor=(evHucum+depSavunma)/2;
- let depSkor=(depHucum+evSavunma)/2;
-
- if(ev.sahaAdet>=3){
-  evSkor=evSkor*0.65+((ev.sahaAtilan+ev.sahaYenilen)/2)*0.35;
- }
- if(dep.sahaAdet>=3){
-  depSkor=depSkor*0.65+((dep.sahaAtilan+dep.sahaYenilen)/2)*0.35;
- }
-
- evSkor=Math.round(evSkor);
- depSkor=Math.round(depSkor);
-
- const fark=evSkor-depSkor;
- const toplam=evSkor+depSkor;
- const ornek=Math.min(ev.adet,dep.adet);
-
- let guven=Math.round(50+Math.min(20,Math.abs(fark)*1.15)+Math.min(8,ornek*0.8));
+ const evHucum=ev.adet?ev.atilan:ligOrt,evSavunma=ev.adet?ev.yenilen:ligOrt;
+ const depHucum=dep.adet?dep.atilan:ligOrt,depSavunma=dep.adet?dep.yenilen:ligOrt;
+ let evSkor=(evHucum+depSavunma)/2,depSkor=(depHucum+evSavunma)/2;
+ if(ev.sahaAdet>=3)evSkor=evSkor*.65+((ev.sahaAtilan+ev.sahaYenilen)/2)*.35;
+ if(dep.sahaAdet>=3)depSkor=depSkor*.65+((dep.sahaAtilan+dep.sahaYenilen)/2)*.35;
+ evSkor=Math.round(evSkor);depSkor=Math.round(depSkor);
+ const fark=evSkor-depSkor,toplam=evSkor+depSkor,ornek=Math.min(ev.adet,dep.adet);
+ let guven=Math.round(50+Math.min(20,Math.abs(fark)*1.15)+Math.min(8,ornek*.8));
  guven=Math.max(50,Math.min(78,guven));
-
- const kazanan=fark>0?"Ev sahibi":fark<0?"Deplasman":"Dengeli maç";
  const favori=fark>0?nbaTakimAdi(g,true):fark<0?nbaTakimAdi(g,false):"Belirgin favori yok";
-
  function sayiTahmini(limit){
-  const farkToplam=toplam-limit;
-  const secim=farkToplam>=0?"ÜST":"ALT";
+  const farkToplam=toplam-limit,secim=farkToplam>=0?"ÜST":"ALT";
   const guvenP=Math.max(50,Math.min(85,Math.round(50+Math.abs(farkToplam)*1.1)));
   return {secim,guven:guvenP};
  }
-
- return {
-  evSkor,depSkor,toplam,fark,kazanan,favori,guven,
-  ust200:sayiTahmini(200.5),
-  ust220:sayiTahmini(220.5),
-  ust240:sayiTahmini(240.5),
-  handikap:fark>0?nbaTakimAdi(g,true)+" -"+Math.abs(fark):fark<0?nbaTakimAdi(g,false)+" -"+Math.abs(fark):"0"
- };
+ return {evSkor,depSkor,toplam,fark,favori,guven,
+  ust200:sayiTahmini(200.5),ust220:sayiTahmini(220.5),ust240:sayiTahmini(240.5),
+  handikap:fark>0?nbaTakimAdi(g,true)+" -"+Math.abs(fark):fark<0?nbaTakimAdi(g,false)+" -"+Math.abs(fark):"0"};
 }
 
+/* Geçmiş testini tek tek maç taraması yerine bir kez hesapla */
 function nbaGecmisTest(games){
  const tamam=games.filter(nbaTamamlandi).sort((a,b)=>nbaTarih(a)-nbaTarih(b));
  let dogru=0,toplam=0;
-
- tamam.forEach(g=>{
-  const tarih=nbaTarih(g);
-  const onceki=games.filter(x=>nbaTamamlandi(x)&&nbaTarih(x)<tarih);
-  const ev=nbaTakimFormu(nbaTakimAnahtari(g,true),tarih,games,true);
-  const dep=nbaTakimFormu(nbaTakimAnahtari(g,false),tarih,games,false);
-
-  if(ev.adet<3||dep.adet<3) return;
-
+ const formCache=new Map();
+ for(const g of tamam){
+  const tarih=nbaTarih(g),evKey=nbaTakimAnahtari(g,true),depKey=nbaTakimAnahtari(g,false);
+  const ev=nbaTakimFormu(evKey,tarih,games,true),dep=nbaTakimFormu(depKey,tarih,games,false);
+  if(ev.adet<3||dep.adet<3)continue;
   const tahmin=nbaTahmin(g,games);
+  if(tahmin.fark===0)continue;
+  toplam++;
   const gercek=Number(g.home_score)>Number(g.away_score);
-  const tahminEv=tahmin.fark>0;
-
-  if(tahmin.fark!==0){
-   toplam++;
-   if(gercek===tahminEv)dogru++;
-  }
- });
-
+  if(gercek===(tahmin.fark>0))dogru++;
+ }
  return toplam?Math.round(dogru/toplam*100):null;
 }
-async function iymsBaslat(){
- const durum=$("iymsDurum");
- const ozet=$("iymsOzet");
 
- durum.innerText="İY/MS geçmiş verileri yükleniyor...";
- ozet.innerHTML="";
-
- try{
-  const r=await fetch("./iyms-veri.json?v="+Date.now(),{cache:"no-store"});
-  if(!r.ok)throw new Error("iyms-veri.json bulunamadı");
-
-  const data=await r.json();
-  const maclar=Array.isArray(data.matches)?data.matches:[];
-
-  const sayac={
-   "1/1":0,"1/X":0,"1/2":0,
-   "X/1":0,"X/X":0,"X/2":0,
-   "2/1":0,"2/X":0,"2/2":0
-  };
-
-  maclar.forEach(m=>{
-   const iyEv=Number(m.ht_home);
-   const iyDep=Number(m.ht_away);
-   const msEv=Number(m.ft_home);
-   const msDep=Number(m.ft_away);
-
-   if(![iyEv,iyDep,msEv,msDep].every(Number.isFinite))return;
-
-   const iy=iyEv>iyDep?"1":iyEv<iyDep?"2":"X";
-   const ms=msEv>msDep?"1":msEv<msDep?"2":"X";
-   sayac[iy+"/"+ms]++;
-  });
-
-  const toplam=Object.values(sayac).reduce((a,b)=>a+b,0);
-
-  durum.innerHTML=
-   "Geçmiş maç sayısı: <b>"+toplam+"</b><br>"+
-   "İlk yarı skoru bulunan veri kapsamı: <b>"+(data.coverage_percent??0)+"%</b>";
-
-  ozet.innerHTML=Object.entries(sayac).map(([ad,sayi])=>{
-   const yuzde=toplam?(sayi/toplam*100).toFixed(1):"0.0";
-   return "<div class='panel'><b>"+ad+"</b> — "+sayi+
-          " maç (%"+yuzde+")</div>";
-  }).join("");
-
- }catch(e){
-  durum.innerText="Veri yüklenemedi: "+e.message;
- }
-}
 async function nbaBaslat(){
  $("nbaDurum").innerText="NBA verileri yükleniyor...";
  $("nbaMaclar").innerHTML="";
-
  try{
   const r=await fetch("./nba.json?v="+Date.now(),{cache:"no-store"});
   if(!r.ok)throw new Error("nba.json dosyası bulunamadı");
-
-  const data=await r.json();
-  const games=Array.isArray(data.games)?data.games:[];
+  const data=await r.json(),games=Array.isArray(data.games)?data.games:[];
   const simdi=new Date();
-
-  const gelecek=games.filter(g=>
-   !nbaTamamlandi(g)&&nbaTarih(g)>=simdi
-  ).sort((a,b)=>nbaTarih(a)-nbaTarih(b));
-
-  const tamamlanan=games.filter(nbaTamamlandi)
-   .sort((a,b)=>nbaTarih(b)-nbaTarih(a));
-
+  const gelecek=games.filter(g=>!nbaTamamlandi(g)&&nbaTarih(g)>=simdi).sort((a,b)=>nbaTarih(a)-nbaTarih(b));
+  const tamamlanan=games.filter(nbaTamamlandi).sort((a,b)=>nbaTarih(b)-nbaTarih(a));
+  $("nbaDurum").innerText="NBA verileri yüklendi | Kaynak: "+(data.source||"Belirtilmemiş")+" | Toplam maç: "+games.length+" | Gelecek maç: "+gelecek.length;
+  let html=`<div class="nba-card"><b>📊 NBA Tahmin Motoru</b><div style="margin-top:8px">Geçmiş maç kazanan testi: <b>Hesaplanıyor...</b></div></div>`;
+  $("nbaMaclar").innerHTML=html;
+  await new Promise(resolve=>setTimeout(resolve,20));
   const basari=nbaGecmisTest(games);
-
-  $("nbaDurum").innerText=
-   "NBA verileri yüklendi | Kaynak: "+(data.source||"Belirtilmemiş")+
-   " | Toplam maç: "+games.length+
-   " | Gelecek maç: "+gelecek.length;
-
-  let html="";
-
-  html+=`
-   <div class="nba-card">
-    <b>📊 NBA Tahmin Motoru</b>
-    <div style="margin-top:8px">
-     Geçmiş maç kazanan testi:
-     <b>${basari===null?"Yeterli veri yok":"%"+basari}</b>
-    </div>
-    <div style="font-size:11px;color:#aaa;margin-top:5px">
-     Test, geçmiş maçların önceki sonuçları kullanılarak hesaplanır.
-    </div>
-   </div>
-  `;
-
+  html=`<div class="nba-card"><b>📊 NBA Tahmin Motoru</b><div style="margin-top:8px">Geçmiş maç kazanan testi: <b>${basari===null?"Yeterli veri yok":"%"+basari}</b></div><div style="font-size:11px;color:#aaa;margin-top:5px">Test, geçmiş maçların önceki sonuçları kullanılarak hesaplanır.</div></div>`;
   if(gelecek.length){
-   html+=`<h3 style="margin:18px 0 10px">🏀 Yaklaşan NBA Maçları</h3>`;
-
+   html+=`<h3>🏀 Yaklaşan NBA Maçları</h3>`;
    gelecek.slice(0,30).forEach(g=>{
     const t=nbaTahmin(g,games);
-    const tarih=nbaTarih(g).toLocaleString("tr-TR",{
-     timeZone:"Europe/Istanbul",
-     day:"2-digit",month:"2-digit",year:"numeric",
-     hour:"2-digit",minute:"2-digit"
-    });
-
-    html+=`
-     <div class="nba-card">
-      <div style="font-size:12px;color:#aaa">${tarih}</div>
-      <div style="font-size:16px;font-weight:bold;margin:9px 0">
-       ${nbaTakimAdi(g,false)} - ${nbaTakimAdi(g,true)}
-      </div>
-      <div style="font-size:20px;text-align:center;margin:10px 0">
-       ${t.depSkor} - ${t.evSkor}
-      </div>
-      <div style="border-top:1px solid #555;padding-top:9px">
-       <div>🏆 Kazanan tahmini: <b>${t.favori}</b></div>
-       <div>🎯 Model güveni: <b>%${t.guven}</b></div>
-       <div>📈 Toplam sayı tahmini: <b>${t.toplam}</b></div>
-       <div>200.5: <b>${t.ust200.secim}</b> (%${t.ust200.guven})</div>
-       <div>220.5: <b>${t.ust220.secim}</b> (%${t.ust220.guven})</div>
-       <div>240.5: <b>${t.ust240.secim}</b> (%${t.ust240.guven})</div>
-       <div>⚖️ Tahmini handikap: <b>${t.handikap}</b></div>
-      </div>
-     </div>
-    `;
-   });
-
-  }else{
-   html+=`
-    <div class="nba-card">
-     Şu anda listelenecek yaklaşan maç bulunamadı.
-    </div>
-   `;
-  }
-
-  html+=`<h3 style="margin:20px 0 10px">📋 Son Tamamlanan Maçlar</h3>`;
-
-  tamamlanan.slice(0,10).forEach(g=>{
-   const tarih=nbaTarih(g).toLocaleDateString("tr-TR");
-   html+=`
-    <div class="nba-card">
+    const tarih=nbaTarih(g).toLocaleString("tr-TR",{timeZone:"Europe/Istanbul",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+    html+=`<div class="nba-card">
      <div style="font-size:12px;color:#aaa">${tarih}</div>
-     <b>${nbaTakimAdi(g,false)}</b>
-     <div style="font-size:20px;text-align:center;margin:7px 0">
-      ${g.away_score} - ${g.home_score}
+     <div style="font-size:16px;font-weight:bold;margin:9px 0">${nbaTakimAdi(g,false)} - ${nbaTakimAdi(g,true)}</div>
+     <div style="font-size:20px;text-align:center;margin:10px 0">${t.depSkor} - ${t.evSkor}</div>
+     <div style="border-top:1px solid #555;padding-top:9px">
+      <div>🏆 Kazanan tahmini: <b>${t.favori}</b></div>
+      <div>🎯 Model güveni: <b>%${t.guven}</b></div>
+      <div>📈 Toplam sayı tahmini: <b>${t.toplam}</b></div>
+      <div>200.5: <b>${t.ust200.secim}</b> (%${t.ust200.guven})</div>
+      <div>220.5: <b>${t.ust220.secim}</b> (%${t.ust220.guven})</div>
+      <div>240.5: <b>${t.ust240.secim}</b> (%${t.ust240.guven})</div>
+      <div>⚖️ Tahmini handikap: <b>${t.handikap}</b></div>
      </div>
-     <b>${nbaTakimAdi(g,true)}</b>
-     <div style="font-size:12px;color:#aaa;margin-top:6px">Tamamlandı</div>
-    </div>
-   `;
+    </div>`;
+   });
+  }else html+=`<div class="nba-card">Şu anda listelenecek yaklaşan maç bulunamadı.</div>`;
+  html+=`<h3>📋 Son Tamamlanan Maçlar</h3>`;
+  tamamlanan.slice(0,10).forEach(g=>{
+   html+=`<div class="nba-card">
+    <div style="font-size:12px;color:#aaa">${nbaTarih(g).toLocaleDateString("tr-TR")}</div>
+    <b>${nbaTakimAdi(g,false)}</b>
+    <div style="font-size:20px;text-align:center;margin:7px 0">${g.away_score} - ${g.home_score}</div>
+    <b>${nbaTakimAdi(g,true)}</b>
+    <div style="font-size:12px;color:#aaa;margin-top:6px">Tamamlandı</div>
+   </div>`;
   });
-
   $("nbaMaclar").innerHTML=html;
-
- }catch(e){
-  $("nbaDurum").innerText="NBA veri hatası: "+e.message;
- }
+  nbaYuklendi=true;
+ }catch(e){$("nbaDurum").innerText="NBA veri hatası: "+e.message}
 }
 
+/* SAYFA AÇILIŞI */
+$("tarih").value=today();
+baslat();
+
 </script>
-
-
 
 <script>
 if("serviceWorker" in navigator){
@@ -1107,15 +803,6 @@ if("serviceWorker" in navigator){
  });
 }
 </script>
-
-<div id="nbaBolumu" class="tab-content hidden">
- <h2>🏀 NBA Maç Analizi</h2>
- <div class="panel">
-  <div id="nbaDurum">NBA verileri kontrol ediliyor...</div>
-  <div id="nbaMaclar"></div>
-  <button onclick="nbaBaslat()">NBA Verilerini Yenile</button>
- </div>
-</div>
 
 </body>
 </html>

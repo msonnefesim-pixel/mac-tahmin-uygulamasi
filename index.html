@@ -767,7 +767,7 @@ async function iymsBaslat(){
    const ev=evVeri[m.ev]||[];
    const dep=depVeri[m.dep]||[];
 
-   if(ev.length>=5 && dep.length>=5){
+   if(ev.length>=3 && dep.length>=3){
     const oran={};
 
     secenekler.forEach(k=>{
@@ -822,7 +822,7 @@ async function iymsBaslat(){
     const ev=evG[m.ev]||[];
     const dep=depG[m.dep]||[];
 
-    if(ev.length<5||dep.length<5)return;
+    if(ev.length<3||dep.length<3)return;
 
     const oran={};
 
@@ -901,7 +901,7 @@ async function iymsBaslat(){
    const a=evTum[temiz(ev)]||[];
    const b=depTum[temiz(dep)]||[];
 
-   if(a.length<5||b.length<5)return null;
+   if(a.length<3||b.length<3)return null;
 
    const oran={};
 

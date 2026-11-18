@@ -50,18 +50,24 @@ jobs:
           print("NBA VERİSİ BAŞARIYLA İNDİRİLDİ!")
           PY
 
+      
       - name: NBA veri dosyasını hazırla
         run: |
           python - <<'PY'
           import pandas as pd
           import json
-          from datetime import datetime, timezone
+          from datetime import datetime, timezone, date
 
           df = pd.read_parquet("nba_test.parquet")
 
           df = df.astype(object).where(pd.notna(df), None)
 
           games = df.to_dict(orient="records")
+
+          for game in games:
+              for key, value in game.items():
+                  if isinstance(value, (date, datetime)):
+                      game[key] = value.isoformat()
 
           games.sort(key=lambda x: str(x.get("game_date") or ""))
 
@@ -77,6 +83,7 @@ jobs:
 
           print("NBA maçları aktarıldı:", len(games))
           PY
+
 
       - name: Değişiklikleri kaydet
         run: |

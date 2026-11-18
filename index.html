@@ -961,8 +961,8 @@ async function iymsBaslat(){
    macHtml+="</div>";
   });
 
-  macAlan.innerHTML=macHtml;
-ozet.innerHTML=html;
+  macAlan.innerHTML=macHtml+html;
+ozet.innerHTML="";
 iymsYuklendi=true;
 durum.innerHTML+="<br>Analiz ve başarı testi tamamlandı.";
  }catch(e){

@@ -772,34 +772,82 @@ function sekmeAc(sekme){
  if(!futbol)nbaBaslat();
 }
 
+
+$("tarih").value=today();
+baslat();
+</script>
+
 async function nbaBaslat(){
  $("nbaDurum").innerText="NBA verileri yükleniyor...";
  $("nbaMaclar").innerHTML="";
  try{
   const r=await fetch("./nba.json?v="+Date.now(),{cache:"no-store"});
   if(!r.ok)throw new Error("nba.json dosyası bulunamadı");
+
   const data=await r.json();
   const games=Array.isArray(data.games)?data.games:[];
+  const simdi=new Date();
+
   $("nbaDurum").innerText=
-   "NBA veri dosyası okundu"+
+   "NBA verileri yüklendi"+
    " | Kaynak: "+(data.source||"Belirtilmemiş")+
-   " | Maç sayısı: "+games.length;
+   " | Toplam maç: "+games.length;
 
   if(!games.length){
    $("nbaMaclar").innerHTML=
-    "<div class='nba-card'>Henüz NBA maç verisi yok. Veri kaynağını bağladığımızda maçlar burada görünecek.</div>";
-  }else{
-   $("nbaMaclar").innerHTML=
-    "<div class='nba-card'>"+games.length+" NBA maçı bulundu. Analiz bağlantısını hazırlayacağız.</div>";
+    "<div class='nba-card'>Henüz NBA maç verisi yok.</div>";
+   return;
   }
+
+  const gelecek=games
+   .filter(g=>!g.completed && new Date(g.start_time||g.game_date)>=simdi)
+   .sort((a,b)=>new Date(a.start_time||a.game_date)-new Date(b.start_time||b.game_date));
+
+  const oynanan=games
+   .filter(g=>g.completed)
+   .sort((a,b)=>new Date(b.start_time||b.game_date)-new Date(a.start_time||a.game_date));
+
+  const liste=gelecek.length?gelecek.slice(0,20):oynanan.slice(0,20);
+
+  if(!liste.length){
+   $("nbaMaclar").innerHTML=
+    "<div class='nba-card'>Gösterilecek maç bulunamadı.</div>";
+   return;
+  }
+
+  $("nbaMaclar").innerHTML=liste.map(g=>{
+   const tarih=g.start_time||g.game_date;
+   const saat=tarih?new Date(tarih).toLocaleString("tr-TR",{
+    timeZone:"Europe/Istanbul",
+    day:"2-digit",
+    month:"2-digit",
+    year:"numeric",
+    hour:"2-digit",
+    minute:"2-digit"
+   }):"Tarih belirtilmemiş";
+
+   const skor=g.completed
+    ?(g.away_score+" - "+g.home_score)
+    :"Maç saati: "+saat;
+
+   return `
+    <div class="nba-card">
+     <div><b>${g.away_team_name||g.away_team_abbr||"Deplasman"}</b></div>
+     <div style="text-align:center;font-size:18px;margin:6px 0">
+      ${g.completed?skor:"VS"}
+     </div>
+     <div><b>${g.home_team_name||g.home_team_abbr||"Ev sahibi"}</b></div>
+     <div style="font-size:12px;margin-top:8px;color:#aaa">
+      ${g.completed?"Tamamlandı":saat}
+     </div>
+    </div>
+   `;
+  }).join("");
+
  }catch(e){
   $("nbaDurum").innerText="NBA veri hatası: "+e.message;
  }
 }
-
-$("tarih").value=today();
-baslat();
-</script>
 
 <script>
 if("serviceWorker" in navigator){

@@ -940,7 +940,55 @@ function nbaGecmisTest(games){
 
  return toplam?Math.round(dogru/toplam*100):null;
 }
+async function iymsBaslat(){
+ const durum=$("iymsDurum");
+ const ozet=$("iymsOzet");
 
+ durum.innerText="İY/MS geçmiş verileri yükleniyor...";
+ ozet.innerHTML="";
+
+ try{
+  const r=await fetch("./iyms-veri.json?v="+Date.now(),{cache:"no-store"});
+  if(!r.ok)throw new Error("iyms-veri.json bulunamadı");
+
+  const data=await r.json();
+  const maclar=Array.isArray(data.matches)?data.matches:[];
+
+  const sayac={
+   "1/1":0,"1/X":0,"1/2":0,
+   "X/1":0,"X/X":0,"X/2":0,
+   "2/1":0,"2/X":0,"2/2":0
+  };
+
+  maclar.forEach(m=>{
+   const iyEv=Number(m.ht_home);
+   const iyDep=Number(m.ht_away);
+   const msEv=Number(m.ft_home);
+   const msDep=Number(m.ft_away);
+
+   if(![iyEv,iyDep,msEv,msDep].every(Number.isFinite))return;
+
+   const iy=iyEv>iyDep?"1":iyEv<iyDep?"2":"X";
+   const ms=msEv>msDep?"1":msEv<msDep?"2":"X";
+   sayac[iy+"/"+ms]++;
+  });
+
+  const toplam=Object.values(sayac).reduce((a,b)=>a+b,0);
+
+  durum.innerHTML=
+   "Geçmiş maç sayısı: <b>"+toplam+"</b><br>"+
+   "İlk yarı skoru bulunan veri kapsamı: <b>"+(data.coverage_percent??0)+"%</b>";
+
+  ozet.innerHTML=Object.entries(sayac).map(([ad,sayi])=>{
+   const yuzde=toplam?(sayi/toplam*100).toFixed(1):"0.0";
+   return "<div class='panel'><b>"+ad+"</b> — "+sayi+
+          " maç (%"+yuzde+")</div>";
+  }).join("");
+
+ }catch(e){
+  durum.innerText="Veri yüklenemedi: "+e.message;
+ }
+}
 async function nbaBaslat(){
  $("nbaDurum").innerText="NBA verileri yükleniyor...";
  $("nbaMaclar").innerHTML="";

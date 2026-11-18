@@ -85,6 +85,7 @@ th{color:var(--yellow)}
  <button id="futbolButon" class="tab-button active" onclick="sekmeAc('futbol')">⚽ FUTBOL</button>
  <button id="nbaButon" class="tab-button" onclick="sekmeAc('nba')">🏀 NBA</button>
 </div>
+ <div id="futbolBolumu" class="tab-content">
 <div class="panel">
  <div id="durum">Veriler yükleniyor...</div>
  <div id="sayilar" class="small"></div>
@@ -772,5 +773,15 @@ if("serviceWorker" in navigator){
  });
 }
 </script>
+  </div>
+
+<div id="nbaBolumu" class="tab-content hidden">
+ <h2>🏀 NBA Maç Analizi</h2>
+ <div class="panel">
+  <div id="nbaDurum">NBA verileri kontrol ediliyor...</div>
+  <div id="nbaMaclar"></div>
+  <button onclick="nbaBaslat()">NBA Verilerini Yenile</button>
+ </div>
+</div>
 </body>
 </html>

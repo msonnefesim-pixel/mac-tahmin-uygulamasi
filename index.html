@@ -632,31 +632,84 @@ function sekmeAc(sekme){
  if(nba&&!nbaYuklendi)nbaBaslat();
 }
 
+
 /* İLK YARI / MAÇ SONU */
 async function iymsBaslat(){
- const durum=$("iymsDurum"),ozet=$("iymsOzet");
- durum.innerText="İY/MS geçmiş verileri yükleniyor...";
+ const durum=$("iymsDurum");
+ const ozet=$("iymsOzet");
+ const macAlan=$("iymsMaclar");
+
+ durum.innerText="İY/MS verileri hazırlanıyor...";
  ozet.innerHTML="";
+ macAlan.innerHTML="";
+
  try{
-  const r=await fetch("./iyms-veri.json?v="+Date.now(),{cache:"no-store"});
+  const r=await fetch("./iyms-veri.json",{cache:"default"});
   if(!r.ok)throw new Error("iyms-veri.json bulunamadı");
-  const data=await r.json(),maclar=Array.isArray(data.matches)?data.matches:[];
-  const sayac={"1/1":0,"1/X":0,"1/2":0,"X/1":0,"X/X":0,"X/2":0,"2/1":0,"2/X":0,"2/2":0};
+
+  const data=await r.json();
+  const maclar=Array.isArray(data.matches)?data.matches:[];
+
+  const sayac={
+   "1/1":0,"1/X":0,"1/2":0,
+   "X/1":0,"X/X":0,"X/2":0,
+   "2/1":0,"2/X":0,"2/2":0
+  };
+
   maclar.forEach(m=>{
-   const iyEv=Number(m.ht_home),iyDep=Number(m.ht_away),msEv=Number(m.ft_home),msDep=Number(m.ft_away);
+   const iyEv=Number(m.ht_home);
+   const iyDep=Number(m.ht_away);
+   const msEv=Number(m.ft_home);
+   const msDep=Number(m.ft_away);
+
    if(![iyEv,iyDep,msEv,msDep].every(Number.isFinite))return;
+
    const iy=iyEv>iyDep?"1":iyEv<iyDep?"2":"X";
    const ms=msEv>msDep?"1":msEv<msDep?"2":"X";
+
    sayac[iy+"/"+ms]++;
   });
+
   const toplam=Object.values(sayac).reduce((a,b)=>a+b,0);
-  durum.innerHTML="Geçmiş maç sayısı: <b>"+toplam+"</b><br>İlk yarı skoru bulunan veri kapsamı: <b>"+(data.coverage_percent??0)+"%</b>";
+
+  durum.innerHTML=
+   "Geçmiş maç sayısı: <b>"+toplam+
+   "</b><br>İlk yarı skoru bulunan veri kapsamı: <b>"+
+   (data.coverage_percent??0)+"%</b>";
+
   ozet.innerHTML=Object.entries(sayac).map(([ad,sayi])=>{
    const oran=toplam?(sayi/toplam*100).toFixed(1):"0.0";
-   return "<div class='panel'><b>"+ad+"</b> — "+sayi+" maç (%"+oran+")</div>";
+   return "<div class='panel'><b>"+ad+
+    "</b> — "+sayi+" maç (%"+oran+")</div>";
   }).join("");
+
+  const gelecek=Array.isArray(FIXTURES)?[...FIXTURES]:[];
+
+  gelecek.sort((a,b)=>
+   (a.date+" "+a.time).localeCompare(b.date+" "+b.time)
+  );
+
+  if(!gelecek.length){
+   macAlan.innerHTML="<div class='panel'>Şu anda gelecek maç bulunamadı.</div>";
+  }else{
+   macAlan.innerHTML=
+    "<h3>📅 GELECEK MAÇLAR ("+gelecek.length+")</h3>"+
+    gelecek.map(m=>
+     "<div class='panel'>"+
+      "<b>"+m.date+" · "+m.time+"</b><br>"+
+      "<span>"+m.league+"</span><br>"+
+      "<b>"+m.home+" - "+m.away+"</b><br>"+
+      "<div>İY/MS: Veri analizi hazırlanıyor</div>"+
+     "</div>"
+    ).join("");
+  }
+
   iymsYuklendi=true;
- }catch(e){durum.innerText="Veri yüklenemedi: "+e.message}
+  durum.innerHTML+="<br>Gelecek maç listesi hazır.";
+
+ }catch(e){
+  durum.innerText="Veri yüklenemedi: "+e.message;
+ }
 }
 
 /* NBA */

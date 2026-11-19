@@ -635,7 +635,7 @@ function sekmeAc(sekme){
 
   
 
-/* İY/MS TAHMİN + GERİYE DÖNÜK BAŞARI TESTİ */
+ /* İY/MS TAHMİN + GERİYE DÖNÜK BAŞARI TESTİ */
 async function iymsBaslat(){
  const durum=$("iymsDurum");
  const ozet=$("iymsOzet");
@@ -779,8 +779,7 @@ async function iymsBaslat(){
 
      oran[k]=Math.sqrt(pA*pB);
     });
-
-    const toplamOran=Object.values(oran).reduce((a,b)=>a+b,0);
+const toplamOran=Object.values(oran).reduce((a,b)=>a+b,0);
 
     if(toplamOran>0){
      const tahminEdilen=secenekler
@@ -903,273 +902,8 @@ async function iymsBaslat(){
 
    if(a.length<3||b.length<3)return null;
 
-
-/* İY/MS TAHMİN + GERİYE DÖNÜK BAŞARI TESTİ */
-async function iymsBaslat(){
- const durum=$("iymsDurum");
- const ozet=$("iymsOzet");
- const macAlan=$("iymsMaclar");
-
- durum.innerText="İY/MS analiz ve başarı testi hazırlanıyor...";
- ozet.innerHTML="";
-
- try{
-  const r=await fetch("./iyms-veri.json",{cache:"default"});
-  if(!r.ok)throw new Error("iyms-veri.json bulunamadı");
-
-  const data=await r.json();
-  const gecmis=Array.isArray(data.matches)?data.matches:[];
-  const gelecek=Array.isArray(FIXTURES)?[...FIXTURES]:[];
-
-  const secenekler=[
-   "1/1","1/X","1/2",
-   "X/1","X/X","X/2",
-   "2/1","2/X","2/2"
-  ];
-
-  const ters={"1":"2","2":"1","X":"X"};
-  const temiz=s=>String(s??"").trim().toLowerCase();
-
-  function takim(m,tip){
-   const alanlar=tip==="ev"
-    ?["home","home_team","home_name","team_home","hometeam"]
-    :["away","away_team","away_name","team_away","awayteam"];
-
-   for(const a of alanlar){
-    if(m[a]!==undefined && m[a]!==null && String(m[a]).trim())
-     return String(m[a]).trim();
-   }
-   return "";
-  }
-
-  function skor(m,alanlar){
-   for(const a of alanlar){
-    if(m[a]!==undefined && m[a]!==null && m[a]!==""){
-     const n=Number(m[a]);
-     if(Number.isFinite(n))return n;
-    }
-   }
-   return null;
-  }
-
-  function tarih(m){
-   return String(m.date||m.match_date||m.fixture_date||"").slice(0,10);
-  }
-
-  function sonuc(a,b){
-   return a>b?"1":a<b?"2":"X";
-  }
-
-  function tersKod(k){
-   return ters[k[0]]+"/"+ters[k[2]];
-  }
-
-  const kayitlar=[];
-
-  gecmis.forEach(m=>{
-   const ev=takim(m,"ev");
-   const dep=takim(m,"dep");
-   const iyEv=skor(m,["ht_home","home_ht","halftime_home"]);
-   const iyDep=skor(m,["ht_away","away_ht","halftime_away"]);
-   const msEv=skor(m,["ft_home","home_ft","home_score"]);
-   const msDep=skor(m,["ft_away","away_ft","away_score"]);
-
-   if(!ev||!dep||[iyEv,iyDep,msEv,msDep].some(v=>v===null))return;
-
-   kayitlar.push({
-    ev:temiz(ev),
-    dep:temiz(dep),
-    tarih:tarih(m),
-    kod:sonuc(iyEv,iyDep)+"/"+sonuc(msEv,msDep)
-   });
-  });
-
-  const sayac={};
-  secenekler.forEach(k=>sayac[k]=0);
-  kayitlar.forEach(m=>sayac[m.kod]++);
-
-  const toplam=kayitlar.length;
-
-  durum.innerHTML=
-   "Geçmiş maç sayısı: <b>"+toplam+
-   "</b><br>İlk yarı skoru bulunan veri kapsamı: <b>"+
-   (data.coverage_percent??0)+"%</b>";
-
-  let html=secenekler.map(k=>{
-   const n=sayac[k]||0;
-   const yuzde=toplam?(n/toplam*100).toFixed(1):"0.0";
-   return "<div class='panel'><b>"+k+"</b> — "+n+
-    " maç (%"+yuzde+")</div>";
-  }).join("");
-
-  /* GERİYE DÖNÜK TEST */
-  const sirali=kayitlar
-   .filter(m=>/^\d{4}-\d{2}-\d{2}$/.test(m.tarih))
-   .sort((a,b)=>a.tarih.localeCompare(b.tarih));
-
-  const evVeri={};
-  const depVeri={};
-
-  function ekle(kayit){
-   if(!evVeri[kayit.ev])evVeri[kayit.ev]=[];
-   if(!depVeri[kayit.dep])depVeri[kayit.dep]=[];
-
-   evVeri[kayit.ev].push(kayit.kod);
-   depVeri[kayit.dep].push(tersKod(kayit.kod));
-  }
-
-  const test={
-   toplam:0,
-   dogru:0,
-   tahmin:{}
-  };
-
-  secenekler.forEach(k=>{
-   test.tahmin[k]={adet:0,dogru:0};
-  });
-
-  let baslangic=0;
-
-  for(const m of sirali){
-   const ev=evVeri[m.ev]||[];
-   const dep=depVeri[m.dep]||[];
-
-   if(ev.length>=3 && dep.length>=3){
-    const oran={};
-
-    secenekler.forEach(k=>{
-     const a=ev.filter(x=>x===k).length;
-     const b=dep.filter(x=>x===k).length;
-
-     const pA=(a+0.5)/(ev.length+4.5);
-     const pB=(b+0.5)/(dep.length+4.5);
-
-     oran[k]=Math.sqrt(pA*pB);
-    });
-
-    const toplamOran=Object.values(oran).reduce((a,b)=>a+b,0);
-
-    if(toplamOran>0){
-     const tahminEdilen=secenekler
-      .map(k=>({kod:k,oran:oran[k]}))
-      .sort((a,b)=>b.oran-a.oran)[0].kod;
-
-     test.toplam++;
-     test.tahmin[tahminEdilen].adet++;
-
-     if(tahminEdilen===m.kod){
-      test.dogru++;
-      test.tahmin[tahminEdilen].dogru++;
-     }
-    }
-   }
-
-   // Aynı gün oynanan maçlar birbirinin eğitim verisi olmaz.
-   const sonraki=sirali.slice(baslangic).filter(x=>x.tarih===m.tarih);
-   if(sonraki.length){
-    // Tarih grubu aşağıda topluca eklenecek.
-   }
-   baslangic++;
-  }
-
-  /* Tarih gruplarıyla gerçek kronolojik test */
-  const evG={};
-  const depG={};
-  const test2={toplam:0,dogru:0,tahmin:{}};
-
-  secenekler.forEach(k=>test2.tahmin[k]={adet:0,dogru:0});
-
-  const tarihler=[...new Set(sirali.map(m=>m.tarih))];
-
-  tarihler.forEach(gun=>{
-   const gunMaclari=sirali.filter(m=>m.tarih===gun);
-
-   gunMaclari.forEach(m=>{
-    const ev=evG[m.ev]||[];
-    const dep=depG[m.dep]||[];
-
-    if(ev.length<3||dep.length<3)return;
-
-    const oran={};
-
-    secenekler.forEach(k=>{
-     const a=ev.filter(x=>x===k).length;
-     const b=dep.filter(x=>x===k).length;
-     oran[k]=Math.sqrt(
-      ((a+0.5)/(ev.length+4.5))*
-      ((b+0.5)/(dep.length+4.5))
-     );
-    });
-
-    const tahminEdilen=secenekler
-     .sort((a,b)=>oran[b]-oran[a])[0];
-
-    test2.toplam++;
-    test2.tahmin[tahminEdilen].adet++;
-
-    if(tahminEdilen===m.kod){
-     test2.dogru++;
-     test2.tahmin[tahminEdilen].dogru++;
-    }
-   });
-
-   // O günün maçları ancak testler bittikten sonra eklenir.
-   gunMaclari.forEach(m=>{
-    if(!evG[m.ev])evG[m.ev]=[];
-    if(!depG[m.dep])depG[m.dep]=[];
-    evG[m.ev].push(m.kod);
-    depG[m.dep].push(tersKod(m.kod));
-   });
-  });
-
-  html+="<h3>📊 GERİYE DÖNÜK BAŞARI TESTİ</h3>";
-
-  if(test2.toplam===0){
-   html+="<div class='panel'>⚠️ Test için yeterli tarihli ve takımlara ait geçmiş veri bulunamadı.</div>";
-  }else{
-   const genel=(test2.dogru/test2.toplam*100).toFixed(1);
-
-   html+="<div class='panel'>";
-   html+="<b>Test edilen tahmin:</b> "+test2.toplam+" maç<br>";
-   html+="<b>Doğru tahmin:</b> "+test2.dogru+" maç<br>";
-   html+="<b>Genel isabet:</b> %"+genel;
-   html+="</div>";
-
-   html+="<h3>Dokuz seçeneğin performansı</h3>";
-
-   secenekler.forEach(k=>{
-    const x=test2.tahmin[k];
-    const oran=x.adet?(x.dogru/x.adet*100).toFixed(1):"0.0";
-
-    html+="<div class='panel'>";
-    html+="<b>"+k+"</b><br>";
-    html+="Tahmin sayısı: "+x.adet+"<br>";
-    html+="Doğru: "+x.dogru+"<br>";
-    html+="İsabet: %"+oran;
-    html+="</div>";
-   });
-  }
-
-  /* GELECEK MAÇ TAHMİNLERİ */
-  const evTum={};
-  const depTum={};
-
-  kayitlar.forEach(m=>{
-   if(!evTum[m.ev])evTum[m.ev]=[];
-   if(!depTum[m.dep])depTum[m.dep]=[];
-   evTum[m.ev].push(m.kod);
-   depTum[m.dep].push(tersKod(m.kod));
-  });
-
-  function tahmin(ev,dep){
-   const a=evTum[temiz(ev)]||[];
-   const b=depTum[temiz(dep)]||[];
-
-   if(a.length<3||b.length<3)return null;
-
    const oran={};
-
-   secenekler.forEach(k=>{
+secenekler.forEach(k=>{
     const pA=(a.filter(x=>x===k).length+0.5)/(a.length+4.5);
     const pB=(b.filter(x=>x===k).length+0.5)/(b.length+4.5);
     oran[k]=Math.sqrt(pA*pB);
@@ -1187,126 +921,58 @@ async function iymsBaslat(){
    (a.date+" "+a.time).localeCompare(b.date+" "+b.time)
   );
 
-  // Yeterli geçmiş verisi bulunan maçları hazırla.
-  const tahminliMaclar=gelecek.map(m=>({
-   mac:m,
-   tahmin:tahmin(m.home,m.away)
-  })).filter(x=>x.tahmin);
-
-  // Birden fazla tarih seçimi için tarih listesi.
-  const gelecekTarihleri=[...new Set(
-   tahminliMaclar.map(x=>x.mac.date)
-  )].sort();
-
-  let tarihHtml="";
-
-  if(gelecekTarihleri.length){
-   gelecekTarihleri.forEach(gun=>{
-    tarihHtml+="<label style='display:inline-flex;align-items:center;gap:6px;background:#222;padding:9px;border-radius:8px;margin:4px;font-size:14px'>";
-    tarihHtml+="<input type='checkbox' class='iymsTarihSec' value='"+gun+"'>";
-    tarihHtml+=gun+"</label>";
-   });
-  }else{
-   tarihHtml="<div>Yeterli veriye sahip gelecek maç bulunamadı.</div>";
-  }
-
-  // Seçilen tarihlere göre maç kartlarını oluştur.
-  function maclariGoster(seciliTarihler){
-   const liste=seciliTarihler.length
-    ?tahminliMaclar.filter(x=>seciliTarihler.includes(x.mac.date))
-    :tahminliMaclar;
-
-   let sonucHtml="";
-
-   if(!liste.length){
-    return "<div class='panel'>Seçilen tarihlerde gösterilecek maç bulunamadı.</div>";
-   }
-
-   liste.forEach(x=>{
-    const m=x.mac;
-    const t=x.tahmin;
-
-    sonucHtml+="<div class='panel'>";
-    sonucHtml+="<b>"+m.date+" · "+m.time+"</b><br>";
-    sonucHtml+="<small>"+(m.league||"")+"</small><br>";
-    sonucHtml+="<b>"+m.home+" - "+m.away+"</b><br>";
-
-    const siraliOran=secenekler
-     .map(k=>({kod:k,oran:t.oran[k]}))
-     .sort((a,b)=>b.oran-a.oran);
-
-    sonucHtml+="⭐ En güçlü seçenek: <b>"+
-     siraliOran[0].kod+" (%"+
-     siraliOran[0].oran.toFixed(1)+")</b><br>";
-
-    sonucHtml+="<small>Ev sahibi: "+t.evMac+
-     " maç · Deplasman: "+t.depMac+" maç</small>";
-
-    sonucHtml+="<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px'>";
-
-    siraliOran.forEach(x=>{
-     sonucHtml+="<div style='background:#222;padding:9px;border-radius:8px;text-align:center'>";
-     sonucHtml+="<b>"+x.kod+"</b><br>%"+x.oran.toFixed(1);
-     sonucHtml+="</div>";
-    });
-
-    sonucHtml+="</div></div>";
-   });
-
-   return sonucHtml;
-  }
-
   let macHtml="<h3>🎯 GELECEK MAÇLAR - İY/MS</h3>";
 
-  macHtml+="<div class='panel'>";
-  macHtml+="<b>📅 Birden fazla tarih seç</b><br>";
-  macHtml+="<small>İstediğin günleri işaretle. Hiçbir gün seçmezsen tüm maçlar gösterilir.</small><br><br>";
-  macHtml+=tarihHtml;
-  macHtml+="<br><button type='button' id='iymsTarihTemizle' style='margin-top:10px;padding:10px 14px;border-radius:8px;background:#b00020;color:white;border:0;font-weight:bold'>↻ Tüm tarihleri göster</button>";
-  macHtml+="</div>";
+  
+  let macHtml="<h3>🎯 GELECEK MAÇLAR - İY/MS</h3>";
 
-  macHtml+="<div id='iymsGelecekMacListesi'>";
-  macHtml+=maclariGoster([]);
-  macHtml+="</div>";
+  gelecek.forEach(m=>{
+   const t=tahmin(m.home,m.away);
 
-  // Önce gelecek maçlar, ardından geçmiş istatistikler.
-  macAlan.innerHTML=macHtml+html;
-  ozet.innerHTML="";
+   // Yeterli veri yoksa maçı hiç gösterme.
+   if(!t)return;
 
-  // Çoklu tarih seçimi.
-  const tarihKutulari=macAlan.querySelectorAll(".iymsTarihSec");
+   macHtml+="<div class='panel'>";
+   macHtml+="<b>"+m.date+" · "+m.time+"</b><br>";
+   macHtml+="<small>"+(m.league||"")+"</small><br>";
+   macHtml+="<b>"+m.home+" - "+m.away+"</b><br>";
 
-  tarihKutulari.forEach(kutu=>{
-   kutu.addEventListener("change",()=>{
-    const secili=[
-     ...macAlan.querySelectorAll(".iymsTarihSec:checked")
-    ].map(x=>x.value);
+   const siraliOran=secenekler
+    .map(k=>({kod:k,oran:t.oran[k]}))
+    .sort((a,b)=>b.oran-a.oran);
 
-    const liste=macAlan.querySelector("#iymsGelecekMacListesi");
-    if(liste)liste.innerHTML=maclariGoster(secili);
+   macHtml+="⭐ En güçlü seçenek: <b>"+
+    siraliOran[0].kod+" (%"+
+    siraliOran[0].oran.toFixed(1)+")</b><br>";
+
+   macHtml+="<small>Ev sahibi: "+t.evMac+
+    " maç · Deplasman: "+t.depMac+" maç</small>";
+
+   macHtml+="<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px'>";
+
+   siraliOran.forEach(x=>{
+    macHtml+="<div style='background:#222;padding:9px;border-radius:8px;text-align:center'>";
+    macHtml+="<b>"+x.kod+"</b><br>%"+x.oran.toFixed(1);
+    macHtml+="</div>";
    });
+
+   macHtml+="</div></div>";
   });
 
-  // Seçimi temizle: bütün gelecek maçları göster.
-  const temizleButonu=macAlan.querySelector("#iymsTarihTemizle");
-
-  if(temizleButonu){
-   temizleButonu.addEventListener("click",()=>{
-    tarihKutulari.forEach(kutu=>kutu.checked=false);
-
-    const liste=macAlan.querySelector("#iymsGelecekMacListesi");
-    if(liste)liste.innerHTML=maclariGoster([]);
-   });
-  }
-
+  macAlan.innerHTML=macHtml+html;
+  ozet.innerHTML="";
   iymsYuklendi=true;
   durum.innerHTML+="<br>Analiz ve başarı testi tamamlandı.";
 
+ozet.innerHTML="";
+iymsYuklendi=true;
+durum.innerHTML+="<br>Analiz ve başarı testi tamamlandı.";
  }catch(e){
   durum.innerText="Hata: "+e.message;
  }
 }
-
+  
+    
 
     
 

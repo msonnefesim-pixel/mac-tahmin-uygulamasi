@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#111111">
+<title>YaPaYCiN Canlı Skor</title>
+<style>
+:root{--bg:#090909;--panel:#171717;--panel2:#202020;--red:#d71920;--yellow:#ffd400;--text:#f5f5f5;--muted:#aaa;--line:#333;--green:#22c55e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+header{background:linear-gradient(135deg,#1b1b1b,#350609);border-bottom:3px solid var(--yellow);padding:18px 14px 16px}
+.wrap{max-width:980px;margin:auto}
+.brand{font-size:13px;font-weight:800;letter-spacing:2px;color:var(--yellow)}
+h1{margin:7px 0 4px;font-size:27px}
+.sub{color:#ddd;font-size:13px}
+.topline{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:16px 0}
+.pill{display:inline-flex;align-items:center;gap:7px;background:#2b1011;border:1px solid #722126;border-radius:30px;padding:8px 12px;font-size:12px;font-weight:700}
+.dot{width:8px;height:8px;border-radius:50%;background:#f33;box-shadow:0 0 9px #f33}
+button{border:0;border-radius:9px;padding:11px 14px;background:var(--yellow);color:#111;font-weight:800;font-size:13px}
+button:active{transform:scale(.98)}
+main{padding:14px}
+.statusline{color:var(--muted);font-size:12px;margin:8px 2px 14px}
+.section-title{font-size:15px;font-weight:900;color:var(--yellow);margin:20px 2px 10px;text-transform:uppercase;letter-spacing:.6px}
+.matches{display:grid;grid-template-columns:1fr;gap:9px}
+.match{background:var(--panel);border:1px solid var(--line);border-left:4px solid #555;border-radius:12px;padding:12px}
+.match.live{border-left-color:var(--red);background:linear-gradient(90deg,#241011,var(--panel) 45%)}
+.match.finished{border-left-color:var(--green)}
+.league{font-size:11px;color:var(--yellow);font-weight:800;margin-bottom:10px}
+.teams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center}
+.team{font-size:14px;font-weight:800;line-height:1.25;overflow-wrap:anywhere}
+.team.away{text-align:right}
+.score{text-align:center;min-width:65px;font-size:22px;font-weight:900;white-space:nowrap}
+.score small{display:block;font-size:10px;color:var(--muted);font-weight:700;margin-top:3px}
+.meta{display:flex;justify-content:space-between;gap:8px;margin-top:10px;color:var(--muted);font-size:11px}
+.live-label{color:#ff5a5a;font-weight:900}
+.finished-label{color:#70df91;font-weight:800}
+.empty,.error{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;text-align:center;color:var(--muted);font-size:14px;line-height:1.5}
+.error{border-color:#7c2525;color:#ffd0d0}
+footer{padding:20px 14px 30px;text-align:center;color:var(--muted);font-size:11px}
+footer a{color:var(--yellow);font-weight:800}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid #666;border-top-color:var(--yellow);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(min-width:700px){.matches{grid-template-columns:1fr 1fr}h1{font-size:32px}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">YaPaYCiN • FUTBOL</div>
+  <h1>⚽ CANLI SKORLAR</h1>
+  <div class="sub">Canlı maçlar, devam eden karşılaşmalar ve güncel sonuçlar</div>
+</div></header>
+<main class="wrap">
+  <div class="topline">
+    <div class="pill"><span class="dot"></span> CANLI TAKİP</div>
+    <button id="refreshBtn" type="button" onclick="loadMatches(true)">↻ ŞİMDİ YENİLE</button>
+  </div>
+  <div id="updated" class="statusline"><span class="spinner"></span>Maçlar yükleniyor...</div>
+  <div class="section-title">🔴 Canlı maçlar</div>
+  <div id="liveMatches" class="matches"><div class="empty">Canlı maçlar aranıyor...</div></div>
+  <div class="section-title">📋 Diğer maçlar ve sonuçlar</div>
+  <div id="otherMatches" class="matches"><div class="empty">Maçlar yükleniyor...</div></div>
+</main>
+<footer>
+  Canlı skor verileri SportScore tarafından sağlanır.
+  <br><a href="https://sportscore.com/" target="_blank" rel="dofollow noopener">Powered by SportScore</a>
+  <br><br>YaPaYCiN Maç Analiz
+</footer>
+<script>
+const API_URL = "https://sportscore.com/api/widget/matches/?sport=football&limit=50";
+const REFRESH_MS = 60000;
+let lastData = [];
+let busy = false;
+
+function esc(v){
+  return String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function scoreText(m){
+  const h = m.home_score ?? m.homeScore ?? m.score?.home ?? null;
+  const a = m.away_score ?? m.awayScore ?? m.score?.away ?? null;
+  return h === null || a === null ? "– : –" : `${h} : ${a}`;
+}
+function statusOf(m){
+  const s = String(m.status ?? m.match_status ?? m.state ?? "").toLowerCase();
+  const t = String(m.status_text ?? m.statusText ?? m.status_label ?? "").toLowerCase();
+  if (["live","inplay","in_play","playing","1h","2h","ht","half_time","extra_time","penalties"].some(x=>s.includes(x)||t.includes(x))) return "live";
+  if (["finished","ft","full_time","after_penalties","aet"].some(x=>s.includes(x)||t.includes(x))) return "finished";
+  return "other";
+}
+function minuteOf(m){
+  return m.elapsed ?? m.minute ?? m.elapsed_minutes ?? m.time_elapsed ?? m.status_text ?? m.statusText ?? "";
+}
+function formatTime(m){
+  const raw = m.time ?? m.kickoff ?? m.start_time ?? m.date ?? "";
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (!Number.isNaN(d.getTime()) && String(raw).includes("T")) {
+    return d.toLocaleString("tr-TR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+  }
+  return String(raw);
+}
+function card(m){
+  const state = statusOf(m);
+  const home = m.home ?? m.home_team ?? m.homeTeam ?? m.home_name ?? "Ev sahibi";
+  const away = m.away ?? m.away_team ?? m.awayTeam ?? m.away_name ?? "Deplasman";
+  const league = m.competition ?? m.league ?? m.tournament ?? m.competition_name ?? "Futbol";
+  const status = m.status_text ?? m.statusText ?? m.status_label ?? (state==="live" ? "CANLI" : state==="finished" ? "MS" : "Başlamadı");
+  const minute = minuteOf(m);
+  let label = state==="live" ? `<span class="live-label">● ${esc(status)} ${minute!=="" && !String(status).toLowerCase().includes(String(minute).toLowerCase()) ? esc(minute) : ""}</span>` : state==="finished" ? `<span class="finished-label">${esc(status)}</span>` : esc(status);
+  return `<article class="match ${state}">
+    <div class="league">${esc(league)}</div>
+    <div class="teams">
+      <div class="team">${esc(home)}</div>
+      <div class="score">${esc(scoreText(m))}<small>${label}</small></div>
+      <div class="team away">${esc(away)}</div>
+    </div>
+    <div class="meta"><span>${esc(formatTime(m))}</span><span>${state==="live"?"CANLI TAKİP":state==="finished"?"TAMAMLANDI":"MAÇ BİLGİSİ"}</span></div>
+  </article>`;
+}
+function render(matches){
+  const live = matches.filter(m=>statusOf(m)==="live");
+  const other = matches.filter(m=>statusOf(m)!=="live");
+  document.getElementById("liveMatches").innerHTML = live.length ? live.map(card).join("") : `<div class="empty">Şu anda listelenen canlı maç bulunmuyor.</div>`;
+  document.getElementById("otherMatches").innerHTML = other.length ? other.map(card).join("") : `<div class="empty">Şu anda başka maç veya sonuç bulunmuyor.</div>`;
+}
+async function loadMatches(manual=false){
+  if(busy) return;
+  busy=true;
+  const btn=document.getElementById("refreshBtn");
+  if(manual) btn.textContent="YÜKLENİYOR...";
+  try{
+    const res=await fetch(API_URL,{cache:"no-store"});
+    if(!res.ok) throw new Error("Veri kaynağı HTTP "+res.status);
+    const data=await res.json();
+    const matches=Array.isArray(data) ? data : (data.matches ?? data.data ?? data.events ?? []);
+    if(!Array.isArray(matches)) throw new Error("Beklenmeyen veri biçimi");
+    lastData=matches;
+    render(lastData);
+    document.getElementById("updated").textContent="Son güncelleme: "+new Date().toLocaleTimeString("tr-TR")+" • Otomatik yenileme: 60 saniye";
+  }catch(err){
+    document.getElementById("updated").textContent="Canlı skor verisi alınamadı.";
+    if(!lastData.length){
+      document.getElementById("liveMatches").innerHTML=`<div class="error">Canlı skor servisine şu anda ulaşılamadı. Biraz sonra tekrar deneyebilirsin.<br><small>${esc(err.message)}</small></div>`;
+      document.getElementById("otherMatches").innerHTML="";
+    }
+  }finally{
+    busy=false;
+    btn.textContent="↻ ŞİMDİ YENİLE";
+  }
+}
+loadMatches();
+setInterval(()=>loadMatches(false),REFRESH_MS);
+</script>
+</body>
+</html>

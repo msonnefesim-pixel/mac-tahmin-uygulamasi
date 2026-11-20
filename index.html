@@ -387,7 +387,7 @@ function listele(){
    setTimeout(prepareBatch,0);return
   }
   if(token!==listRenderToken)return;
-  list.sort((a,b)=>past?String(a.m.time).localeCompare(String(b.m.time)):b.rank-a.rank||String(a.m.time).localeCompare(String(b.m.time)));
+  list.sort((a,b)=>String(a.m.time||"").localeCompare(String(b.m.time||""))||String(a.m.home||"").localeCompare(String(b.m.home||""),"tr"));
   const count=list.filter(x=>x.rank>=0).length;
   ozetAlan.innerHTML=past?"":`<div class="summary-item"><span class="summary-number">${list.length}</span><span class="summary-label">Toplam maç</span></div><div class="summary-item"><span class="summary-number">${count}</span><span class="summary-label">Tahmin üretilen</span></div><div class="summary-item"><span class="summary-number">${list.length-count}</span><span class="summary-label">Tahmin bulunmayan</span></div>`;
   if(!list.length){macAlan.textContent=past?"Bu tarihte kayıtlı geçmiş maç bulunamadı.":"Bu tarihte gösterilecek maç bulunamadı.";return}

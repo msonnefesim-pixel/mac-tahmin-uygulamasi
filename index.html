@@ -895,7 +895,8 @@ function renderLiveScores(){
  renderLivePanel("nbaCanliPanel",nbaMatches,"🔴 CANLI NBA SKORLARI","all");
 }
 function liveLocalDate(){
- return new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Istanbul",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+ // SportScore /api/v1/fixtures date parametresi UTC takvim günüdür.
+ return new Date().toISOString().slice(0,10);
 }
 function liveMatchKey(m){
  const slug=m.slug||m.id||m.fixture_id||m.match_id;
@@ -923,7 +924,7 @@ async function liveScoresLoad(){
   // Gece yarısı gün değişince bazı servisler devam eden maçları önceki takvim gününde tutabiliyor.
   // O durumda hem bugünün hem de önceki günün canlı fikstürünü kontrol et.
   if(!current.some(m=>liveState(m)==="live")||dateChanged){
-   const days=dateChanged?[day,dateAdd(day,-1)]:[day];
+   const days=[day,dateAdd(day,-1)];
    const liveResults=await Promise.allSettled(days.map(d=>
     fetch("https://sportscore.com/api/v1/fixtures/?sport=football&date="+d+"&status=live&limit=200&src=yapaycin",{cache:"no-store",mode:"cors"})
      .then(r=>{if(!r.ok)throw new Error("Canlı maç servisi HTTP "+r.status);return r.json()})

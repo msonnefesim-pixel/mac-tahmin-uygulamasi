@@ -490,7 +490,7 @@ async function iymsBaslat(){
   }).filter(Boolean);
   const days=[...new Set(upcoming.map(x=>x.match.date))];
   let futureHtml="<h3>🎯 Gelecek maçlar - İY/MS</h3><div class='panel'><b>Lig seç</b><br><select id='iymsLeague' style='width:100%;margin:8px 0'><option value='all'>🌍 Bütün ligler</option>";
-  [...new Set(upcoming.map(x=>x.match.league||"Diğer"))].sort((a,b)=>a.localeCompare(b,"tr")).forEach(l=>futureHtml+=`<option value="${encodeURIComponent(l)}">${l}</option>`);
+  [...new Set(upcoming.map(x=>x.match.league||"Diğer"))].sort((a,b)=>a.localeCompare(b,"tr")).forEach(l=>{const match=upcoming.find(x=>(x.match.league||"Diğer")===l)?.match||{};const country=countryInfo(match);futureHtml+=`<option value="${encodeURIComponent(l)}">${country.flag} ${country.name} · ${leagueTR(l)}</option>`});
   futureHtml+="</select><b>Birden fazla tarih seç</b><p>Hiçbir tarih işaretlenmezse tüm maçlar görünür.</p>";
   if(days.length)days.forEach(d=>futureHtml+=`<label style="display:inline-flex;width:auto;align-items:center;gap:5px;background:#292929;padding:8px;margin:3px;border-radius:7px"><input type="checkbox" class="iyms-date" value="${d}" style="width:auto;margin:0">${d}</label>`);
   else futureHtml+="Yeterli geçmiş veriye sahip gelecek maç bulunamadı.";

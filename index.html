@@ -167,6 +167,8 @@ th{color:var(--yellow)}
 
 /* GENEL VERİLER */
 let FIXTURES=[], HISTORY=[];
+let fixtureDateIndex=new Map(), historyDateIndex=new Map(), listRenderToken=0;
+function makeDateIndex(rows){const map=new Map();for(const m of rows){const d=String(m.date||"");if(!map.has(d))map.set(d,[]);map.get(d).push(m)}return map;}
 let teamIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map();
 let hiddenLeagues=new Set();
 let iymsYuklendi=false, nbaYuklendi=false, iddaaYuklendi=false, iddaaLoading=false, analysisRunning=false;
@@ -351,26 +353,37 @@ function ligleriKaydet(){
 }
 function listele(){
  if(!FIXTURES.length&&!HISTORY.length)return;
- const date=$("tarih").value||today(),past=date<today(),source=past?HISTORY:FIXTURES;
+ const token=++listRenderToken;
+ const date=$("tarih").value||today(),past=date<today();
+ const source=past?historyDateIndex.get(date)||[]:fixtureDateIndex.get(date)||[];
  const query=($("arama").value||"").toLocaleLowerCase("tr"),filter=$("filtre").value,league=$("ligSec").value;
  const list=[];
- for(const m of source){
-  if(String(m.date)!==date)continue;
-  const ln=m.league||"Diğer";if(hiddenLeagues.has(ln))continue;
-  if(league!=="all"&&encodeURIComponent(ln)!==league)continue;
-  const c=countryInfo(m),text=(m.home+" "+m.away+" "+ln+" "+c.name).toLocaleLowerCase("tr");
-  if(query&&!text.includes(query))continue;
-  if(past){list.push({m,t:null,rank:-1});continue}
-  const t=predictFootball(m);if(!filterMatch(t,filter))continue;
-  list.push({m,t,rank:highest(t)});
+ $("maclar").textContent=source.length?"Maçlar hazırlanıyor...":"Bu tarihte "+(past?"kayıtlı geçmiş maç":"gösterilecek maç")+" bulunamadı.";
+ $("macOzet").innerHTML="";
+ let i=0;
+ function batch(){
+  if(token!==listRenderToken)return;
+  const stop=Math.min(i+18,source.length);
+  for(;i<stop;i++){
+   const m=source[i],ln=m.league||"Diğer";
+   if(hiddenLeagues.has(ln))continue;
+   if(league!=="all"&&encodeURIComponent(ln)!==league)continue;
+   const c=countryInfo(m),text=(m.home+" "+m.away+" "+ln+" "+c.name).toLocaleLowerCase("tr");
+   if(query&&!text.includes(query))continue;
+   if(past){list.push({m,t:null,rank:-1});continue}
+   const t=predictFootball(m);if(!filterMatch(t,filter))continue;
+   list.push({m,t,rank:highest(t)});
+  }
+  if(i<source.length){setTimeout(batch,0);return}
+  list.sort((a,b)=>past?String(a.m.time).localeCompare(String(b.m.time)):b.rank-a.rank||String(a.m.time).localeCompare(String(b.m.time)));
+  const count=list.filter(x=>x.rank>=0).length;
+  $("macOzet").innerHTML=past?"":`<div class="summary-item"><span class="summary-number">${list.length}</span><span class="summary-label">Toplam maç</span></div><div class="summary-item"><span class="summary-number">${count}</span><span class="summary-label">Tahmin üretilen</span></div><div class="summary-item"><span class="summary-number">${list.length-count}</span><span class="summary-label">Tahmin bulunmayan</span></div>`;
+  if(!list.length){$("maclar").textContent=past?"Bu tarihte kayıtlı geçmiş maç bulunamadı.":"Bu tarihte gösterilecek maç bulunamadı.";return}
+  let out="",last="",rank=0;
+  list.forEach(x=>{if(x.m.date!==last){out+=`<div class="day-title">${dateText(x.m.date)}</div>`;last=x.m.date}if(x.rank>=0)rank++;out+=matchCard(x.m,x.t,past,rank)});
+  if(token===listRenderToken)$("maclar").innerHTML=out;
  }
- list.sort((a,b)=>past?String(a.m.time).localeCompare(String(b.m.time)):b.rank-a.rank||String(a.m.time).localeCompare(String(b.m.time)));
- const count=list.filter(x=>x.rank>=0).length;
- $("macOzet").innerHTML=past?"":`<div class="summary-item"><span class="summary-number">${list.length}</span><span class="summary-label">Toplam maç</span></div><div class="summary-item"><span class="summary-number">${count}</span><span class="summary-label">Tahmin üretilen</span></div><div class="summary-item"><span class="summary-number">${list.length-count}</span><span class="summary-label">Tahmin bulunmayan</span></div>`;
- if(!list.length){$("maclar").innerHTML=past?"Bu tarihte kayıtlı geçmiş maç bulunamadı.":"Bu tarihte gösterilecek maç bulunamadı.";return}
- let out="",last="",rank=0;
- list.forEach(x=>{if(x.m.date!==last){out+=`<div class="day-title">${dateText(x.m.date)}</div>`;last=x.m.date}if(x.rank>=0)rank++;out+=matchCard(x.m,x.t,past,rank)});
- $("maclar").innerHTML=out;
+ batch();
 }
 function tarihKaydir(n){$("tarih").value=dateAdd($("tarih").value||today(),n);listele()}
 async function baslat(force=false){
@@ -379,6 +392,7 @@ async function baslat(force=false){
   const r=await fetch("./data.json"+(force?"?v="+Date.now():""),{cache:force?"no-store":"default"});
   if(!r.ok)throw new Error("data.json yüklenemedi ("+r.status+")");
   const data=await r.json();FIXTURES=Array.isArray(data.fixtures)?data.fixtures:[];HISTORY=Array.isArray(data.history)?data.history:[];
+  fixtureDateIndex=makeDateIndex(FIXTURES);historyDateIndex=makeDateIndex(HISTORY);
   buildIndexes();
   try{hiddenLeagues=new Set(JSON.parse(localStorage.getItem("yapaycinHiddenLeagues")||"[]"))}catch(e){hiddenLeagues=new Set()}
   fillLeagues();$("durum").innerHTML="<span class='good'>Futbol verileri yüklendi</span>";

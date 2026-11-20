@@ -346,7 +346,7 @@ async function baslat(force=false){
   fillLeagues();$("durum").innerHTML="<span class='good'>Futbol verileri yüklendi</span>";
   $("sayilar").textContent="Gelecek maç: "+FIXTURES.length+" · Geçmiş maç: "+HISTORY.length+" · Güncelleme: "+(data.updated||"bilinmiyor");
   listele();
-  if(!iddaaYuklendi&&!iddaaLoading)iddaaBaslat();
+  // İddaa bültenini açılışta indirme; yalnızca kullanıcı İDDAA sekmesine girince yükle.
  }catch(e){$("durum").textContent="Futbol veri hatası: "+e.message}
 }
 function sekmeAc(name){

@@ -471,8 +471,8 @@ async function iymsBaslat(){
 
 /* IDDAA ORAN ENTEGRASYONU - canlı bülten, arşiv yok */
 function iddaaNorm(v){
- return String(v||"").toLocaleLowerCase("tr").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"")
-  .replace(/ı/g,"i").replace(/[^a-z0-9]+/g," ").trim().replace(/\\s+/g," ");
+ return String(v||"").toLocaleLowerCase("tr").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+  .replace(/ı/g,"i").replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ");
 }
 function iddaaMarkets(e){return Array.isArray(e.m)?e.m.filter(x=>x&&Array.isArray(x.o)&&x.o.length):[]}
 function iddaaMarket(e,t,st){return iddaaMarkets(e).find(x=>String(x.t)===String(t)&&String(x.st)===String(st))}
@@ -502,7 +502,7 @@ function iddaaFixture(e){
 function iddaaCard(e){
  const m1=iddaaMarket(e,1,1),ou=iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89),goal=iddaaMarket(e,2,4);
  const first=iddaaMarket(e,2,720);
- const six=goal&&goal.o?goal.o.find(x=>/6\\s*\\+|6\\+ gol/i.test(String(x.n||""))):null;
+ const six=goal&&goal.o?goal.o.find(x=>/6\s*\+|6\+ gol/i.test(String(x.n||""))):null;
  const fixture=iddaaFixture(e),p=fixture?predictFootball(fixture):null;
  let html="<div class='match'><div class='match-top'><div class='teams'>"+(e.hn||"Ev sahibi")+" - "+(e.an||"Deplasman")+"</div><span class='rank'>"+iddaaDate(e)+"</span></div>";
  html+="<div class='meta'>"+iddaaCompetition(e)+"</div>";

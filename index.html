@@ -531,18 +531,15 @@ function iddaaCard(e){
  html+=iddaaMarketHtml("Karşılıklı Gol",bttsM);
  html+=iddaaMarketHtml("İlk Yarı KG",first);
  if(six&&iddaaOdds(six))html+="<div class='analysis-box'><b>6+ Gol</b><div class='pred'><span class='pred-value'>"+iddaaOdds(six).toFixed(2)+"</span></div></div>";
- html+="<div class='analysis-box'><b>YaPaYCiN – İDDAA karşılaştırması</b><div class='small'>Marjı çıkarılmış piyasa olasılığı ile YaPaYCiN model olasılığı arasındaki fark yüzde puan olarak gösterilir. Bu fark kesin kazanç veya bahis önerisi değildir.</div>";
  if(p){
+  html+="<div class='analysis-box'><b>YaPaYCiN – İDDAA karşılaştırması</b><div class='small'>Marjı çıkarılmış piyasa olasılığı ile YaPaYCiN model olasılığı arasındaki fark yüzde puan olarak gösterilir. Bu fark kesin kazanç veya bahis önerisi değildir.</div>";
   const market1=[["1",p.one,["1","Ev sahibi","Home"]],["X",p.draw,["X","0","Beraberlik","Beraber","Draw"]],["2",p.two,["2","Deplasman","Away"]]].map(([k,v,a])=>iddaaCompareCell(k,v,iddaaFairProbability(m1,a)));
   const marketOver=iddaaFairProbability(ou,["Üst","Over"]);
   const marketBtts=iddaaFairProbability(bttsM,["Var","Evet","Yes","Karşılıklı Gol Var"]);
   const marketFirst=iddaaFairProbability(first,["Var","Evet","Yes","Karşılıklı Gol Var"]);
   const compare=market1.join("")+iddaaCompareCell("3,5 Üst",p.over35,marketOver)+iddaaCompareCell("KG Var",p.btts,marketBtts)+iddaaCompareCell("İlk Yarı KG",p.first,marketFirst);
-  html+="<div class='predictions'>"+predictionBox("Model 1",p.one)+predictionBox("Model X",p.draw)+predictionBox("Model 2",p.two)+predictionBox("Model 3,5 Üst",p.over35)+predictionBox("Model KG",p.btts)+"</div><div class='predictions'>"+compare+"</div>";
- }else{
-  html+="<div class='small'>Bu maç YaPaYCiN fikstüründeki takımlarla eşleştirilemedi veya model için yeterli geçmiş veri bulunamadı. İDDAA oranları görüntüleniyor; karşılaştırma bu nedenle henüz hesaplanamıyor.</div>";
+  html+="<div class='predictions'>"+predictionBox("Model 1",p.one)+predictionBox("Model X",p.draw)+predictionBox("Model 2",p.two)+predictionBox("Model 3,5 Üst",p.over35)+predictionBox("Model KG",p.btts)+"</div><div class='predictions'>"+compare+"</div></div>";
  }
- html+="</div>";
  return html+"</div>";
 }
 function iddaaDahaFazla(){

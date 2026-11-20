@@ -356,39 +356,53 @@ function listele(){
  if(!FIXTURES.length&&!HISTORY.length)return;
  const token=++listRenderToken;
  const date=$("tarih").value||today(),past=date<today();
- const source=past?historyDateIndex.get(date)||[]:fixtureDateIndex.get(date)||[];
+ const source=past?(historyDateIndex.get(date)||[]):(fixtureDateIndex.get(date)||[]);
  const query=($("arama").value||"").toLocaleLowerCase("tr"),filter=$("filtre").value,league=$("ligSec").value;
- const list=[];
- const macAlan=$("maclar"), ozetAlan=$("macOzet");
+ const macAlan=$("maclar"),ozetAlan=$("macOzet");
  if(!source.length){macAlan.textContent="Bu tarihte "+(past?"kayıtlı geçmiş maç":"gösterilecek maç")+" bulunamadı.";ozetAlan.innerHTML="";return}
- // Yenileme veya filtre değişiminde eski maçları hesaplama bitene kadar ekranda tut.
- if(!macAlan.innerHTML.trim())macAlan.textContent="Maç tahminleri hazırlanıyor...";
+ const list=[];
  let i=0;
- function batch(){
+ // Önce veriyi küçük parçalarda hazırla; mevcut liste ilk yeni kartlar hazır olana kadar korunur.
+ function prepareBatch(){
   if(token!==listRenderToken)return;
-  const stop=Math.min(i+8,source.length);
+  const stop=Math.min(i+10,source.length);
   for(;i<stop;i++){
    const m=source[i],ln=m.league||"Diğer";
    if(hiddenLeagues.has(ln))continue;
    if(league!=="all"&&encodeURIComponent(ln)!==league)continue;
-   const c=countryInfo(m),text=(m.home+" "+m.away+" "+ln+" "+c.name).toLocaleLowerCase("tr");
-   if(query&&!text.includes(query))continue;
+   const country=countryInfo(m),searchText=(m.home+" "+m.away+" "+ln+" "+country.name).toLocaleLowerCase("tr");
+   if(query&&!searchText.includes(query))continue;
    if(past){list.push({m,t:null,rank:-1});continue}
-   const cacheKey=[m.league_id,m.date,m.time,m.home,m.away].join("|");
-   let t;if(predictionCache.has(cacheKey))t=predictionCache.get(cacheKey);else{t=predictFootball(m);predictionCache.set(cacheKey,t)}
+   const key=[m.league_id,m.date,m.time,m.home,m.away].join("|");
+   let t;
+   if(predictionCache.has(key))t=predictionCache.get(key);
+   else{t=predictFootball(m);predictionCache.set(key,t)}
    if(!filterMatch(t,filter))continue;
    list.push({m,t,rank:highest(t)});
   }
-  if(i<source.length){setTimeout(batch,0);return}
+  if(i<source.length){setTimeout(prepareBatch,0);return}
+  if(token!==listRenderToken)return;
   list.sort((a,b)=>past?String(a.m.time).localeCompare(String(b.m.time)):b.rank-a.rank||String(a.m.time).localeCompare(String(b.m.time)));
   const count=list.filter(x=>x.rank>=0).length;
-  $("macOzet").innerHTML=past?"":`<div class="summary-item"><span class="summary-number">${list.length}</span><span class="summary-label">Toplam maç</span></div><div class="summary-item"><span class="summary-number">${count}</span><span class="summary-label">Tahmin üretilen</span></div><div class="summary-item"><span class="summary-number">${list.length-count}</span><span class="summary-label">Tahmin bulunmayan</span></div>`;
-  if(!list.length){$("maclar").textContent=past?"Bu tarihte kayıtlı geçmiş maç bulunamadı.":"Bu tarihte gösterilecek maç bulunamadı.";return}
-  let out="",last="",rank=0;
-  list.forEach(x=>{if(x.m.date!==last){out+=`<div class="day-title">${dateText(x.m.date)}</div>`;last=x.m.date}if(x.rank>=0)rank++;out+=matchCard(x.m,x.t,past,rank)});
-  if(token===listRenderToken)$("maclar").innerHTML=out;
+  ozetAlan.innerHTML=past?"":`<div class="summary-item"><span class="summary-number">${list.length}</span><span class="summary-label">Toplam maç</span></div><div class="summary-item"><span class="summary-number">${count}</span><span class="summary-label">Tahmin üretilen</span></div><div class="summary-item"><span class="summary-number">${list.length-count}</span><span class="summary-label">Tahmin bulunmayan</span></div>`;
+  if(!list.length){macAlan.textContent=past?"Bu tarihte kayıtlı geçmiş maç bulunamadı.":"Bu tarihte gösterilecek maç bulunamadı.";return}
+  macAlan.innerHTML="";
+  let renderIndex=0,last="";
+  function renderBatch(){
+   if(token!==listRenderToken)return;
+   const stop=Math.min(renderIndex+10,list.length);
+   let html="";
+   for(;renderIndex<stop;renderIndex++){
+    const x=list[renderIndex];
+    if(x.m.date!==last){html+=`<div class="day-title">${dateText(x.m.date)}</div>`;last=x.m.date}
+    html+=matchCard(x.m,x.t,past,renderIndex+1);
+   }
+   macAlan.insertAdjacentHTML("beforeend",html);
+   if(renderIndex<list.length)setTimeout(renderBatch,0);
+  }
+  renderBatch();
  }
- batch();
+ prepareBatch();
 }
 function tarihKaydir(n){$("tarih").value=dateAdd($("tarih").value||today(),n);listele()}
 async function baslat(force=false){

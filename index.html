@@ -470,7 +470,8 @@ async function iymsBaslat(){
 
 
 /* IDDAA ORAN ENTEGRASYONU - canlı bülten, arşiv yok */
-function iddaaEsc(v){return String(v??\"\").replace(/&/g,\"&amp;\").replace(/</g,\"&lt;\").replace(/>/g,\"&gt;\").replace(/\"/g,\"&quot;\").replace(/'/g,\"&#39;\")}\nfunction iddaaNorm(v){
+function iddaaEsc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
+function iddaaNorm(v){
  return String(v||"").toLocaleLowerCase("tr").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
   .replace(/ı/g,"i").replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ");
 }

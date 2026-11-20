@@ -1,5 +1,5 @@
 
-const CACHE_NAME = "yapaycin-mac-analiz-v26";
+const CACHE_NAME = "yapaycin-mac-analiz-v27";
 
 const FILES_TO_CACHE = [
   "./",

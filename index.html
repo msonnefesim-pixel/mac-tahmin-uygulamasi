@@ -276,13 +276,14 @@ function predictFootball(m){
 function highest(t){return t?Math.max(t.one,t.draw,t.two,t.over35,t.six,t.btts,t.first??0,t.second??0):-1}
 function predictionBox(name,value){return `<div class="pred"><span class="pred-name">${name}</span><span class="pred-value">${pct(value)}</span></div>`}
 function matchCard(m,t,past=false,rank=0){
- const oddsHtml=!past&&t?iddaaFootballComparison(m,t):"";
- return `<div class="match"><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?("#"+rank+" · "+pct(highest(t))):"Tahmin yok"}</span>`:""}</div>
+ const finalPrediction=!past&&t?iddaaAdjustedPrediction(m,t):t;
+ return `<div class="match"><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?("#"+rank+" · "+pct(highest(finalPrediction))):"Tahmin yok"}</span>`:""}</div>
  <div class="meta-row"><div class="meta">${leagueView(m)}</div><div class="kickoff">${m.time||"Saat yok"}</div></div>
  ${past?`<div class="result">Maç sonucu: ${m.ft_home}-${m.ft_away}</div>`:`<div class="predictions">
- ${predictionBox("1",t?.one)}${predictionBox("X",t?.draw)}${predictionBox("2",t?.two)}${predictionBox("3,5 Üst",t?.over35)}
- ${predictionBox("6+ Gol",t?.six)}${predictionBox("KG Var",t?.btts)}${predictionBox("İlk Yarı KG",t?.first)}${predictionBox("İkinci Yarı KG",t?.second)}
- </div>${oddsHtml}`}</div>`;
+ ${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}
+ ${predictionBox("3,5 Üst",finalPrediction?.over35)}${predictionBox("6+ Gol",finalPrediction?.six)}
+ ${predictionBox("KG Var",finalPrediction?.btts)}${predictionBox("KG Yok",finalPrediction?.btts==null?null:1-finalPrediction.btts)}
+ </div>`}</div>`;
 }
 function filterMatch(t,f){
  if(f==="all")return true;if(!t)return false;
@@ -603,24 +604,42 @@ function iddaaFixture(e){
  const date=iddaaDateKey(e),near=FIXTURES.filter(m=>iddaaDateDistance(date,iddaaFixtureDateKey(m))<=1);
  return iddaaBestMatch("event",date,e.hn,e.an,iddaaEventTimestamp(e),near,iddaaFixtureDateKey,m=>m.home,m=>m.away,iddaaFixtureTimestamp);
 }
-function iddaaFootballComparison(fixture,p){
- const e=iddaaFindEventForFixture(fixture);
- if(!e)return "";
- const m1=iddaaMarket(e,1,1),ou=iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89),first=iddaaMarket(e,2,720);
- const cells=[
-  iddaaCompareCell("1",p.one,iddaaFairProbability(m1,["1","Ev sahibi","Home"])),
-  iddaaCompareCell("X",p.draw,iddaaFairProbability(m1,["X","0","Beraberlik","Beraber","Draw"])),
-  iddaaCompareCell("2",p.two,iddaaFairProbability(m1,["2","Deplasman","Away"])),
-  iddaaCompareCell("KG Var",p.btts,iddaaFairProbability(bttsM,["Var","Evet","Yes","Karşılıklı Gol Var"])),
-  iddaaCompareCell("İlk Yarı KG",p.first,iddaaFairProbability(first,["Var","Evet","Yes","Karşılıklı Gol Var"]))
- ];
+function iddaaBlendProbability(model,market){
+ if(model===null||model===undefined||!Number.isFinite(model))return market;
+ if(market===null||market===undefined||!Number.isFinite(market))return model;
+ return Math.max(0,Math.min(1,(model+market)/2));
+}
+function iddaaAdjustedPrediction(fixture,p){
+ if(!p)return p;
+ const e=iddaaFindEventForFixture(fixture);if(!e)return p;
+ const m1=iddaaMarket(e,1,1),ou=iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89),goal=iddaaMarket(e,2,4);
+ const out={...p};
+ const one=iddaaFairProbability(m1,["1","Ev sahibi","Home"]);
+ const draw=iddaaFairProbability(m1,["X","0","Beraberlik","Beraber","Draw"]);
+ const two=iddaaFairProbability(m1,["2","Deplasman","Away"]);
+ // 1-X-2 pazarı ancak üç olasılık birlikte yaklaşık %100 ediyorsa kullanılır.
+ if(one!==null&&draw!==null&&two!==null&&Math.abs(one+draw+two-1)<.035){
+  out.one=iddaaBlendProbability(p.one,one);
+  out.draw=iddaaBlendProbability(p.draw,draw);
+  out.two=iddaaBlendProbability(p.two,two);
+  const sum=out.one+out.draw+out.two;
+  if(sum>0){out.one/=sum;out.draw/=sum;out.two/=sum;}
+ }
+ const kg=iddaaFairProbability(bttsM,["Var","Evet","Yes","Karşılıklı Gol Var"]);
+ if(kg!==null)out.btts=iddaaBlendProbability(p.btts,kg);
  if(ou){
   const line=String(ou.sov??"").replace(",",".");
   const has35=line==="3.5"||ou.o.some(x=>/3[,.]5/.test(String(x.n||x.name||"")));
-  if(has35)cells.push(iddaaCompareCell("3,5 Üst",p.over35,iddaaFairProbability(ou,["Üst","Over"])));
+  if(has35){
+   const over=iddaaFairProbability(ou,["Üst","Over","Üst 3.5","Over 3.5"]);
+   if(over!==null)out.over35=iddaaBlendProbability(p.over35,over);
+  }
  }
- const visible=cells.filter(Boolean);if(!visible.length)return "";
- return `<div class="analysis-box"><b>📊 İDDAA oranlarıyla karşılaştırma</b><div class="small">Aynı tarih ve aynı takımlara ait marjsız piyasa olasılığı ile model farkı. Yalnızca iki tarafta da veri bulunan tahminler gösterilir.</div><div class="predictions">${visible.join("")}</div></div>`;
+ if(goal&&Array.isArray(goal.o)){
+  const sixMarket=iddaaFairProbability(goal,["6+","6 +","6+ Gol","6 ve üzeri","6 veya daha fazla"]);
+  if(sixMarket!==null)out.six=iddaaBlendProbability(p.six,sixMarket);
+ }
+ return out;
 }
 
 function iddaaFairProbability(m,aliases){

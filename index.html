@@ -789,12 +789,18 @@ async function iddaaBaslat(force=false){
 /* CANLI SKORLAR - SportScore ücretsiz API */
 function liveEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function liveState(m){
- const raw=[m.status,m.match_status,m.state,m.status_text,m.statusText,m.status_label].filter(Boolean).join(" ").toLowerCase().replace(/[ -]+/g,"_");
- if(/live|in_play|in_progress|inprogress|playing|first_half|second_half|1st_half|2nd_half|half_time|halftime|extra_time|penalt|(^|_)1h($|_)|(^|_)2h($|_)|(^|_)q[1-4]($|_)|1st_quarter|2nd_quarter|3rd_quarter|4th_quarter|overtime/.test(raw))return "live";
+ const raw=[m.status,m.match_status,m.state,m.status_text,m.statusText,m.status_label,m.period,m.phase].filter(Boolean).join(" ").toLowerCase().replace(/[ -]+/g,"_");
+ if(/live|in_play|inplay|in_progress|inprogress|playing|first_half|second_half|1st_half|2nd_half|half_time|halftime|(^|_)ht($|_)|(^|_)break($|_)|extra_time|extra-time|penalt|(^|_)1h($|_)|(^|_)2h($|_)|(^|_)q[1-4]($|_)|1st_quarter|2nd_quarter|3rd_quarter|4th_quarter|overtime/.test(raw))return "live";
  if(/finished|full_time|(^|_)ft($|_)|after_penalt|(^|_)aet($|_)|ended|final/.test(raw))return "finished";
  return "other";
 }
-function liveList(data){if(Array.isArray(data))return data;if(data&&Array.isArray(data.matches))return data.matches;if(data&&Array.isArray(data.data))return data.data;if(data&&Array.isArray(data.events))return data.events;return []}
+function liveList(data){
+ if(Array.isArray(data))return data;
+ if(!data||typeof data!=="object")return [];
+ for(const key of ["matches","fixtures","events","data","results"])if(Array.isArray(data[key]))return data[key];
+ for(const key of ["data","result"])if(data[key]&&typeof data[key]==="object"){const found=liveList(data[key]);if(found.length)return found}
+ return [];
+}
 function liveNorm(v){return String(v||"").toLocaleLowerCase("tr").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ")}
 function liveScoreCard(m){
  const state=liveState(m),home=m.home||m.home_team||m.homeTeam||m.home_name||"Ev sahibi",away=m.away||m.away_team||m.awayTeam||m.away_name||"Deplasman";
@@ -839,14 +845,34 @@ function renderLiveScores(){
 async function liveScoresLoad(){
  if(liveScoresBusy)return;liveScoresBusy=true;
  try{
-  const urls=["https://sportscore.com/api/widget/matches/?sport=football&limit=50&src=yapaycin","https://sportscore.com/api/widget/matches/?sport=basketball&limit=50&src=yapaycin"];
-  const responses=await Promise.all(urls.map(u=>fetch(u,{cache:"default",mode:"cors"})));
-  if(responses.some(r=>!r.ok))throw new Error("Canlı skor servisi HTTP "+responses.map(r=>r.status).join("/"));
-  const payloads=await Promise.all(responses.map(r=>r.json()));
-  liveFootballMatches=liveList(payloads[0]);liveBasketballMatches=liveList(payloads[1]);liveScoresLastFetch=Date.now();
-  renderLiveScores();
- }catch(e){console.warn("Canlı skor güncellemesi:",e.message)}
- finally{liveScoresBusy=false}
+  // Futbol ve basketbol isteklerini birbirinden bağımsız yürüt: NBA kaynağı bozulsa da futbol skoru gelsin.
+  const footballUrl="https://sportscore.com/api/widget/matches/?sport=football&limit=50&src=yapaycin";
+  const footballResponse=await fetch(footballUrl,{cache:"no-store",mode:"cors"});
+  if(!footballResponse.ok)throw new Error("Futbol skor servisi HTTP "+footballResponse.status);
+  const footballData=await footballResponse.json();
+  liveFootballMatches=liveList(footballData);
+  // Widget akışında canlı maç yoksa, resmi günlük fikstür uç noktasından yalnızca canlıları ayrıca iste.
+  if(!liveFootballMatches.some(m=>liveState(m)==="live")){
+   try{
+    const utcDate=new Date().toISOString().slice(0,10);
+    const fallbackUrl="https://sportscore.com/api/v1/fixtures/?sport=football&date="+utcDate+"&status=live&limit=200&src=yapaycin";
+    const fallbackResponse=await fetch(fallbackUrl,{cache:"no-store",mode:"cors"});
+    if(fallbackResponse.ok){
+     const fallbackData=await fallbackResponse.json(),fallbackMatches=liveList(fallbackData);
+     if(fallbackMatches.length)liveFootballMatches=fallbackMatches;
+    }
+   }catch(fallbackError){console.warn("Ek canlı maç kaynağı:",fallbackError.message)}
+  }
+  // Basketbol tarafındaki hata futbol listesini engellemesin.
+  try{
+   const basketballResponse=await fetch("https://sportscore.com/api/widget/matches/?sport=basketball&limit=50&src=yapaycin",{cache:"no-store",mode:"cors"});
+   if(basketballResponse.ok)liveBasketballMatches=liveList(await basketballResponse.json());
+  }catch(basketballError){console.warn("NBA canlı skor kaynağı:",basketballError.message)}
+  liveScoresLastFetch=Date.now();renderLiveScores();
+ }catch(e){
+  console.warn("Canlı skor güncellemesi:",e.message);
+  const status=$("liveResultsStatus");if(status)status.textContent="Canlı skor bağlantı hatası: "+e.message;
+ }finally{liveScoresBusy=false}
 }
 function startLiveScores(){
  if(liveScoresTimer)return;

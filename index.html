@@ -805,12 +805,12 @@ function liveScoreCard(m){
  let time=rawTime;if(rawTime){const d=new Date(rawTime);if(!Number.isNaN(d.getTime())&&String(rawTime).includes("T"))time=d.toLocaleString("tr-TR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}
  return "<div class=\"live-score-card "+(state==="finished"?"finished":"")+"\"><div class=\"live-score-top\"><span>"+liveEsc(league)+"</span><span class=\""+(state==="live"?"live-now":"live-finished")+"\">"+(state==="live"?"<span class=\"live-dot\"></span> CANLI":liveEsc(status))+"</span></div><div class=\"live-score-teams\"><span>"+liveEsc(home)+"</span><strong class=\"live-score-value\">"+(hs==null||as==null?"– : –":liveEsc(hs+" : "+as))+"</strong><span>"+liveEsc(away)+"</span></div><div class=\"live-score-top\"><span>"+liveEsc(time)+"</span><span>"+(state==="live"?"CANLI":"TAMAMLANDI")+"</span></div></div>";
 }
-function renderLivePanel(id,matches,title){
+function renderLivePanel(id,matches,title,mode){
  const el=$(id);if(!el)return;
- const wanted=liveViewMode;
- const list=matches.filter(m=>liveState(m)===wanted);
- if(!list.length){el.innerHTML="<p>"+(wanted==="live"?"Şu anda canlı maç bulunamadı.":"Gösterilecek bitmiş maç bulunamadı.")+"</p>";return}
- el.innerHTML=list.map(liveScoreCard).join("")+"<div class=\"live-source\">Canlı skor verileri <a href=\"https://sportscore.com/\" target=\"_blank\" rel=\"noopener\">Powered by SportScore</a> tarafından sağlanır. · Son kontrol: "+liveEsc(new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}))+"</div>";
+ const wanted=mode||liveViewMode;
+ const list=matches.filter(m=>mode==="all"?liveState(m)!=="other":liveState(m)===wanted);
+ if(!list.length){el.innerHTML="<p>"+(wanted==="live"?"Şu anda canlı maç bulunamadı.":wanted==="finished"?"Gösterilecek bitmiş maç bulunamadı.":"Gösterilecek maç bulunamadı.")+"</p>";return}
+ el.innerHTML=(title?"<b>"+title+"</b>":"")+list.map(liveScoreCard).join("")+"<div class=\"live-source\">Canlı skor verileri <a href=\"https://sportscore.com/\" target=\"_blank\" rel=\"noopener\">Powered by SportScore</a> tarafından sağlanır. · Son kontrol: "+liveEsc(new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}))+"</div>";
 }
 function liveFilterSet(mode){
  liveViewMode=mode;
@@ -822,7 +822,7 @@ function liveFilterSet(mode){
 }
 function renderLiveResults(){
  const el=$("liveResultsPanel");if(!el)return;
- renderLivePanel("liveResultsPanel",liveFootballMatches,"");
+ renderLivePanel("liveResultsPanel",liveFootballMatches,"",liveViewMode);
  const count=liveFootballMatches.filter(m=>liveState(m)===liveViewMode).length;
  $("liveResultsStatus").textContent=(liveViewMode==="live"?"Canlı maç":"Biten maç")+" sayısı: "+count+" · Son kontrol: "+(liveScoresLastFetch?new Date(liveScoresLastFetch).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}):"bekleniyor");
 }
@@ -834,7 +834,7 @@ function renderLiveScores(){
   const home=liveNorm(m.home||m.home_team||m.homeTeam||m.home_name),away=liveNorm(m.away||m.away_team||m.awayTeam||m.away_name);
   return /nba/i.test(league)||(teams.size>0&&teams.has(home)&&teams.has(away));
  });
- renderLivePanel("nbaCanliPanel",nbaMatches,"🔴 CANLI NBA SKORLARI");
+ renderLivePanel("nbaCanliPanel",nbaMatches,"🔴 CANLI NBA SKORLARI","all");
 }
 async function liveScoresLoad(){
  if(liveScoresBusy)return;liveScoresBusy=true;

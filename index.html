@@ -167,6 +167,7 @@ th{color:var(--yellow)}
 
 /* GENEL VERİLER */
 let FIXTURES=[], HISTORY=[];
+let footballRefreshBusy=false, predictionCache=new Map();
 let fixtureDateIndex=new Map(), historyDateIndex=new Map(), listRenderToken=0;
 function makeDateIndex(rows){const map=new Map();for(const m of rows){const d=String(m.date||"");if(!map.has(d))map.set(d,[]);map.get(d).push(m)}return map;}
 let teamIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map();
@@ -358,12 +359,14 @@ function listele(){
  const source=past?historyDateIndex.get(date)||[]:fixtureDateIndex.get(date)||[];
  const query=($("arama").value||"").toLocaleLowerCase("tr"),filter=$("filtre").value,league=$("ligSec").value;
  const list=[];
- $("maclar").textContent=source.length?"Maçlar hazırlanıyor...":"Bu tarihte "+(past?"kayıtlı geçmiş maç":"gösterilecek maç")+" bulunamadı.";
- $("macOzet").innerHTML="";
+ const macAlan=$("maclar"), ozetAlan=$("macOzet");
+ if(!source.length){macAlan.textContent="Bu tarihte "+(past?"kayıtlı geçmiş maç":"gösterilecek maç")+" bulunamadı.";ozetAlan.innerHTML="";return}
+ // Yenileme veya filtre değişiminde eski maçları hesaplama bitene kadar ekranda tut.
+ if(!macAlan.innerHTML.trim())macAlan.textContent="Maç tahminleri hazırlanıyor...";
  let i=0;
  function batch(){
   if(token!==listRenderToken)return;
-  const stop=Math.min(i+18,source.length);
+  const stop=Math.min(i+8,source.length);
   for(;i<stop;i++){
    const m=source[i],ln=m.league||"Diğer";
    if(hiddenLeagues.has(ln))continue;
@@ -371,7 +374,9 @@ function listele(){
    const c=countryInfo(m),text=(m.home+" "+m.away+" "+ln+" "+c.name).toLocaleLowerCase("tr");
    if(query&&!text.includes(query))continue;
    if(past){list.push({m,t:null,rank:-1});continue}
-   const t=predictFootball(m);if(!filterMatch(t,filter))continue;
+   const cacheKey=[m.league_id,m.date,m.time,m.home,m.away].join("|");
+   let t;if(predictionCache.has(cacheKey))t=predictionCache.get(cacheKey);else{t=predictFootball(m);predictionCache.set(cacheKey,t)}
+   if(!filterMatch(t,filter))continue;
    list.push({m,t,rank:highest(t)});
   }
   if(i<source.length){setTimeout(batch,0);return}
@@ -387,11 +392,14 @@ function listele(){
 }
 function tarihKaydir(n){$("tarih").value=dateAdd($("tarih").value||today(),n);listele()}
 async function baslat(force=false){
- $("durum").textContent="Futbol verileri yükleniyor...";
+ if(footballRefreshBusy)return;
+ footballRefreshBusy=true;
+ $("durum").textContent=force?"Veriler yenileniyor... Mevcut maç listesi korunuyor.":"Futbol verileri yükleniyor...";
  try{
   const r=await fetch("./data.json"+(force?"?v="+Date.now():""),{cache:force?"no-store":"default"});
   if(!r.ok)throw new Error("data.json yüklenemedi ("+r.status+")");
   const data=await r.json();FIXTURES=Array.isArray(data.fixtures)?data.fixtures:[];HISTORY=Array.isArray(data.history)?data.history:[];
+  predictionCache.clear();
   fixtureDateIndex=makeDateIndex(FIXTURES);historyDateIndex=makeDateIndex(HISTORY);
   buildIndexes();
   try{hiddenLeagues=new Set(JSON.parse(localStorage.getItem("yapaycinHiddenLeagues")||"[]"))}catch(e){hiddenLeagues=new Set()}
@@ -406,6 +414,7 @@ async function baslat(force=false){
   // Canlı skorları ilk ekran çizildikten sonra al; tahmin listesini yeniden hesaplatmaz.
   setTimeout(startLiveScores,12000);
  }catch(e){$("durum").textContent="Futbol veri hatası: "+e.message}
+ finally{footballRefreshBusy=false}
 }
 function sekmeAc(name){
  const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",nba:"nbaBolumu",live:"liveBolumu",iddaa:"iddaaBolumu"};

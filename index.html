@@ -817,7 +817,7 @@ function liveMinuteLabel(m){
  return "Dakika bilgisi yok";
 }
 function liveScoreCard(m){
- const state=liveState(m),home=m.home||m.home_team||m.homeTeam||m.home_name||"Ev sahibi",away=m.away||m.away_team||m.away_name||"Deplasman";
+ const state=liveState(m),home=m.home||m.home_team||m.homeTeam||m.home_name||"Ev sahibi",away=m.away||m.away_team||m.awayTeam||m.away_name||"Deplasman";
  const hs=m.home_score??m.homeScore??(m.score&&m.score.home),as=m.away_score??m.awayScore??(m.score&&m.score.away);
  const league=m.competition||m.league||m.tournament||m.competition_name||"Karşılaşma";
  const status=m.status_text||m.statusText||m.status_label||(state==="live"?"CANLI":"MS");

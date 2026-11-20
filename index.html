@@ -146,8 +146,8 @@ th{color:var(--yellow)}
 let FIXTURES=[], HISTORY=[];
 let teamIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map();
 let hiddenLeagues=new Set();
-let iymsYuklendi=false, nbaYuklendi=false, iddaaYuklendi=false, analysisRunning=false;
-let IDDAA_EVENTS=[], IDDAA_COMPETITIONS=new Map(), iddaaUpdated="", iddaaShown=20;
+let iymsYuklendi=false, nbaYuklendi=false, iddaaYuklendi=false, iddaaLoading=false, analysisRunning=false;
+let IDDAA_EVENTS=[], IDDAA_COMPETITIONS=new Map(), IDDAA_INDEX=new Map(), iddaaUpdated="", iddaaShown=20;
 const $=id=>document.getElementById(id);
 const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
 const num=v=>v!==null&&v!==undefined&&v!==""&&Number.isFinite(Number(v));
@@ -276,12 +276,13 @@ function predictFootball(m){
 function highest(t){return t?Math.max(t.one,t.draw,t.two,t.over35,t.six,t.btts,t.first??0,t.second??0):-1}
 function predictionBox(name,value){return `<div class="pred"><span class="pred-name">${name}</span><span class="pred-value">${pct(value)}</span></div>`}
 function matchCard(m,t,past=false,rank=0){
+ const oddsHtml=!past&&t?iddaaFootballComparison(m,t):"";
  return `<div class="match"><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?("#"+rank+" · "+pct(highest(t))):"Tahmin yok"}</span>`:""}</div>
  <div class="meta-row"><div class="meta">${leagueView(m)}</div><div class="kickoff">${m.time||"Saat yok"}</div></div>
  ${past?`<div class="result">Maç sonucu: ${m.ft_home}-${m.ft_away}</div>`:`<div class="predictions">
  ${predictionBox("1",t?.one)}${predictionBox("X",t?.draw)}${predictionBox("2",t?.two)}${predictionBox("3,5 Üst",t?.over35)}
  ${predictionBox("6+ Gol",t?.six)}${predictionBox("KG Var",t?.btts)}${predictionBox("İlk Yarı KG",t?.first)}${predictionBox("İkinci Yarı KG",t?.second)}
- </div>`}</div>`;
+ </div>${oddsHtml}`}</div>`;
 }
 function filterMatch(t,f){
  if(f==="all")return true;if(!t)return false;
@@ -344,6 +345,7 @@ async function baslat(force=false){
   fillLeagues();$("durum").innerHTML="<span class='good'>Futbol verileri yüklendi</span>";
   $("sayilar").textContent="Gelecek maç: "+FIXTURES.length+" · Geçmiş maç: "+HISTORY.length+" · Güncelleme: "+(data.updated||"bilinmiyor");
   listele();
+  if(!iddaaYuklendi&&!iddaaLoading)iddaaBaslat();
  }catch(e){$("durum").textContent="Futbol veri hatası: "+e.message}
 }
 function sekmeAc(name){
@@ -502,9 +504,29 @@ function iddaaDate(e){
  let n=Number(e.d||0);if(!n)return "Tarih yok";if(n<1000000000000)n*=1000;
  return new Date(n).toLocaleString("tr-TR",{timeZone:"Europe/Istanbul",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
 }
+function iddaaEventKey(date,home,away){return date+"|"+iddaaNorm(home)+"|"+iddaaNorm(away)}
 function iddaaFixture(e){
- const h=iddaaNorm(e.hn),a=iddaaNorm(e.an);
- return FIXTURES.find(m=>iddaaNorm(m.home)===h&&iddaaNorm(m.away)===a)||null;
+ const date=iddaaDateKey(e),h=iddaaNorm(e.hn),a=iddaaNorm(e.an);
+ return FIXTURES.find(m=>String(m.date).slice(0,10)===date&&iddaaNorm(m.home)===h&&iddaaNorm(m.away)===a)||null;
+}
+function iddaaFootballComparison(fixture,p){
+ const e=IDDAA_INDEX.get(iddaaEventKey(String(fixture.date).slice(0,10),fixture.home,fixture.away));
+ if(!e)return "";
+ const m1=iddaaMarket(e,1,1),ou=iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89),first=iddaaMarket(e,2,720);
+ const cells=[
+  iddaaCompareCell("1",p.one,iddaaFairProbability(m1,["1","Ev sahibi","Home"])),
+  iddaaCompareCell("X",p.draw,iddaaFairProbability(m1,["X","0","Beraberlik","Beraber","Draw"])),
+  iddaaCompareCell("2",p.two,iddaaFairProbability(m1,["2","Deplasman","Away"])),
+  iddaaCompareCell("KG Var",p.btts,iddaaFairProbability(bttsM,["Var","Evet","Yes","Karşılıklı Gol Var"])),
+  iddaaCompareCell("İlk Yarı KG",p.first,iddaaFairProbability(first,["Var","Evet","Yes","Karşılıklı Gol Var"]))
+ ];
+ if(ou){
+  const line=String(ou.sov??"").replace(",",".");
+  const has35=line==="3.5"||ou.o.some(x=>/3[,.]5/.test(String(x.n||x.name||"")));
+  if(has35)cells.push(iddaaCompareCell("3,5 Üst",p.over35,iddaaFairProbability(ou,["Üst","Over"])));
+ }
+ const visible=cells.filter(Boolean);if(!visible.length)return "";
+ return `<div class="analysis-box"><b>📊 İDDAA oranlarıyla karşılaştırma</b><div class="small">Aynı tarih ve aynı takımlara ait marjsız piyasa olasılığı ile model farkı. Yalnızca iki tarafta da veri bulunan tahminler gösterilir.</div><div class="predictions">${visible.join("")}</div></div>`;
 }
 
 function iddaaFairProbability(m,aliases){
@@ -590,6 +612,8 @@ function iddaaListele(reset=true){
   (rows.length>iddaaShown?"<div class='panel' style='text-align:center'><div class='small'>"+shown.length+" / "+rows.length+" maç gösteriliyor.</div><button type='button' onclick='iddaaDahaFazla()'>⬇️ 20 Maç Daha Göster</button></div>":"<div class='panel small' style='text-align:center'>Bültenin sonuna ulaştın · "+rows.length+" maç</div>");
 }
 async function iddaaBaslat(force=false){
+ if(iddaaLoading)return;
+ iddaaLoading=true;
  const status=$("iddaaDurum");status.textContent="İddaa bülteni kaynaktan okunuyor...";$("iddaaMaclar").innerHTML="";
  try{
   const urls=["https://sportsbookv2.iddaa.com/sportsbook/events?st=1&type=0&version=0","https://sportsbookv2.iddaa.com/sportsbook/competitions?st=1"];
@@ -602,17 +626,19 @@ async function iddaaBaslat(force=false){
   const compData=payloads[1]&&payloads[1].data;
   const comps=Array.isArray(compData)?compData:(compData&&Array.isArray(compData.competitions)?compData.competitions:[]);
   if(!events.length)throw new Error("Bültende okunabilir etkinlik bulunamadı.");
-  IDDAA_EVENTS=events;IDDAA_COMPETITIONS=new Map();
+  IDDAA_EVENTS=events;IDDAA_INDEX=new Map();IDDAA_COMPETITIONS=new Map();
   comps.forEach(c=>{if(c)IDDAA_COMPETITIONS.set(String(c.i??c.cid??c.id),c);if(c&&c.cid)IDDAA_COMPETITIONS.set(String(c.cid),c)});
+  IDDAA_EVENTS.forEach(e=>{const key=iddaaEventKey(iddaaDateKey(e),e.hn,e.an);if(!IDDAA_INDEX.has(key))IDDAA_INDEX.set(key,e)});
   iddaaUpdated=new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
   iddaaYuklendi=true;
   iddaaTarihleriHazirla();
   status.innerHTML="<span class='good'>Güncel bülten alındı.</span> · "+events.length+" etkinlik kaydı · Kaynak okuma: "+iddaaUpdated;
   iddaaListele();
+  if(FIXTURES.length)listele();
  }catch(e){
   status.innerHTML="Oran kaynağına doğrudan erişilemedi: "+String(e.message||e)+
    "<br><span class='small'>Tarayıcı kaynak erişimini (CORS) engelliyor olabilir. Bu durumda izinli bir sunucu bağlantısı gerekir; otomatik arşivleme yapılmadı.</span>";
- }
+ }finally{iddaaLoading=false}
 }
 
 /* NBA */

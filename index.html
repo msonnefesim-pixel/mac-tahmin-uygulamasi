@@ -64,6 +64,7 @@ th{color:var(--yellow)}
  <button id="futbolButon" class="tab-button active" onclick="sekmeAc('futbol')">⚽ FUTBOL</button>
  <button id="iymsButon" class="tab-button" onclick="sekmeAc('iyms')">🎯 İY/MS</button>
  <button id="nbaButon" class="tab-button" onclick="sekmeAc('nba')">🏀 NBA</button>
+ <button id="liveButon" class="tab-button" onclick="sekmeAc('live')">🔴 CANLI SONUÇLAR</button>
  <!-- İDDAA arka planda çalışır; kullanıcı sekmesi gösterilmez. -->
 </div>
 
@@ -101,7 +102,6 @@ th{color:var(--yellow)}
   <p>6+ Gol ve KG Var birbirinden bağımsız tahminlerdir. Olasılıklar garanti değildir.</p>
   <div id="macOzet" class="summary"></div>
   <div id="maclar">Maçlar hazırlanıyor...</div>
-  <div id="canliFutbolPanel" class="panel hidden"></div>
  </div>
  <h2>Bağımsız Geçmiş Başarı Analizi</h2>
  <div class="panel">
@@ -109,6 +109,18 @@ th{color:var(--yellow)}
   <button class="secondary" onclick="testleriHesapla()">Dönem analizlerini hesapla</button>
   <div id="analizDurum" class="small"></div>
   <div id="donemAnalizleri"></div>
+ </div>
+</section>
+
+<section id="liveBolumu" class="hidden">
+ <h2>🔴 CANLI SONUÇLAR</h2>
+ <div class="panel">
+  <div class="controls">
+   <button id="liveOnlyButton" class="secondary" onclick="liveFilterSet('live')">✓ Sadece canlı maçlar</button>
+   <button id="finishedOnlyButton" class="secondary" onclick="liveFilterSet('finished')">✓ Biten maçlar</button>
+  </div>
+  <div id="liveResultsStatus" class="small">Canlı sonuçlar yükleniyor...</div>
+  <div id="liveResultsPanel"></div>
  </div>
 </section>
 
@@ -159,6 +171,7 @@ let teamIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map();
 let hiddenLeagues=new Set();
 let iymsYuklendi=false, nbaYuklendi=false, iddaaYuklendi=false, iddaaLoading=false, analysisRunning=false;
 let NBA_GAMES_CACHE=[], liveFootballMatches=[], liveBasketballMatches=[], liveScoresBusy=false, liveScoresTimer=null, liveScoresLastFetch=0;
+let liveViewMode="live";
 let IDDAA_EVENTS=[], IDDAA_COMPETITIONS=new Map(), IDDAA_INDEX=new Map(), IDDAA_BY_DATE=new Map(), IDDAA_MATCH_CACHE=new Map(), iddaaUpdated="", iddaaShown=20;
 const $=id=>document.getElementById(id);
 const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
@@ -368,9 +381,10 @@ async function baslat(force=false){
  }catch(e){$("durum").textContent="Futbol veri hatası: "+e.message}
 }
 function sekmeAc(name){
- const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",nba:"nbaBolumu",iddaa:"iddaaBolumu"};
+ const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",nba:"nbaBolumu",live:"liveBolumu",iddaa:"iddaaBolumu"};
  Object.keys(ids).forEach(k=>$(ids[k]).classList.toggle("hidden",k!==name));
- $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");$("nbaButon").classList.toggle("active",name==="nba");
+ $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");$("nbaButon").classList.toggle("active",name==="nba");$("liveButon").classList.toggle("active",name==="live");
+ if(name==="live"){renderLiveResults();if(Date.now()-liveScoresLastFetch>30000)liveScoresLoad();}
  if(name==="iyms"&&!iymsYuklendi)iymsBaslat();
  if(name==="nba"&&!nbaYuklendi)nbaBaslat();
  if(name==="iddaa"){if(!iddaaYuklendi)iddaaBaslat();else iddaaListele();}
@@ -793,17 +807,27 @@ function liveScoreCard(m){
 }
 function renderLivePanel(id,matches,title){
  const el=$(id);if(!el)return;
- // Kaynak bazen biten maçları listenin başına koyuyor; canlıları her zaman öne al.
- const list=matches.map((m,i)=>({m,i,state:liveState(m)}))
-  .filter(x=>x.state!=="other")
-  .sort((a,b)=>(a.state==="live"?0:1)-(b.state==="live"?0:1)||a.i-b.i)
-  .slice(0,30).map(x=>x.m);
- if(!list.length){el.classList.add("hidden");el.innerHTML="";return}
- el.classList.remove("hidden");
- el.innerHTML="<b>"+title+"</b>"+list.map(liveScoreCard).join("")+"<div class=\"live-source\">Canlı skor verileri <a href=\"https://sportscore.com/\" target=\"_blank\" rel=\"noopener\">Powered by SportScore</a> tarafından sağlanır. · Son kontrol: "+liveEsc(new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}))+"</div>";
+ const wanted=liveViewMode;
+ const list=matches.filter(m=>liveState(m)===wanted);
+ if(!list.length){el.innerHTML="<p>"+(wanted==="live"?"Şu anda canlı maç bulunamadı.":"Gösterilecek bitmiş maç bulunamadı.")+"</p>";return}
+ el.innerHTML=list.map(liveScoreCard).join("")+"<div class=\"live-source\">Canlı skor verileri <a href=\"https://sportscore.com/\" target=\"_blank\" rel=\"noopener\">Powered by SportScore</a> tarafından sağlanır. · Son kontrol: "+liveEsc(new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}))+"</div>";
+}
+function liveFilterSet(mode){
+ liveViewMode=mode;
+ $("liveOnlyButton").classList.toggle("active",mode==="live");
+ $("finishedOnlyButton").classList.toggle("active",mode==="finished");
+ $("liveOnlyButton").textContent=(mode==="live"?"✓ ":"") +"Sadece canlı maçlar";
+ $("finishedOnlyButton").textContent=(mode==="finished"?"✓ ":"") +"Biten maçlar";
+ renderLiveResults();
+}
+function renderLiveResults(){
+ const el=$("liveResultsPanel");if(!el)return;
+ renderLivePanel("liveResultsPanel",liveFootballMatches,"");
+ const count=liveFootballMatches.filter(m=>liveState(m)===liveViewMode).length;
+ $("liveResultsStatus").textContent=(liveViewMode==="live"?"Canlı maç":"Biten maç")+" sayısı: "+count+" · Son kontrol: "+(liveScoresLastFetch?new Date(liveScoresLastFetch).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}):"bekleniyor");
 }
 function renderLiveScores(){
- renderLivePanel("canliFutbolPanel",liveFootballMatches,"🔴 CANLI FUTBOL VE SONUÇLAR");
+ renderLiveResults();
  const teams=new Set(NBA_GAMES_CACHE.flatMap(g=>[nbaName(g,true),nbaName(g,false)]).map(liveNorm));
  const nbaMatches=liveBasketballMatches.filter(m=>{
   const league=String(m.competition||m.league||m.tournament||m.competition_name||"");

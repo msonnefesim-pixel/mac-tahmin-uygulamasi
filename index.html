@@ -776,7 +776,7 @@ async function iddaaBaslat(force=false){
 function liveEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function liveState(m){
  const raw=[m.status,m.match_status,m.state,m.status_text,m.statusText,m.status_label].filter(Boolean).join(" ").toLowerCase().replace(/[ -]+/g,"_");
- if(/live|in_play|inprogress|playing|first_half|second_half|half_time|halftime|extra_time|penalt|(^|_)1h($|_)|(^|_)2h($|_)|(^|_)q[1-4]($|_)|overtime/.test(raw))return "live";
+ if(/live|in_play|in_progress|inprogress|playing|first_half|second_half|1st_half|2nd_half|half_time|halftime|extra_time|penalt|(^|_)1h($|_)|(^|_)2h($|_)|(^|_)q[1-4]($|_)|1st_quarter|2nd_quarter|3rd_quarter|4th_quarter|overtime/.test(raw))return "live";
  if(/finished|full_time|(^|_)ft($|_)|after_penalt|(^|_)aet($|_)|ended|final/.test(raw))return "finished";
  return "other";
 }

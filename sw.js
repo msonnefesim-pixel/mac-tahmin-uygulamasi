@@ -1,5 +1,4 @@
-
-const CACHE_NAME = "yapaycin-mac-analiz-v31";
+const CACHE_NAME = "yapaycin-mac-analiz-v32";
 
 const FILES_TO_CACHE = [
   "./",
@@ -29,27 +28,49 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
-
   const url = new URL(event.request.url);
-
   if (url.origin !== self.location.origin) return;
 
   if (url.pathname.endsWith("/data.json")) {
-    event.respondWith(
-      fetch(event.request).then(response => {
-        if (response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache =>
-            cache.put(event.request, copy)
-          );
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const baseRequest = new Request(url.origin + url.pathname);
+      if (url.searchParams.has("v")) {
+        try {
+          const fresh = await fetch(event.request);
+          if (fresh.ok) await cache.put(baseRequest, fresh.clone());
+          return fresh;
+        } catch (e) {
+          return (await cache.match(baseRequest)) || Response.error();
         }
+      }
+      const cached = await cache.match(baseRequest);
+      const refresh = fetch(baseRequest).then(response => {
+        if (response.ok) return cache.put(baseRequest, response.clone()).then(() => response);
         return response;
-      }).catch(() => caches.match(event.request))
-    );
+      }).catch(() => null);
+      if (cached) {
+        event.waitUntil(refresh);
+        return cached;
+      }
+      const fresh = await refresh;
+      return fresh || Response.error();
+    })());
     return;
   }
 
-  event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
-  );
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const cached = await cache.match(event.request);
+    if (cached) return cached;
+    try {
+      const response = await fetch(event.request);
+      if (response.ok && (url.pathname.endsWith(".html") || url.pathname.endsWith(".json") || url.pathname.endsWith(".png") || url.pathname.endsWith(".css") || url.pathname.endsWith(".js"))) {
+        cache.put(event.request, response.clone());
+      }
+      return response;
+    } catch (e) {
+      return Response.error();
+    }
+  })());
 });

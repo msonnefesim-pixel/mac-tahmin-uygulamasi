@@ -356,7 +356,7 @@ async function baslat(force=false){
 function sekmeAc(name){
  const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",nba:"nbaBolumu",iddaa:"iddaaBolumu"};
  Object.keys(ids).forEach(k=>$(ids[k]).classList.toggle("hidden",k!==name));
- $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");$("nbaButon").classList.toggle("active",name==="nba");$("iddaaButon").classList.toggle("active",name==="iddaa");
+ $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");$("nbaButon").classList.toggle("active",name==="nba");
  if(name==="iyms"&&!iymsYuklendi)iymsBaslat();
  if(name==="nba"&&!nbaYuklendi)nbaBaslat();
  if(name==="iddaa"){if(!iddaaYuklendi)iddaaBaslat();else iddaaListele();}

@@ -793,7 +793,11 @@ function liveScoreCard(m){
 }
 function renderLivePanel(id,matches,title){
  const el=$(id);if(!el)return;
- const list=matches.filter(m=>liveState(m)!=="other").slice(0,15);
+ // Kaynak bazen biten maçları listenin başına koyuyor; canlıları her zaman öne al.
+ const list=matches.map((m,i)=>({m,i,state:liveState(m)}))
+  .filter(x=>x.state!=="other")
+  .sort((a,b)=>(a.state==="live"?0:1)-(b.state==="live"?0:1)||a.i-b.i)
+  .slice(0,30).map(x=>x.m);
  if(!list.length){el.classList.add("hidden");el.innerHTML="";return}
  el.classList.remove("hidden");
  el.innerHTML="<b>"+title+"</b>"+list.map(liveScoreCard).join("")+"<div class=\"live-source\">Canlı skor verileri <a href=\"https://sportscore.com/\" target=\"_blank\" rel=\"noopener\">Powered by SportScore</a> tarafından sağlanır. · Son kontrol: "+liveEsc(new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}))+"</div>";

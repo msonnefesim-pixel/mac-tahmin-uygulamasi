@@ -528,7 +528,7 @@ function iddaaTeamKey(value){
 function iddaaEventKey(date,home,away){return date+"|"+iddaaTeamKey(home)+"|"+iddaaTeamKey(away)}
 function iddaaFixtureDateKey(f){
  const raw=String(f&&f.date||"").trim();
- if(/^\\d{4}-\\d{2}-\\d{2}$/.test(raw))return raw;
+ if(/^\d{4}-\d{2}-\d{2}$/.test(raw))return raw;
  const d=new Date(raw);if(!Number.isFinite(d.getTime()))return "";
  const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Istanbul",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(d);
  const get=t=>parts.find(x=>x.type===t)?.value||"";
@@ -536,10 +536,10 @@ function iddaaFixtureDateKey(f){
 }
 function iddaaFixtureTimestamp(f){
  const raw=String(f&&f.date||"").trim();
- if(/[T ]\\d{1,2}:\\d{2}/.test(raw)||/[zZ]$|[+-]\\d{2}:?\\d{2}$/.test(raw)){
+ if(/[T ]\d{1,2}:\d{2}/.test(raw)||/[zZ]$|[+-]\d{2}:?\d{2}$/.test(raw)){
   const d=new Date(raw);if(Number.isFinite(d.getTime()))return d.getTime();
  }
- const day=iddaaFixtureDateKey(f),time=String(f&&f.time||"").match(/(\\d{1,2}):(\\d{2})/);
+ const day=iddaaFixtureDateKey(f),time=String(f&&f.time||"").match(/(\d{1,2}):(\d{2})/);
  if(day&&time)return new Date(day+"T"+String(time[1]).padStart(2,"0")+":"+time[2]+":00+03:00").getTime();
  return null;
 }
@@ -587,16 +587,21 @@ function iddaaBestMatch(source,date,home,away,timeOfSource,items,getDate,getHome
  if(candidates.length>1&&candidates[0].score-candidates[1].score<.035)return null;
  return candidates[0].score>=.83?candidates[0].item:null;
 }
+function iddaaShiftDate(key,delta){
+ if(!key)return "";
+ const d=new Date(key+"T12:00:00Z");d.setUTCDate(d.getUTCDate()+delta);return d.toISOString().slice(0,10);
+}
 function iddaaFindEventForFixture(f){
  const date=iddaaFixtureDateKey(f),home=iddaaTeamKey(f.home),away=iddaaTeamKey(f.away);
  const cacheKey=[date,home,away,String(f.time||"")].join("|");
  if(IDDAA_MATCH_CACHE.has(cacheKey))return IDDAA_MATCH_CACHE.get(cacheKey);
- const ts=iddaaFixtureTimestamp(f);
- const event=iddaaBestMatch("fixture",date,home,away,ts,IDDAA_EVENTS,iddaaDateKey,e=>e.hn,e=>e.an,iddaaEventTimestamp);
+ const ts=iddaaFixtureTimestamp(f),near=[-1,0,1].flatMap(n=>IDDAA_BY_DATE.get(iddaaShiftDate(date,n))||[]);
+ const event=iddaaBestMatch("fixture",date,home,away,ts,near,iddaaDateKey,e=>e.hn,e=>e.an,iddaaEventTimestamp);
  IDDAA_MATCH_CACHE.set(cacheKey,event||null);return event||null;
 }
 function iddaaFixture(e){
- return iddaaBestMatch("event",iddaaDateKey(e),e.hn,e.an,iddaaEventTimestamp(e),FIXTURES,iddaaFixtureDateKey,m=>m.home,m=>m.away,iddaaFixtureTimestamp);
+ const date=iddaaDateKey(e),near=FIXTURES.filter(m=>iddaaDateDistance(date,iddaaFixtureDateKey(m))<=1);
+ return iddaaBestMatch("event",date,e.hn,e.an,iddaaEventTimestamp(e),near,iddaaFixtureDateKey,m=>m.home,m=>m.away,iddaaFixtureTimestamp);
 }
 function iddaaFootballComparison(fixture,p){
  const e=iddaaFindEventForFixture(fixture);

@@ -1,0 +1,30 @@
+
+name: Iddaa Kaynak Testi
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/30 * * * *"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Depoyu indir
+        uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Kaynak testi
+        run: python test_iddaa_kaynagi.py
+
+      - name: Raporu yükle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iddaa-kaynak-test-raporu
+          path: iddaa-kaynak-test-raporu.txt
+          if-no-files-found: warn

@@ -504,10 +504,31 @@ function iddaaDate(e){
  let n=Number(e.d||0);if(!n)return "Tarih yok";if(n<1000000000000)n*=1000;
  return new Date(n).toLocaleString("tr-TR",{timeZone:"Europe/Istanbul",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
 }
-function iddaaEventKey(date,home,away){return date+"|"+iddaaNorm(home)+"|"+iddaaNorm(away)}
+function iddaaTeamKey(value){
+ let n=iddaaNorm(value).replace(/^(fc|cf|afc|sc|ac|fk|sk|club) /,"").replace(/ (fc|cf|afc|sc|ac|fk|sk|club)$/,"").trim();
+ const aliases={
+  "man utd":"manchester united","man united":"manchester united","manchester utd":"manchester united",
+  "man city":"manchester city","manchester c":"manchester city",
+  "psg":"paris saint germain","paris sg":"paris saint germain","paris saint-germain":"paris saint germain",
+  "bayern munchen":"bayern munich","fc bayern":"bayern munich",
+  "inter":"inter milan","internazionale":"inter milan",
+  "atletico":"atletico madrid","atleti":"atletico madrid",
+  "sporting lisbon":"sporting cp","sporting clube de portugal":"sporting cp",
+  "sl benfica":"benfica","fc porto":"porto",
+  "fenerbahce":"fenerbahce","fenerbahce istanbul":"fenerbahce",
+  "galatasaray istanbul":"galatasaray","besiktas istanbul":"besiktas",
+  "basaksehir":"istanbul basaksehir","istanbul basaksehir fk":"istanbul basaksehir",
+  "tottenham":"tottenham hotspur","spurs":"tottenham hotspur",
+  "wolves":"wolverhampton wanderers","wolverhampton":"wolverhampton wanderers",
+  "west ham":"west ham united","newcastle":"newcastle united",
+  "athletic bilbao":"athletic club","athletic club bilbao":"athletic club"
+ };
+ return aliases[n]||n;
+}
+function iddaaEventKey(date,home,away){return date+"|"+iddaaTeamKey(home)+"|"+iddaaTeamKey(away)}
 function iddaaFixture(e){
- const date=iddaaDateKey(e),h=iddaaNorm(e.hn),a=iddaaNorm(e.an);
- return FIXTURES.find(m=>String(m.date).slice(0,10)===date&&iddaaNorm(m.home)===h&&iddaaNorm(m.away)===a)||null;
+ const date=iddaaDateKey(e),h=iddaaTeamKey(e.hn),a=iddaaTeamKey(e.an);
+ return FIXTURES.find(m=>String(m.date).slice(0,10)===date&&iddaaTeamKey(m.home)===h&&iddaaTeamKey(m.away)===a)||null;
 }
 function iddaaFootballComparison(fixture,p){
  const e=IDDAA_INDEX.get(iddaaEventKey(String(fixture.date).slice(0,10),fixture.home,fixture.away));

@@ -216,6 +216,8 @@ function dateText(s){return new Date(s+"T12:00:00").toLocaleDateString("tr-TR",{
 /* FUTBOL TAHMİN MOTORU */
 function buildIndexes(){
  teamIndex.clear();leagueIndex.clear();leaguePrefix.clear();
+ // Geçmişi bir kez sırala; ardından tüm takım ve lig indeksleri aynı sırayı miras alır.
+ HISTORY.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
  for(const m of HISTORY){
   const lid=String(m.league_id||"");
   if(!leagueIndex.has(lid))leagueIndex.set(lid,[]);
@@ -226,10 +228,8 @@ function buildIndexes(){
    teamIndex.get(key).push(m);
   }
  }
- const sort=(a,b)=>String(a.date).localeCompare(String(b.date));
- for(const arr of teamIndex.values())arr.sort(sort);
  for(const [lid,arr] of leagueIndex){
-  arr.sort(sort);const count=[0],goals=[0];
+  const count=[0],goals=[0];
   for(const m of arr){const valid=num(m.ft_home)&&num(m.ft_away);count.push(count[count.length-1]+(valid?1:0));goals.push(goals[goals.length-1]+(valid?Number(m.ft_home)+Number(m.ft_away):0));}
   leaguePrefix.set(lid,{arr,count,goals});
  }

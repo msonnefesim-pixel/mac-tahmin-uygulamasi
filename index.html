@@ -141,7 +141,7 @@ let FIXTURES=[], HISTORY=[];
 let teamIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map();
 let hiddenLeagues=new Set();
 let iymsYuklendi=false, nbaYuklendi=false, iddaaYuklendi=false, analysisRunning=false;
-let IDDAA_EVENTS=[], IDDAA_COMPETITIONS=new Map(), iddaaUpdated="";
+let IDDAA_EVENTS=[], IDDAA_COMPETITIONS=new Map(), iddaaUpdated="", iddaaShown=20;
 const $=id=>document.getElementById(id);
 const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
 const num=v=>v!==null&&v!==undefined&&v!==""&&Number.isFinite(Number(v));
@@ -545,16 +545,23 @@ function iddaaCard(e){
  html+="</div>";
  return html+"</div>";
 }
-function iddaaListele(){
+function iddaaDahaFazla(){
+ iddaaShown+=20;
+ iddaaListele(false);
+}
+function iddaaListele(reset=true){
+ if(reset)iddaaShown=20;
  const q=iddaaNorm($("iddaaArama")?.value||"");
  const rows=IDDAA_EVENTS.filter(e=>{
   const name=iddaaNorm((e.hn||"")+" "+(e.an||"")+" "+iddaaCompetition(e));
   return (!q||name.includes(q))&&iddaaMarkets(e).length>0;
  });
- $("iddaaOzet").innerHTML="<div class='summary-item'><span class='summary-number'>"+rows.length+"</span><span class='summary-label'>Oranlı etkinlik</span></div><div class='summary-item'><span class='summary-number'>"+IDDAA_COMPETITIONS.size+"</span><span class='summary-label'>Lig / kupa</span></div><div class='summary-item'><span class='summary-number'>"+iddaaUpdated+"</span><span class='summary-label'>Son okuma</span></div>";
+ $("iddaaOzet").innerHTML="<div class='summary-item'><span class='summary-number'>"+rows.length+"</span><span class='summary-label'>Bulunan maç</span></div><div class='summary-item'><span class='summary-number'>"+Math.min(iddaaShown,rows.length)+" / "+rows.length+"</span><span class='summary-label'>Gösterilen</span></div><div class='summary-item'><span class='summary-number'>"+IDDAA_COMPETITIONS.size+"</span><span class='summary-label'>Lig / kupa</span></div><div class='summary-item'><span class='summary-number'>"+iddaaUpdated+"</span><span class='summary-label'>Son okuma</span></div>";
  if(!rows.length){$("iddaaMaclar").innerHTML="<div class='panel'>Arama ölçütüne uygun oranlı maç bulunamadı.</div>";return}
  rows.sort((a,b)=>Number(a.d||0)-Number(b.d||0));
- $("iddaaMaclar").innerHTML=rows.map(iddaaCard).join("");
+ const shown=rows.slice(0,iddaaShown);
+ $("iddaaMaclar").innerHTML=shown.map(iddaaCard).join("")+
+  (rows.length>iddaaShown?"<div class='panel' style='text-align:center'><div class='small'>"+shown.length+" / "+rows.length+" maç gösteriliyor.</div><button type='button' onclick='iddaaDahaFazla()'>⬇️ 20 Maç Daha Göster</button></div>":"<div class='panel small' style='text-align:center'>Bültenin sonuna ulaştın · "+rows.length+" maç</div>");
 }
 async function iddaaBaslat(force=false){
  const status=$("iddaaDurum");status.textContent="İddaa bülteni kaynaktan okunuyor...";$("iddaaMaclar").innerHTML="";

@@ -147,7 +147,7 @@ let FIXTURES=[], HISTORY=[];
 let teamIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map();
 let hiddenLeagues=new Set();
 let iymsYuklendi=false, nbaYuklendi=false, iddaaYuklendi=false, iddaaLoading=false, analysisRunning=false;
-let IDDAA_EVENTS=[], IDDAA_COMPETITIONS=new Map(), IDDAA_INDEX=new Map(), iddaaUpdated="", iddaaShown=20;
+let IDDAA_EVENTS=[], IDDAA_COMPETITIONS=new Map(), IDDAA_INDEX=new Map(), IDDAA_BY_DATE=new Map(), IDDAA_MATCH_CACHE=new Map(), iddaaUpdated="", iddaaShown=20;
 const $=id=>document.getElementById(id);
 const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
 const num=v=>v!==null&&v!==undefined&&v!==""&&Number.isFinite(Number(v));
@@ -526,12 +526,80 @@ function iddaaTeamKey(value){
  return aliases[n]||n;
 }
 function iddaaEventKey(date,home,away){return date+"|"+iddaaTeamKey(home)+"|"+iddaaTeamKey(away)}
+function iddaaFixtureDateKey(f){
+ const raw=String(f&&f.date||"").trim();
+ if(/^\\d{4}-\\d{2}-\\d{2}$/.test(raw))return raw;
+ const d=new Date(raw);if(!Number.isFinite(d.getTime()))return "";
+ const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Istanbul",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(d);
+ const get=t=>parts.find(x=>x.type===t)?.value||"";
+ return get("year")+"-"+get("month")+"-"+get("day");
+}
+function iddaaFixtureTimestamp(f){
+ const raw=String(f&&f.date||"").trim();
+ if(/[T ]\\d{1,2}:\\d{2}/.test(raw)||/[zZ]$|[+-]\\d{2}:?\\d{2}$/.test(raw)){
+  const d=new Date(raw);if(Number.isFinite(d.getTime()))return d.getTime();
+ }
+ const day=iddaaFixtureDateKey(f),time=String(f&&f.time||"").match(/(\\d{1,2}):(\\d{2})/);
+ if(day&&time)return new Date(day+"T"+String(time[1]).padStart(2,"0")+":"+time[2]+":00+03:00").getTime();
+ return null;
+}
+function iddaaEventTimestamp(e){
+ let n=Number(e&&e.d||0);if(!n)return null;if(n<1000000000000)n*=1000;return n;
+}
+function iddaaDateDistance(a,b){
+ if(!a||!b)return 99;
+ return Math.round(Math.abs(new Date(a+"T12:00:00+03:00")-new Date(b+"T12:00:00+03:00"))/86400000);
+}
+function iddaaNameSimilarity(a,b){
+ const x=iddaaTeamKey(a),y=iddaaTeamKey(b);if(!x||!y)return 0;if(x===y)return 1;
+ if((x.includes(y)||y.includes(x))&&Math.min(x.length,y.length)>=4)return .91;
+ const ax=x.split(" ").filter(Boolean),by=y.split(" ").filter(Boolean);
+ const common=ax.filter(t=>by.includes(t)).length;
+ const dice=2*common/(ax.length+by.length||1);
+ if(ax.length>1&&by.length>1){
+  const initials=(u,v)=>u.length===v.length&&u.every((t,i)=>i===0&&t.length===1?t===v[i][0]:t===v[i]);
+  if(initials(ax,by)||initials(by,ax))return Math.max(dice,.91);
+ }
+ const a1=x.slice(0,48),b1=y.slice(0,48),prev=Array.from({length:b1.length+1},(_,i)=>i);
+ let row;
+ for(let i=1;i<=a1.length;i++){
+  row=[i];
+  for(let j=1;j<=b1.length;j++)row[j]=Math.min(row[j-1]+1,prev[j]+1,prev[j-1]+(a1[i-1]===b1[j-1]?0:1));
+  for(let j=0;j<prev.length;j++)prev[j]=row[j];
+ }
+ const edit=1-row[b1.length]/Math.max(a1.length,b1.length,1);
+ return Math.max(dice,edit*.92);
+}
+function iddaaBestMatch(source,date,home,away,timeOfSource,items,getDate,getHome,getAway,getTime){
+ const candidates=[];
+ for(const item of items){
+  const d=getDate(item),distance=iddaaDateDistance(date,d);if(distance>1)continue;
+  const hs=iddaaNameSimilarity(home,getHome(item)),as=iddaaNameSimilarity(away,getAway(item));
+  if(hs<.78||as<.78)continue;
+  const otherTime=getTime(item);
+  if(timeOfSource&&otherTime&&Math.abs(timeOfSource-otherTime)>18*3600000)continue;
+  let score=(hs+as)/2;
+  if(timeOfSource&&otherTime)score+=Math.max(0,.06*(1-Math.abs(timeOfSource-otherTime)/(18*3600000)));
+  candidates.push({item,score,hs,as,distance});
+ }
+ candidates.sort((a,b)=>b.score-a.score);
+ if(!candidates.length)return null;
+ if(candidates.length>1&&candidates[0].score-candidates[1].score<.035)return null;
+ return candidates[0].score>=.83?candidates[0].item:null;
+}
+function iddaaFindEventForFixture(f){
+ const date=iddaaFixtureDateKey(f),home=iddaaTeamKey(f.home),away=iddaaTeamKey(f.away);
+ const cacheKey=[date,home,away,String(f.time||"")].join("|");
+ if(IDDAA_MATCH_CACHE.has(cacheKey))return IDDAA_MATCH_CACHE.get(cacheKey);
+ const ts=iddaaFixtureTimestamp(f);
+ const event=iddaaBestMatch("fixture",date,home,away,ts,IDDAA_EVENTS,iddaaDateKey,e=>e.hn,e=>e.an,iddaaEventTimestamp);
+ IDDAA_MATCH_CACHE.set(cacheKey,event||null);return event||null;
+}
 function iddaaFixture(e){
- const date=iddaaDateKey(e),h=iddaaTeamKey(e.hn),a=iddaaTeamKey(e.an);
- return FIXTURES.find(m=>String(m.date).slice(0,10)===date&&iddaaTeamKey(m.home)===h&&iddaaTeamKey(m.away)===a)||null;
+ return iddaaBestMatch("event",iddaaDateKey(e),e.hn,e.an,iddaaEventTimestamp(e),FIXTURES,iddaaFixtureDateKey,m=>m.home,m=>m.away,iddaaFixtureTimestamp);
 }
 function iddaaFootballComparison(fixture,p){
- const e=IDDAA_INDEX.get(iddaaEventKey(String(fixture.date).slice(0,10),fixture.home,fixture.away));
+ const e=iddaaFindEventForFixture(fixture);
  if(!e)return "";
  const m1=iddaaMarket(e,1,1),ou=iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89),first=iddaaMarket(e,2,720);
  const cells=[
@@ -647,9 +715,9 @@ async function iddaaBaslat(force=false){
   const compData=payloads[1]&&payloads[1].data;
   const comps=Array.isArray(compData)?compData:(compData&&Array.isArray(compData.competitions)?compData.competitions:[]);
   if(!events.length)throw new Error("Bültende okunabilir etkinlik bulunamadı.");
-  IDDAA_EVENTS=events;IDDAA_INDEX=new Map();IDDAA_COMPETITIONS=new Map();
+  IDDAA_EVENTS=events;IDDAA_INDEX=new Map();IDDAA_BY_DATE=new Map();IDDAA_MATCH_CACHE=new Map();IDDAA_COMPETITIONS=new Map();
   comps.forEach(c=>{if(c)IDDAA_COMPETITIONS.set(String(c.i??c.cid??c.id),c);if(c&&c.cid)IDDAA_COMPETITIONS.set(String(c.cid),c)});
-  IDDAA_EVENTS.forEach(e=>{const key=iddaaEventKey(iddaaDateKey(e),e.hn,e.an);if(!IDDAA_INDEX.has(key))IDDAA_INDEX.set(key,e)});
+  IDDAA_EVENTS.forEach(e=>{const date=iddaaDateKey(e),key=iddaaEventKey(date,e.hn,e.an);if(!IDDAA_INDEX.has(key))IDDAA_INDEX.set(key,e);if(!IDDAA_BY_DATE.has(date))IDDAA_BY_DATE.set(date,[]);IDDAA_BY_DATE.get(date).push(e)});
   iddaaUpdated=new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
   iddaaYuklendi=true;
   iddaaTarihleriHazirla();

@@ -172,7 +172,7 @@ function makeDateIndex(rows){const map=new Map();for(const m of rows){const d=St
 let teamIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map();
 let hiddenLeagues=new Set();
 let iymsYuklendi=false, nbaYuklendi=false, iddaaYuklendi=false, iddaaLoading=false, analysisRunning=false;
-let NBA_GAMES_CACHE=[], liveFootballMatches=[], liveBasketballMatches=[], liveScoresBusy=false, liveScoresTimer=null, liveScoresLastFetch=0;
+let NBA_GAMES_CACHE=[], liveFootballMatches=[], liveBasketballMatches=[], liveScoresBusy=false, liveScoresTimer=null, liveScoresLastFetch=0, liveScoresDate="";
 let liveViewMode="live";
 let IDDAA_EVENTS=[], IDDAA_COMPETITIONS=new Map(), IDDAA_INDEX=new Map(), IDDAA_BY_DATE=new Map(), IDDAA_MATCH_CACHE=new Map(), iddaaUpdated="", iddaaShown=20;
 const $=id=>document.getElementById(id);
@@ -905,7 +905,7 @@ function liveMatchKey(m){
 async function liveScoresLoad(){
  if(liveScoresBusy)return;liveScoresBusy=true;
  try{
-  const day=liveLocalDate();
+  const day=liveLocalDate(),dateChanged=!!liveScoresDate&&liveScoresDate!==day;
   const footballUrl="https://sportscore.com/api/widget/matches/?sport=football&limit=50&src=yapaycin";
   const finishedUrl="https://sportscore.com/api/v1/fixtures/?sport=football&date="+day+"&status=finished&limit=200&src=yapaycin";
   const [widgetResult,finishedResult]=await Promise.allSettled([
@@ -919,23 +919,35 @@ async function liveScoresLoad(){
   [...widgetMatches,...finishedMatches].forEach(m=>{
    const key=liveMatchKey(m);if(key!=="||")merged.set(key,m);
   });
-  liveFootballMatches=[...merged.values()].filter(m=>liveState(m)!=="other");
-  if(!liveFootballMatches.some(m=>liveState(m)==="live")){
-   try{
-    const liveUrl="https://sportscore.com/api/v1/fixtures/?sport=football&date="+day+"&status=live&limit=200&src=yapaycin";
-    const liveResponse=await fetch(liveUrl,{cache:"no-store",mode:"cors"});
-    if(liveResponse.ok){
-     const liveMatches=liveList(await liveResponse.json());
-     liveMatches.forEach(m=>merged.set(liveMatchKey(m),m));
-     liveFootballMatches=[...merged.values()].filter(m=>liveState(m)!=="other");
-    }
-   }catch(e){console.warn("Ek canlı maç kaynağı:",e.message)}
+  let current=[...merged.values()].filter(m=>liveState(m)!=="other");
+  // Gece yarısı gün değişince bazı servisler devam eden maçları önceki takvim gününde tutabiliyor.
+  // O durumda hem bugünün hem de önceki günün canlı fikstürünü kontrol et.
+  if(!current.some(m=>liveState(m)==="live")||dateChanged){
+   const days=dateChanged?[day,dateAdd(day,-1)]:[day];
+   const liveResults=await Promise.allSettled(days.map(d=>
+    fetch("https://sportscore.com/api/v1/fixtures/?sport=football&date="+d+"&status=live&limit=200&src=yapaycin",{cache:"no-store",mode:"cors"})
+     .then(r=>{if(!r.ok)throw new Error("Canlı maç servisi HTTP "+r.status);return r.json()})
+   ));
+   liveResults.forEach(result=>{
+    if(result.status!=="fulfilled")return;
+    liveList(result.value).forEach(m=>{const key=liveMatchKey(m);if(key!=="||")merged.set(key,m)});
+   });
+   current=[...merged.values()].filter(m=>liveState(m)!=="other");
   }
+  // Gün değişiminde servis kısa süre boş yanıt verirse, önceki kontrolde canlı olan maçı kaybetme.
+  if(dateChanged){
+   for(const old of liveFootballMatches.filter(m=>liveState(m)==="live")){
+    const key=liveMatchKey(old);
+    if(!merged.has(key))merged.set(key,old);
+   }
+   current=[...merged.values()].filter(m=>liveState(m)!=="other");
+  }
+  liveFootballMatches=current;
   try{
    const basketballResponse=await fetch("https://sportscore.com/api/widget/matches/?sport=basketball&limit=50&src=yapaycin",{cache:"no-store",mode:"cors"});
    if(basketballResponse.ok)liveBasketballMatches=liveList(await basketballResponse.json());
   }catch(e){console.warn("NBA canlı skor kaynağı:",e.message)}
-  liveScoresLastFetch=Date.now();renderLiveScores();
+  liveScoresDate=day;liveScoresLastFetch=Date.now();renderLiveScores();
  }catch(e){
   console.warn("Canlı skor güncellemesi:",e.message);
   const status=$("liveResultsStatus");if(status)status.textContent="Canlı skor bağlantı hatası: "+e.message;

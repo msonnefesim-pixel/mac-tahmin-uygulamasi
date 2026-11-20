@@ -500,6 +500,25 @@ function iddaaFixture(e){
  const h=iddaaNorm(e.hn),a=iddaaNorm(e.an);
  return FIXTURES.find(m=>iddaaNorm(m.home)===h&&iddaaNorm(m.away)===a)||null;
 }
+
+function iddaaFairProbability(m,aliases){
+ if(!m||!Array.isArray(m.o))return null;
+ const valid=m.o.map(o=>({o,odd:iddaaOdds(o)})).filter(x=>x.odd);
+ const sum=valid.reduce((s,x)=>s+1/x.odd,0);if(!sum)return null;
+ const keys=aliases.map(iddaaNorm);
+ const found=valid.find(x=>{
+  const label=iddaaNorm(x.o.n||x.o.name||"");
+  const no=iddaaNorm(x.o.no??"");
+  return keys.includes(label)||keys.includes(no);
+ });
+ return found?(1/found.odd)/sum:null;
+}
+function iddaaCompareCell(label,model,market){
+ if(model===null||model===undefined||market===null||market===undefined)return "";
+ const diff=(model-market)*100,sign=diff>0?"+":"";
+ return "<div class='pred'><span class='pred-name'>"+label+"</span><span class='pred-value'>Model "+(model*100).toFixed(1)+"%</span><span class='small'>Piyasa "+(market*100).toFixed(1)+"%</span><span class='small'>Fark <b>"+sign+diff.toFixed(1)+" puan</b></span></div>";
+}
+
 function iddaaCard(e){
  const m1=iddaaMarket(e,1,1),ou=iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89),goal=iddaaMarket(e,2,4);
  const first=iddaaMarket(e,2,720);
@@ -512,9 +531,15 @@ function iddaaCard(e){
  html+=iddaaMarketHtml("Karşılıklı Gol",bttsM);
  html+=iddaaMarketHtml("İlk Yarı KG",first);
  if(six&&iddaaOdds(six))html+="<div class='analysis-box'><b>6+ Gol</b><div class='pred'><span class='pred-value'>"+iddaaOdds(six).toFixed(2)+"</span></div></div>";
- if(p)html+="<div class='analysis-box'><b>YaPaYCiN model karşılaştırması</b><div class='small'>Aynı ev/deplasman takımı fikstüründe eşleşti.</div><div class='predictions'>"+
-  predictionBox("Model 1",p.one)+predictionBox("Model X",p.draw)+predictionBox("Model 2",p.two)+predictionBox("Model KG",p.btts)+
-  "</div></div>";
+ if(p){
+  const market1=[["1",p.one],["X",p.draw],["2",p.two]].map(([k,v])=>iddaaCompareCell(k,v,iddaaFairProbability(m1,[k])));
+  const marketBtts=iddaaFairProbability(bttsM,["Var","Evet","Yes"]);
+  const marketFirst=iddaaFairProbability(first,["Var","Evet","Yes"]);
+  const compare=market1.join("")+iddaaCompareCell("KG Var",p.btts,marketBtts)+iddaaCompareCell("İlk Yarı KG",p.first,marketFirst);
+  html+="<div class='analysis-box'><b>YaPaYCiN – İDDAA karşılaştırması</b><div class='small'>Aynı maç için model olasılığı ile marjı çıkarılmış piyasa olasılığı arasındaki fark, yüzde puan olarak gösterilir.</div><div class='predictions'>"+
+   predictionBox("Model 1",p.one)+predictionBox("Model X",p.draw)+predictionBox("Model 2",p.two)+predictionBox("Model KG",p.btts)+
+   "</div><div class='predictions'>"+compare+"</div></div>";
+ }
  return html+"</div>";
 }
 function iddaaListele(){

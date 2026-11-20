@@ -489,22 +489,29 @@ async function iymsBaslat(){
    return {match:m,probs,h:h.length,a:a.length};
   }).filter(Boolean);
   const days=[...new Set(upcoming.map(x=>x.match.date))];
-  let futureHtml="<h3>🎯 Gelecek maçlar - İY/MS</h3><div class='panel'><b>Birden fazla tarih seç</b><p>Hiçbir tarih işaretlenmezse tüm maçlar görünür.</p>";
+  let futureHtml="<h3>🎯 Gelecek maçlar - İY/MS</h3><div class='panel'><b>Lig seç</b><br><select id='iymsLeague' style='width:100%;margin:8px 0'><option value='all'>🌍 Bütün ligler</option>";
+  [...new Set(upcoming.map(x=>x.match.league||"Diğer"))].sort((a,b)=>a.localeCompare(b,"tr")).forEach(l=>futureHtml+=`<option value="${encodeURIComponent(l)}">${l}</option>`);
+  futureHtml+="</select><b>Birden fazla tarih seç</b><p>Hiçbir tarih işaretlenmezse tüm maçlar görünür.</p>";
   if(days.length)days.forEach(d=>futureHtml+=`<label style="display:inline-flex;width:auto;align-items:center;gap:5px;background:#292929;padding:8px;margin:3px;border-radius:7px"><input type="checkbox" class="iyms-date" value="${d}" style="width:auto;margin:0">${d}</label>`);
   else futureHtml+="Yeterli geçmiş veriye sahip gelecek maç bulunamadı.";
-  futureHtml+='<button id="iymsClear" class="secondary">↻ Tüm tarihleri göster</button></div><div id="iymsFutureList"></div>';
+  futureHtml+='<button id="iymsClear" class="secondary">↻ Filtreleri temizle</button></div><div id="iymsFutureList"></div>';
   area.innerHTML=futureHtml+historyHtml+testHtml;
-  function render(selected=[]){
-   const list=selected.length?upcoming.filter(x=>selected.includes(x.match.date)):upcoming;
+  function render(selected=[],selectedLeague="all"){
+   const dateFiltered=selected.length?upcoming.filter(x=>selected.includes(x.match.date)):upcoming;
+   const list=selectedLeague==="all"?dateFiltered:dateFiltered.filter(x=>encodeURIComponent(x.match.league||"Diğer")===selectedLeague);
    if(!list.length)return "<div class='panel'>Seçilen tarihlerde gösterilecek maç yok.</div>";
    return list.map(x=>{
     const ranked=options.map(k=>({k,p:x.probs[k]})).sort((a,b)=>b.p-a.p);
     return `<div class="panel"><b>${x.match.date} · ${x.match.time||""}</b><br><small>${x.match.league||""}</small><br><b>${x.match.home} - ${x.match.away}</b><br>⭐ En güçlü: <b>${ranked[0].k} (%${ranked[0].p.toFixed(1)})</b><br><small>Ev verisi: ${x.h} · Deplasman verisi: ${x.a}</small><div class="predictions">${ranked.map(y=>`<div class="pred"><b>${y.k}</b><br><span class="pred-value">%${y.p.toFixed(1)}</span></div>`).join("")}</div></div>`;
    }).join("");
   }
-  const listEl=$("iymsFutureList");listEl.innerHTML=render();
-  area.querySelectorAll(".iyms-date").forEach(c=>c.addEventListener("change",()=>listEl.innerHTML=render([...area.querySelectorAll(".iyms-date:checked")].map(x=>x.value))));
-  $("iymsClear").addEventListener("click",()=>{area.querySelectorAll(".iyms-date").forEach(c=>c.checked=false);listEl.innerHTML=render()});
+  const listEl=$("iymsFutureList"),leagueEl=$("iymsLeague");
+  const selectedDates=()=>[...area.querySelectorAll(".iyms-date:checked")].map(x=>x.value);
+  const updateList=()=>listEl.innerHTML=render(selectedDates(),leagueEl.value);
+  listEl.innerHTML=render();
+  area.querySelectorAll(".iyms-date").forEach(c=>c.addEventListener("change",updateList));
+  leagueEl.addEventListener("change",updateList);
+  $("iymsClear").addEventListener("click",()=>{area.querySelectorAll(".iyms-date").forEach(c=>c.checked=false);leagueEl.value="all";updateList()});
   iymsYuklendi=true;status.innerHTML+="<br><span class='good'>İY/MS analizi tamamlandı.</span>";
  }catch(e){status.textContent="İY/MS veri hatası: "+e.message}
 }

@@ -229,9 +229,17 @@ function buildIndexes(){
   }
  }
  for(const [lid,arr] of leagueIndex){
-  const count=[0],goals=[0];
-  for(const m of arr){const valid=num(m.ft_home)&&num(m.ft_away);count.push(count[count.length-1]+(valid?1:0));goals.push(goals[goals.length-1]+(valid?Number(m.ft_home)+Number(m.ft_away):0));}
-  leaguePrefix.set(lid,{arr,count,goals});
+  const count=[0],goals=[0],halfCount=[0],firstGoals=[0],secondGoals=[0];
+  for(const m of arr){
+   const valid=num(m.ft_home)&&num(m.ft_away);
+   count.push(count[count.length-1]+(valid?1:0));
+   goals.push(goals[goals.length-1]+(valid?Number(m.ft_home)+Number(m.ft_away):0));
+   const halfValid=valid&&num(m.ht_home)&&num(m.ht_away)&&Number(m.ft_home)>=Number(m.ht_home)&&Number(m.ft_away)>=Number(m.ht_away);
+   halfCount.push(halfCount[halfCount.length-1]+(halfValid?1:0));
+   firstGoals.push(firstGoals[firstGoals.length-1]+(halfValid?Number(m.ht_home)+Number(m.ht_away):0));
+   secondGoals.push(secondGoals[secondGoals.length-1]+(halfValid?Number(m.ft_home)+Number(m.ft_away)-Number(m.ht_home)-Number(m.ht_away):0));
+  }
+  leaguePrefix.set(lid,{arr,count,goals,halfCount,firstGoals,secondGoals});
  }
 }
 function lowerDate(arr,date){let lo=0,hi=arr.length;while(lo<hi){const mid=(lo+hi)>>1;if(String(arr[mid].date)<String(date))lo=mid+1;else hi=mid;}return lo;}
@@ -278,11 +286,11 @@ function halfPrediction(home,away,match,period){
   if(period==="second"){own-=Number(isHome?m.ht_home:m.ht_away);opp-=Number(isHome?m.ht_away:m.ht_home)}
   return scored?own:opp;
  };
- const league=HISTORY.filter(m=>String(m.league_id)===String(match.league_id)&&String(m.date)<String(match.date)&&num(m.ht_home)&&num(m.ht_away)&&num(m.ft_home)&&num(m.ft_away));
- const avgLeague=league.length?avg(league.map(m=>{
-  const h=period==="first"?Number(m.ht_home):Number(m.ft_home)-Number(m.ht_home);
-  const a=period==="first"?Number(m.ht_away):Number(m.ft_away)-Number(m.ht_away);return (h+a)/2;
- })):0;
+ const league=leaguePrefix.get(String(match.league_id));
+ const leagueEnd=league?lowerDate(league.arr,match.date):0;
+ const leagueCount=league?league.halfCount[leagueEnd]:0;
+ const goalPrefix=period==="first"?league?.firstGoals:league?.secondGoals;
+ const avgLeague=leagueCount&&goalPrefix?(goalPrefix[leagueEnd]/leagueCount)/2:0;
  if(!avgLeague)return null;
  const lh=avg(e.map(m=>get(m,home,true)))*avg(d.map(m=>get(m,away,false)))/avgLeague;
  const la=avg(d.map(m=>get(m,away,true)))*avg(e.map(m=>get(m,home,false)))/avgLeague;
@@ -318,8 +326,13 @@ function filterMatch(t,f){
  if(f==="first")return (t.first??0)>=.4;if(f==="second")return (t.second??0)>=.5;return true;
 }
 function fillLeagues(){
- const map=new Map();
- [...FIXTURES,...HISTORY].forEach(m=>{const c=countryInfo(m),key=c.name;if(!map.has(key))map.set(key,{...c,leagues:new Set()});map.get(key).leagues.add(m.league||"Diğer")});
+ const map=new Map(),leagueCountry=new Map(),allMatches=FIXTURES.concat(HISTORY);
+ for(const m of allMatches){
+  const c=countryInfo(m),key=c.name,league=m.league||"Diğer";
+  if(!map.has(key))map.set(key,{...c,leagues:new Set()});
+  map.get(key).leagues.add(league);
+  if(!leagueCountry.has(league))leagueCountry.set(league,c);
+ }
  const select=$("ligSec"),old=select.value;select.innerHTML='<option value="all">🌍 Bütün görünür ligler</option>';
  [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,"tr")).forEach(c=>{
   const group=document.createElement("optgroup");group.label=c.flag+" "+c.name;
@@ -327,8 +340,8 @@ function fillLeagues(){
   if(group.children.length)select.appendChild(group);
  });
  if([...select.options].some(o=>o.value===old))select.value=old;
- const all=[...new Set([...FIXTURES,...HISTORY].map(m=>m.league||"Diğer"))].sort();
- $("ligCheckboxlar").innerHTML=all.map(l=>{const m=[...FIXTURES,...HISTORY].find(x=>(x.league||"Diğer")===l),c=countryInfo(m||{});return `<label style="display:block;padding:6px;border-bottom:1px solid #444"><input style="width:auto" type="checkbox" data-league="${encodeURIComponent(l)}" ${hiddenLeagues.has(l)?"":"checked"}> ${c.flag} ${c.name} · ${leagueTR(l)}</label>`}).join("");
+ const all=[...leagueCountry.keys()].sort();
+ $("ligCheckboxlar").innerHTML=all.map(l=>{const c=leagueCountry.get(l)||{flag:"🌍",name:"Uluslararası / Diğer"};return `<label style="display:block;padding:6px;border-bottom:1px solid #444"><input style="width:auto" type="checkbox" data-league="${encodeURIComponent(l)}" ${hiddenLeagues.has(l)?"":"checked"}> ${c.flag} ${c.name} · ${leagueTR(l)}</label>`}).join("");
 }
 function yonetimAc(){$("ligYonetim").classList.toggle("hidden")}
 function ligleriKaydet(){

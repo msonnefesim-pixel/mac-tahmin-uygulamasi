@@ -20,37 +20,35 @@ CHECKS = [
 ]
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 YaPaYCiN-SourceCheck/1.1",
+    "User-Agent": "Mozilla/5.0 YaPaYCiN-SourceCheck/1.2",
     "Accept": "application/json, text/plain, */*"
 }
 
+
 def inspect_events(events):
-    result = {"events_count": len(events)}
+    result = {
+        "events_count": len(events),
+        "events_sample": []
+    }
 
-    if not events:
-        result["events_sample"] = "Liste boş"
-        return result
+    for event in events[:5]:
+        if not isinstance(event, dict):
+            continue
 
-    event = events[0]
-
-    if isinstance(event, dict):
-        result["first_event_keys"] = list(event.keys())
-
-        result["first_event_sample"] = {
+        sample = {
             key: event.get(key)
             for key in ("i", "hn", "an", "d", "ci")
         }
 
         markets = event.get("m", [])
-
-        result["first_event_market_count"] = (
+        sample["market_count"] = (
             len(markets) if isinstance(markets, list) else 0
         )
 
-        samples = []
+        market_samples = []
 
         if isinstance(markets, list):
-            for market in markets[:30]:
+            for market in markets[:20]:
                 if not isinstance(market, dict):
                     continue
 
@@ -67,13 +65,14 @@ def inspect_events(events):
                             key: outcome.get(key)
                             for key in ("no", "odd", "n")
                         }
-                        for outcome in outcomes[:10]
+                        for outcome in outcomes[:8]
                         if isinstance(outcome, dict)
                     ]
 
-                samples.append(item)
+                market_samples.append(item)
 
-        result["market_samples"] = samples
+        sample["markets"] = market_samples
+        result["events_sample"].append(sample)
 
     return result
 
@@ -96,8 +95,8 @@ def check(item):
     }
 
     try:
-        with urllib.request.urlopen(req, timeout=25) as response:
-            body = response.read(2_000_001)
+        with urllib.request.urlopen(req, timeout=60) as response:
+            body = response.read()
 
             result["http_status"] = response.status
             result["content_type"] = response.headers.get(
@@ -109,13 +108,11 @@ def check(item):
             )
 
             data = json.loads(body.decode("utf-8-sig"))
-
             result["valid_json"] = True
 
             if isinstance(data, dict):
                 result["top_level_keys"] = list(data.keys())
                 result["is_success"] = data.get("isSuccess")
-
                 payload = data.get("data")
 
                 if item["name"] == "events":
@@ -132,23 +129,20 @@ def check(item):
                             result["events_type"] = type(events).__name__
                             result["events_value"] = events
 
+                    elif isinstance(payload, list):
+                        result.update(inspect_events(payload))
                     else:
                         result["data_type"] = type(payload).__name__
+                        result["data_value"] = payload
+
+                elif isinstance(payload, list):
+                    result["competition_count"] = len(payload)
+
+                    if payload and isinstance(payload[0], dict):
+                        result["first_competition_sample"] = payload[0]
 
                 else:
-                    if isinstance(payload, list):
-                        result["competition_count"] = len(payload)
-
-                        if payload and isinstance(payload[0], dict):
-                            result["first_competition_keys"] = list(
-                                payload[0].keys()
-                            )
-                            result["first_competition_sample"] = (
-                                payload[0]
-                            )
-
-                    else:
-                        result["data_type"] = type(payload).__name__
+                    result["data_type"] = type(payload).__name__
 
             elif isinstance(data, list):
                 result["record_count"] = len(data)
@@ -166,9 +160,8 @@ def check(item):
 
 
 if __name__ == "__main__":
-
     report = {
-        "tool": "YaPaYCiN Iddaa Source Test v1.1",
+        "tool": "YaPaYCiN Iddaa Source Test v1.2",
         "warning": (
             "HTTP access does not establish permission "
             "to bulk collect, archive or redistribute data."

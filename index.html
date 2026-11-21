@@ -1077,7 +1077,7 @@ async function liveScoresLoad(){
   const liveCount=current.filter(m=>liveState(m)==="live").length;
   const doneCount=current.filter(m=>liveState(m)==="finished").length;
   const status=$("liveResultsStatus");
-  if(status)status.textContent="Canlı: "+liveCount+" · Biten: "+doneCount+" · Kaynak kayıtları: widget "+lists[0].length+", bugün "+lists[2].length+", dün "+lists[3].length+" · Son kontrol: "+new Date(liveScoresLastFetch).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
+  if(status)status.textContent="Canlı: "+liveCount+" · Biten: "+doneCount+" · Kaynak kayıtları: widget "+lists[0].length+", canlı API "+lists[1].length+(results[1].status==="rejected"?" (hata: "+String(results[1].reason?.message||"erişim")+")":"")+", bugün "+lists[2].length+", dün "+lists[4].length+" · Başarılı kaynak: "+ok+"/5 · Son kontrol: "+new Date(liveScoresLastFetch).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
  }catch(e){
   console.warn("Canlı skor güncellemesi:",e.message);
   const status=$("liveResultsStatus");if(status)status.textContent="Canlı skor bağlantı hatası: "+e.message+" · Önceki skorlar korunuyor.";

@@ -353,12 +353,21 @@ function ligleriKaydet(){
  try{localStorage.setItem("yapaycinHiddenLeagues",JSON.stringify([...hiddenLeagues]))}catch(e){}
  fillLeagues();$("ligSec").value="all";$("ligYonetim").classList.add("hidden");listele();
 }
+function fixtureFinished(m){
+ if(m.completed===true||m.finished===true||m.is_finished===true||m.isFinished===true)return true;
+ const status=[m.status,m.state,m.match_status,m.status_short,m.status_long,m.fixture_status,m.phase]
+  .filter(v=>typeof v==="string"||typeof v==="number").join(" ").toLocaleLowerCase("tr");
+ return /(^|\\b)(ft|aet|pen|finished|complete|completed|ended|final|full time|ma[cç] bitti|sonu[cç]land[iı]|live|in.?progress|in.?play|halftime|half.?time|devre aras[iı]|canl[iı]|uzatmalar)(\\b|$)/i.test(status);
+}
 function macBasladiMi(m){
- if(String(m.date||"")!==today())return false;
- const match=String(m.time||"").match(/^(\d{1,2}):(\d{2})/);
+ if(fixtureFinished(m))return true;
+ const date=String(m.date||"").slice(0,10);
+ const match=String(m.time||"").match(/^(\\d{1,2}):(\\d{2})/);
+ if(!date)return false;
+ if(date<today())return true;
  if(!match)return false;
- const now=new Date(),kickoff=Number(match[1])*60+Number(match[2]);
- return now.getHours()*60+now.getMinutes()>=kickoff;
+ const kickoff=new Date(date+"T"+String(match[1]).padStart(2,"0")+":"+match[2]+":00");
+ return !Number.isNaN(kickoff.getTime())&&kickoff.getTime()<=Date.now();
 }
 function saatiGecenMaclariKaldir(){
  if(($("tarih").value||today())!==today())return;
@@ -367,9 +376,8 @@ function saatiGecenMaclariKaldir(){
  let removed=0;
  cards.forEach(card=>{
   const date=card.dataset.matchDate||"",time=(card.dataset.matchTime||"").match(/^(\d{1,2}):(\d{2})/);
-  if(date!==today()||!time)return;
-  const now=new Date(),kickoff=Number(time[1])*60+Number(time[2]);
-  if(now.getHours()*60+now.getMinutes()>=kickoff){card.remove();removed++}
+  if(!time)return;
+  if(macBasladiMi({date,time:card.dataset.matchTime})){card.remove();removed++}
  });
  if(removed){
   const remaining=alan.querySelectorAll('.match[data-auto-hide="1"]');

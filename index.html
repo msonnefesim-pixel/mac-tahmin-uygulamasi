@@ -927,7 +927,7 @@ function espnLiveList(payload){
   if(!minute){const match=String(status.displayClock||"").match(/^(\\d+)/);if(match)minute=Number(match[1]);}
   if(period>=2&&minute!==null&&minute<45)minute+=45;
   const notes=(c.notes||[]).map(n=>n.headline||n.text||"").filter(Boolean);
-  const league=e.league&&e.league.name||e.season&&e.season.slug||notes[0]||e.name||"Futbol";
+  const league=c.altGameNote||notes[0]||e.league&&e.league.name||e.season&&e.season.slug||"Futbol";
   return {id:e.id,slug:String(e.id||""),home:home.team&&(home.team.displayName||home.team.name)||home.displayName||home.name||"Ev sahibi",away:away.team&&(away.team.displayName||away.team.name)||away.displayName||away.name||"Deplasman",home_score:home.score??null,away_score:away.score??null,competition:league,status:"inprogress",status_text:display,minute,start_time:e.date||c.date||"",__feedStatus:"live"};
  }).filter(Boolean);
 }

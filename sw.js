@@ -1,4 +1,4 @@
-const CACHE_NAME = "yapaycin-mac-analiz-v73";
+const CACHE_NAME = "yapaycin-mac-analiz-v74";
 
 const FILES_TO_CACHE = ["./","./index.html","./manifest.json","./icon.png"];
 
@@ -14,16 +14,20 @@ self.addEventListener("fetch", event => {
   if (url.origin !== self.location.origin) return;
 
   if (event.request.mode === "navigate") {
-    event.respondWith((async () => {
-      const cache = await caches.open(CACHE_NAME);
-      try {
-        const fresh = await fetch(event.request, { cache: "no-store" });
-        if (fresh.ok) await cache.put(event.request, fresh.clone());
-        return fresh;
-      } catch (e) {
-        return (await cache.match(event.request)) || (await cache.match("./")) || Response.error();
-      }
-    })());
+    const cachePromise = caches.open(CACHE_NAME);
+    const refreshPromise = cachePromise.then(cache =>
+      fetch(event.request, { cache: "no-store" }).then(response => {
+        if (response.ok) return cache.put(event.request, response.clone()).then(() => response);
+        return response;
+      }).catch(() => null)
+    );
+    // Ekrani once onbellekten ac; agdaki yeni surum arka planda guncellensin.
+    event.waitUntil(refreshPromise.then(() => {}));
+    event.respondWith(cachePromise.then(cache =>
+      cache.match(event.request).then(cached =>
+        cached || refreshPromise.then(fresh => fresh || cache.match("./").then(root => root || Response.error()))
+      )
+    ));
     return;
   }
 

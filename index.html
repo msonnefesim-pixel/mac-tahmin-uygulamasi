@@ -955,7 +955,7 @@ function liveLeagueInfo(m){
  };
  const comp=m.competition||m.league||m.tournament||m.competition_name||m.competitionName||m.league_name||m.leagueName||{};
  const league=fieldText(comp)||"Diğer Lig",n=liveNorm(league);
- const country=fieldText(m.country)||fieldText(m.country_name)||fieldText(m.country_code)||fieldText(m.countryCode)||fieldText(m.region)||fieldText(m.area)||fieldText(comp&&comp.country)||fieldText(comp&&comp.country_name)||fieldText(comp&&comp.country_code)||"";
+ const country=fieldText(comp&&comp.country)||fieldText(comp&&comp.country_name)||fieldText(comp&&comp.country_code)||fieldText(comp&&comp.countryCode)||fieldText(m.country_name)||fieldText(m.country_code)||fieldText(m.countryCode)||fieldText(m.country)||fieldText(m.region)||fieldText(m.area)||"";
  const cn=liveNorm(country);
  const countryIs=(...codes)=>codes.some(x=>cn===liveNorm(x));
  const leagueIs=(...names)=>names.some(x=>n===liveNorm(x));
@@ -1038,20 +1038,18 @@ async function liveScoresLoad(){
    const key=liveMatchKey(m);if(key!=="||")merged.set(key,m);
   });
   let current=[...merged.values()].filter(m=>liveState(m)!=="other");
-  // Gece yarısı gün değişince bazı servisler devam eden maçları önceki takvim gününde tutabiliyor.
-  // O durumda hem bugünün hem de önceki günün canlı fikstürünü kontrol et.
-  if(!current.some(m=>liveState(m)==="live")||dateChanged){
-   const days=[day,dateAdd(day,-1)];
-   const liveResults=await Promise.allSettled(days.map(d=>
-    fetch("https://sportscore.com/api/v1/fixtures/?sport=football&date="+d+"&status=live&limit=200&src=yapaycin",{cache:"no-store",mode:"cors"})
-     .then(r=>{if(!r.ok)throw new Error("Canlı maç servisi HTTP "+r.status);return r.json()})
-   ));
-   liveResults.forEach(result=>{
-    if(result.status!=="fulfilled")return;
-    liveList(result.value).forEach(m=>{const key=liveMatchKey(m);if(key!=="||")merged.set(key,m)});
-   });
-   current=[...merged.values()].filter(m=>liveState(m)!=="other");
-  }
+  // Widget endpointi limit=50 ile sınırlı olabilir. Canlı fikstürleri her yenilemede
+  // bugün ve dün için ayrıca çek; böylece Almanya 2. Bundesliga gibi ligler ilk 50 dışında kalmaz.
+  const days=[day,dateAdd(day,-1)];
+  const liveResults=await Promise.allSettled(days.map(d=>
+   fetch("https://sportscore.com/api/v1/fixtures/?sport=football&date="+d+"&status=live&limit=200&src=yapaycin",{cache:"no-store",mode:"cors"})
+    .then(r=>{if(!r.ok)throw new Error("Canlı maç servisi HTTP "+r.status);return r.json()})
+  ));
+  liveResults.forEach(result=>{
+   if(result.status!=="fulfilled")return;
+   liveList(result.value).forEach(m=>{const key=liveMatchKey(m);if(key!=="||")merged.set(key,m)});
+  });
+  current=[...merged.values()].filter(m=>liveState(m)!=="other");
   // Gün değişiminde servis kısa süre boş yanıt verirse, önceki kontrolde canlı olan maçı kaybetme.
   if(dateChanged){
    for(const old of liveFootballMatches.filter(m=>liveState(m)==="live")){

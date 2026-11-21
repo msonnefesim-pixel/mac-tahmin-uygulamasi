@@ -885,7 +885,11 @@ function liveState(m){
  if(m&&m.__feedStatus==="live")return "live";
  if(m&&m.__feedStatus==="finished")return "finished";
  const st=m.status&&typeof m.status==="object"?m.status:{};
- const raw=[m.status,m.match_status,m.state,m.status_text,m.statusText,m.status_label,m.status_code,m.status_short,m.period,m.phase,st.type,st.short,st.long,st.description]
+ const fixture=m.fixture&&typeof m.fixture==="object"?m.fixture:{};
+ const fs=fixture.status&&typeof fixture.status==="object"?fixture.status:{};
+ const raw=[m.status,m.match_status,m.state,m.status_text,m.statusText,m.status_label,m.status_code,m.status_short,m.period,m.phase,
+  st.type,st.short,st.long,st.description,st.code,st.name,st.elapsed,
+  fixture.status,fs.type,fs.short,fs.long,fs.description,fs.code,fs.name]
   .filter(v=>v!==null&&v!==undefined).map(v=>String(v)).join(" ").toLowerCase().replace(/[ -]+/g,"_");
  if(/live|in_play|inplay|in_progress|inprogress|playing|first_half|second_half|1st_half|2nd_half|half_time|halftime|(^|_)ht($|_)|(^|_)break($|_)|extra_time|extra-time|penalt|(^|_)1h($|_)|(^|_)2h($|_)|(^|_)q[1-4]($|_)|1st_quarter|2nd_quarter|3rd_quarter|4th_quarter|overtime/.test(raw))return "live";
  if(/finished|full_time|fulltime|(^|_)ft($|_)|after_penalt|(^|_)aet($|_)|ended|final|complete|completed|match_over|game_over/.test(raw))return "finished";
@@ -1031,16 +1035,16 @@ async function liveScoresLoad(){
    const key=liveMatchKey(m);if(key!=="||")merged.set(key,m);
   });
   let current=[...merged.values()].filter(m=>liveState(m)!=="other");
-  // Widget endpointi limit=50 ile sınırlı olabilir. Canlı fikstürleri her yenilemede
-  // bugün ve dün için ayrıca çek; böylece Almanya 2. Bundesliga gibi ligler ilk 50 dışında kalmaz.
+  // Widget endpointi limit=50 ile sınırlı olabilir. Bugün ve dünün tüm fikstürlerini
+  // çekip sağlayıcının gerçek durum koduna göre canlı maçları ayıkla; status=live filtresine bağımlı kalma.
   const days=[day,dateAdd(day,-1)];
   const liveResults=await Promise.allSettled(days.map(d=>
-   fetch("https://sportscore.com/api/v1/fixtures/?sport=football&date="+d+"&status=live&limit=200&src=yapaycin",{cache:"no-store",mode:"cors"})
+   fetch("https://sportscore.com/api/v1/fixtures/?sport=football&date="+d+"&limit=200&src=yapaycin",{cache:"no-store",mode:"cors"})
     .then(r=>{if(!r.ok)throw new Error("Canlı maç servisi HTTP "+r.status);return r.json()})
   ));
   liveResults.forEach(result=>{
    if(result.status!=="fulfilled")return;
-   liveList(result.value).forEach(m=>{const key=liveMatchKey(m);if(key!=="||")merged.set(key,{...m,__feedStatus:"live"})});
+   liveList(result.value).forEach(m=>{const key=liveMatchKey(m);if(key!=="||")merged.set(key,m)});
   });
   current=[...merged.values()].filter(m=>liveState(m)!=="other");
   // Gün değişiminde servis kısa süre boş yanıt verirse, önceki kontrolde canlı olan maçı kaybetme.

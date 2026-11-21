@@ -39,7 +39,7 @@ button.secondary,.tab-button{background:#292929;color:#fff;border:1px solid #555
 .pred-name{display:block;font-size:10px;color:#bbb}
 .pred-value{display:block;color:var(--yellow);font-weight:bold;margin-top:3px}
 .rank{font-size:11px;color:var(--yellow);white-space:nowrap}
-.live-score-card{background:#211416;border:1px solid #653036;border-left:4px solid var(--red);border-radius:8px;padding:9px;margin:7px 0}
+.live-league-group{margin:12px 0 18px}.live-league-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 10px;margin:10px 0 7px;background:#2a1a1d;border:1px solid #75404a;border-left:4px solid var(--yellow);border-radius:7px;color:#fff;font-weight:bold;font-size:14px}.live-league-heading span:last-child{font-size:11px;color:#f5c400;white-space:nowrap} .live-score-card{background:#211416;border:1px solid #653036;border-left:4px solid var(--red);border-radius:8px;padding:9px;margin:7px 0}
 .live-score-card.finished{background:#142018;border-color:#315c3c;border-left-color:#45b866}
 .live-score-top{display:flex;justify-content:space-between;gap:8px;color:#bbb;font-size:11px}
 .live-score-teams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center;margin-top:7px;font-weight:bold}
@@ -921,12 +921,33 @@ function liveScoreCard(m){
  let time=rawTime;if(rawTime){const d=new Date(rawTime);if(!Number.isNaN(d.getTime())&&String(rawTime).includes("T"))time=d.toLocaleString("tr-TR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}
  return "<div class=\"live-score-card "+(state==="finished"?"finished":"")+"\"><div class=\"live-score-top\"><span>"+liveEsc(league)+"</span><span class=\""+(state==="live"?"live-now":"live-finished")+"\">"+(state==="live"?"<span class=\"live-dot\"></span> CANLI · "+liveEsc(minuteLabel):liveEsc(status))+"</span></div><div class=\"live-score-teams\"><span>"+liveEsc(home)+"</span><strong class=\"live-score-value\">"+(hs==null||as==null?"– : –":liveEsc(hs+" : "+as))+"</strong><span>"+liveEsc(away)+"</span></div><div class=\"live-score-top\"><span>"+liveEsc(time)+"</span><span>"+(state==="live"?liveEsc(minuteLabel):"MAÇ BİTTİ")+"</span></div></div>";
 }
+function liveLeagueInfo(m){
+ const league=String(m.competition||m.league||m.tournament||m.competition_name||"Diğer Lig");
+ const country=String(m.country||m.country_name||m.region||"");
+ const n=liveNorm(league+" "+country);
+ const top=[
+  {key:"turkiye",label:"🇹🇷 TÜRKİYE",rank:0,terms:["super lig","superlig","1 lig","1 ligi","turkiye kupasi","turkish","turkey"]},
+  {key:"ingiltere",label:"🏴 İNGİLTERE",rank:1,terms:["premier league","championship","fa cup","efl cup","england","english"]},
+  {key:"almanya",label:"🇩🇪 ALMANYA",rank:2,terms:["bundesliga","2 bundesliga","dfb pokal","germany","german"]},
+  {key:"ispanya",label:"🇪🇸 İSPANYA",rank:3,terms:["la liga","laliga","segunda","copa del rey","spain","spanish"]},
+  {key:"fransa",label:"🇫🇷 FRANSA",rank:4,terms:["ligue 1","ligue 2","coupe de france","france","french"]},
+  {key:"belcika",label:"🇧🇪 BELÇİKA",rank:5,terms:["jupiler","pro league","challenger pro","belgium","belgian"]},
+  {key:"hollanda",label:"🇳🇱 HOLLANDA",rank:6,terms:["eredivisie","eerste divisie","knvb","netherlands","dutch","holland"]},
+  {key:"italya",label:"🇮🇹 İTALYA",rank:7,terms:["serie a","serie b","coppa italia","italy","italian"]}
+ ];
+ for(const item of top)if(item.terms.some(term=>n.includes(liveNorm(term))))return {key:item.key,label:item.label+" · "+league,rank:item.rank,league};
+ return {key:"other:"+liveNorm(league),label:league,rank:100,league};
+}
 function renderLivePanel(id,matches,title,mode){
  const el=$(id);if(!el)return;
  const wanted=mode||liveViewMode;
  const list=matches.filter(m=>mode==="all"?liveState(m)!=="other":liveState(m)===wanted);
  if(!list.length){el.innerHTML="<p>"+(wanted==="live"?"Şu anda canlı maç bulunamadı.":wanted==="finished"?"Gösterilecek bitmiş maç bulunamadı.":"Gösterilecek maç bulunamadı.")+"</p>";return}
- el.innerHTML=(title?"<b>"+title+"</b>":"")+list.map(liveScoreCard).join("")+"<div class=\"live-source\">Canlı skor verileri <a href=\"https://sportscore.com/\" target=\"_blank\" rel=\"noopener\">Powered by SportScore</a> tarafından sağlanır. · Son kontrol: "+liveEsc(new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}))+"</div>";
+ const groups=new Map();
+ list.forEach(m=>{const info=liveLeagueInfo(m);if(!groups.has(info.key))groups.set(info.key,{info,matches:[]});groups.get(info.key).matches.push(m)});
+ const ordered=[...groups.values()].sort((a,b)=>a.info.rank-b.info.rank||a.info.league.localeCompare(b.info.league,"tr"));
+ const groupedHtml=ordered.map(group=>"<div class=\"live-league-group\"><div class=\"live-league-heading\"><span>"+liveEsc(group.info.label)+"</span><span>"+group.matches.length+" maç</span></div>"+group.matches.map(liveScoreCard).join("")+"</div>").join("");
+ el.innerHTML=(title?"<b>"+title+"</b>":"")+groupedHtml+"<div class=\"live-source\">Canlı skor verileri <a href=\"https://sportscore.com/\" target=\"_blank\" rel=\"noopener\">Powered by SportScore</a> tarafından sağlanır. · Son kontrol: "+liveEsc(new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}))+"</div>";
 }
 function liveFilterSet(mode){
  liveViewMode=mode;

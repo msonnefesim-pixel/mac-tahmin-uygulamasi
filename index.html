@@ -1065,7 +1065,7 @@ async function liveScoresLoad(){
   const fixtureLiveList=liveList(feedSources.fixtures);
   const espnList=espnLiveList(feedSources.espn);
   const lists=[
-   [...widgetList,...fixtureLiveList,...espnList],
+   [...widgetList,...fixtureLiveList.map(m=>({...m,__feedStatus:"live"})),...espnList],
    results[1].status==="fulfilled"?liveList(results[1].value):[],
    results[2].status==="fulfilled"?liveList(results[2].value):[],
    results[3].status==="fulfilled"?liveList(results[3].value):[]

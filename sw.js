@@ -1,4 +1,4 @@
-const CACHE_NAME = "yapaycin-mac-analiz-v70";
+const CACHE_NAME = "yapaycin-mac-analiz-v71";
 
 const FILES_TO_CACHE = ["./","./index.html","./manifest.json","./icon.png"];
 
@@ -12,6 +12,20 @@ self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+
+  if (event.request.mode === "navigate") {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      try {
+        const fresh = await fetch(event.request, { cache: "no-store" });
+        if (fresh.ok) await cache.put(event.request, fresh.clone());
+        return fresh;
+      } catch (e) {
+        return (await cache.match(event.request)) || (await cache.match("./")) || Response.error();
+      }
+    })());
+    return;
+  }
 
   if (url.pathname.endsWith("/live.json")) {
     event.respondWith(fetch(event.request, { cache: "no-store" }).catch(async () => {

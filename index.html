@@ -905,7 +905,7 @@ function liveState(m){
  const kickoffMs=typeof kickoff==="number"?(kickoff<1e12?kickoff*1000:kickoff):Date.parse(kickoff);
  const age=Date.now()-kickoffMs;
  const hasScore=homeScore!==null&&homeScore!==undefined&&awayScore!==null&&awayScore!==undefined&&homeScore!==""&&awayScore!==""&&Number.isFinite(Number(homeScore))&&Number.isFinite(Number(awayScore));
- if(!raw.trim()&&hasScore&&Number.isFinite(kickoffMs)&&age>=0&&age<=210*60000)return "live";
+ if(hasScore&&Number.isFinite(kickoffMs)&&age>=0&&age<=210*60000)return "live";
  return "other";
 }
 function liveList(data){

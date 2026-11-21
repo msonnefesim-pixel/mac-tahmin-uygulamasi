@@ -959,9 +959,10 @@ function liveLeagueInfo(m){
  const womenOrYouth=/(women|woman|ladies|female|femen|frauen|女子|kadın|kadin|youth|u\s?\d{1,2}|junior|reserve|reserves|b team|ii\b)/i.test(normalized);
  let rank=100;
  if(!womenOrYouth){
-  if(/\bbundesliga\b/.test(normalized))rank=1;
-  else if(/\blaliga\b|\bla liga\b/.test(normalized))rank=2;
-  else if(/\bpremier league\b|\benglish premier\b/.test(normalized))rank=3;
+  // Yalnızca en üst liglerin tam adlarını öne al; alt ligleri hariç tut.
+  if(/^(?:(?:germany|german|deutschland) )?bundesliga$/.test(normalized))rank=1;
+  else if(/^(?:(?:spain|spanish|espana) )?la ?liga$/.test(normalized))rank=2;
+  else if(/^(?:(?:england|english) )?premier league$/.test(normalized))rank=3;
  }
  return {key:"league:"+normalized,label:league,rank,league};
 }

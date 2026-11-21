@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - ".github/workflows/canli-skorlar.yml"
+      - "index.html"
   workflow_dispatch:
   schedule:
     - cron: "*/5 * * * *"

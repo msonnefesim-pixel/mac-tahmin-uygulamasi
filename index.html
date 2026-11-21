@@ -1050,7 +1050,8 @@ async function liveScoresLoad(){
  try{
   const day=liveLocalDate(),yesterday=dateAdd(day,-1),dateChanged=!!liveScoresDate&&liveScoresDate!==day;
   const urls=[
-   "https://sportscore.com/api/v1/fixtures/?sport=football&status=live&limit=200&src=yapaycin",
+   "https://sportscore.com/api/widget/matches/?sport=football&limit=50&src=yapaycin",
+   "https://sportscore.com/api/v1/fixtures/?sport=football&date="+day+"&status=live&limit=200&src=yapaycin",
    "https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard",
    "https://sportscore.com/api/v1/fixtures/?sport=football&date="+day+"&status=finished&limit=200&src=yapaycin",
    "https://sportscore.com/api/v1/fixtures/?sport=football&date="+day+"&limit=200&src=yapaycin",
@@ -1059,7 +1060,7 @@ async function liveScoresLoad(){
   const results=await Promise.allSettled(urls.map(url=>fetch(url,{cache:"no-store",mode:"cors",headers:{"Accept":"application/json"}}).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.json()})));
   const ok=results.filter(x=>x.status==="fulfilled").length;
   if(!ok)throw new Error("Canlı skor ve sonuç kaynaklarına ulaşılamadı");
-  const lists=results.map((x,i)=>x.status==="fulfilled"?(i===0?liveList(x.value):i===1?espnLiveList(x.value):liveList(x.value)):[]);
+  const lists=results.map((x,i)=>x.status==="fulfilled"?(i===2?espnLiveList(x.value):liveList(x.value)):[]);
   const merged=new Map();
   const add=(m,source)=>{
    const key=liveMatchKey(m);if(key==="||")return;
@@ -1073,11 +1074,13 @@ async function liveScoresLoad(){
   };
   // Her iki canlı kaynak da bağımsız işlenir. Bir kaynağın boş olmayan ama canlı olmayan
   // kayıt döndürmesi diğer kaynaktaki gerçek canlı maçları engellemez.
+  // SportScore widget ve tarihli fixtures canlı kaynakları bağımsız kontrol edilir.
   lists[0].filter(m=>liveState(m)==="live").forEach(m=>add(m,"today"));
-  lists[1].forEach(m=>add(m,"live-endpoint"));
-  lists[2].forEach(m=>add(m,"finished"));
-  lists[3].forEach(m=>add(m,"today"));
-  lists[4].forEach(m=>add(m,"yesterday"));
+  lists[1].filter(m=>liveState(m)==="live").forEach(m=>add(m,"today"));
+  lists[2].forEach(m=>add(m,"live-endpoint"));
+  lists[3].forEach(m=>add(m,"finished"));
+  lists[4].forEach(m=>add(m,"today"));
+  lists[5].forEach(m=>add(m,"yesterday"));
   let current=[...merged.values()].filter(m=>liveState(m)!=="other");
   if(dateChanged){
    for(const old of liveFootballMatches.filter(m=>liveState(m)==="live")){
@@ -1094,7 +1097,7 @@ async function liveScoresLoad(){
   const liveCount=current.filter(m=>liveState(m)==="live").length;
   const doneCount=current.filter(m=>liveState(m)==="finished").length;
   const status=$("liveResultsStatus");
-  if(status)status.textContent="Canlı: "+liveCount+" · SportScore kayıt/canlı: "+lists[0].length+"/"+lists[0].filter(m=>liveState(m)==="live").length+(results[0].status==="rejected"?" (hata: "+String(results[0].reason?.message||"erişim")+")":"")+" · ESPN gerçek canlı: "+lists[1].length+(results[1].status==="rejected"?" (hata: "+String(results[1].reason?.message||"erişim")+")":"")+" · Sonuç kaynakları: bugün "+lists[2].length+"/"+lists[3].length+", dün "+lists[4].length+" · Başarılı kaynak: "+ok+"/5 · Son kontrol: "+new Date(liveScoresLastFetch).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
+  if(status)status.textContent="Canlı: "+liveCount+" · SportScore widget kayıt/canlı: "+lists[0].length+"/"+lists[0].filter(m=>liveState(m)==="live").length+(results[0].status==="rejected"?" (hata: "+String(results[0].reason?.message||"erişim")+")":"")+" · SportScore tarihli canlı: "+lists[1].length+"/"+lists[1].filter(m=>liveState(m)==="live").length+(results[1].status==="rejected"?" (hata: "+String(results[1].reason?.message||"erişim")+")":"")+" · ESPN canlı: "+lists[2].length+(results[2].status==="rejected"?" (hata: "+String(results[2].reason?.message||"erişim")+")":"")+" · Sonuç kaynakları: bugün "+lists[3].length+"/"+lists[4].length+", dün "+lists[5].length+" · Başarılı kaynak: "+ok+"/6 · Son kontrol: "+new Date(liveScoresLastFetch).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
  }catch(e){
   console.warn("Canlı skor güncellemesi:",e.message);
   const status=$("liveResultsStatus");if(status)status.textContent="Canlı skor bağlantı hatası: "+e.message+" · Önceki skorlar korunuyor.";

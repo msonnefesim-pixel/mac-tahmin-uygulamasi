@@ -93,5 +93,20 @@ jobs:
             exit 0
           fi
           git commit -m "Canli skor verilerini guncelle"
-          git pull --rebase origin main
-          git push origin HEAD:main
+          # Baska Actions isleri ayni anda main'e yazarsa push'i guvenli sekilde yeniden dene.
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            if ! git rebase origin/main; then
+              echo "Rebase cakismasi; otomatik olarak veri ezilmeyecek."
+              git rebase --abort
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              echo "Canli skor verileri yayinlandi."
+              exit 0
+            fi
+            echo "Eszamanli commit algilandi; tekrar deneme: $attempt"
+            sleep 2
+          done
+          echo "Bes denemede push basarisiz oldu."
+          exit 1

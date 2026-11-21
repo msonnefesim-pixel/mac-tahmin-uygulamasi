@@ -921,6 +921,31 @@ function liveScoreCard(m){
  let time=rawTime;if(rawTime){const d=new Date(rawTime);if(!Number.isNaN(d.getTime())&&String(rawTime).includes("T"))time=d.toLocaleString("tr-TR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}
  return "<div class=\"live-score-card "+(state==="finished"?"finished":"")+"\"><div class=\"live-score-top\"><span>"+liveEsc(league)+"</span><span class=\""+(state==="live"?"live-now":"live-finished")+"\">"+(state==="live"?"<span class=\"live-dot\"></span> CANLI · "+liveEsc(minuteLabel):liveEsc(status))+"</span></div><div class=\"live-score-teams\"><span>"+liveEsc(home)+"</span><strong class=\"live-score-value\">"+(hs==null||as==null?"– : –":liveEsc(hs+" : "+as))+"</strong><span>"+liveEsc(away)+"</span></div><div class=\"live-score-top\"><span>"+liveEsc(time)+"</span><span>"+(state==="live"?liveEsc(minuteLabel):"MAÇ BİTTİ")+"</span></div></div>";
 }
+function liveCountryFlag(country){
+ const c=liveNorm(country);
+ const flags=[
+  [/^(tr|tur|turkey|turkiye|turkey)$/,"🇹🇷"],[/^(de|ger|germany|deutschland|almanya)$/,"🇩🇪"],
+  [/^(gb|eng|england|ingiltere|united kingdom)$/,"🏴"],[/^(es|esp|spain|espana|ispanya)$/,"🇪🇸"],
+  [/^(it|ita|italy|italia|italya)$/,"🇮🇹"],[/^(pt|por|portugal|portekiz)$/,"🇵🇹"],
+  [/^(fr|fra|france|fransa)$/,"🇫🇷"],[/^(nl|ned|hol|netherlands|holland|hollanda)$/,"🇳🇱"],
+  [/^(us|usa|united states|america)$/,"🇺🇸"],[/^(mx|mex|mexico|meksika)$/,"🇲🇽"],
+  [/^(br|bra|brazil|brasil|brezilya)$/,"🇧🇷"],[/^(ar|arg|argentina|arjantin)$/,"🇦🇷"],
+  [/^(jp|jpn|japan|japonya)$/,"🇯🇵"],[/^(kr|kor|south korea|korea)$/,"🇰🇷"],
+  [/^(sa|sau|saudi arabia|suudi arabistan)$/,"🇸🇦"],[/^(au|aus|australia|avustralya)$/,"🇦🇺"],
+  [/^(be|bel|belgium|belcika)$/,"🇧🇪"],[/^(ch|sui|switzerland|isvicre)$/,"🇨🇭"],
+  [/^(at|aut|austria|avusturya)$/,"🇦🇹"],[/^(gr|gre|greece|yunanistan)$/,"🇬🇷"],
+  [/^(pl|pol|poland|polonya)$/,"🇵🇱"],[/^(ru|rus|russia|rusya)$/,"🇷🇺"],
+  [/^(ua|ukr|ukraine|ukrayna)$/,"🇺🇦"],[/^(sc|sco|scotland|iskocya)$/,"🏴󠁧󠁢󠁳󠁣󠁴󠁿"],
+  [/^(ie|irl|ireland|irlanda)$/,"🇮🇪"],[/^(dk|den|denmark|danimarka)$/,"🇩🇰"],
+  [/^(se|swe|sweden|isvec)$/,"🇸🇪"],[/^(no|nor|norway|norvec)$/,"🇳🇴"],
+  [/^(hr|cro|croatia|hirvatistan)$/,"🇭🇷"],[/^(rs|srb|serbia|sirbistan)$/,"🇷🇸"],
+  [/^(za|rsa|south africa|guney afrika)$/,"🇿🇦"],[/^(eg|egy|egypt|misir)$/,"🇪🇬"],
+  [/^(ma|mar|morocco|fas)$/,"🇲🇦"],[/^(co|col|colombia|kolombiya)$/,"🇨🇴"],
+  [/^(cl|chi|chile|sili)$/,"🇨🇱"],[/^(uy|uru|uruguay)$/,"🇺🇾"]
+ ];
+ for(const [re,flag] of flags)if(re.test(c))return flag;
+ return "🏳️";
+}
 function liveLeagueInfo(m){
  const league=String(m.competition||m.league||m.tournament||m.competition_name||"Diğer Lig");
  const country=String(m.country||m.country_name||m.country_code||m.countryCode||m.region||"");
@@ -944,7 +969,7 @@ function liveLeagueInfo(m){
   {key:"nl-1",label:"🇳🇱 HOLLANDA · Eredivisie",rank:10,match:()=>hasCountry("NED","HOL","netherlands","holland","hollanda")&&is("eredivisie")}
  ];
  if(!isWomenYouthReserve)for(const item of priority)if(item.match())return {key:"priority:"+item.key,label:item.label,rank:item.rank,league};
- return {key:"other:"+liveNorm(league+" "+country),label:(country?country+" · ":"")+league,rank:100,league};
+ return {key:"other:"+liveNorm(league+" "+country),label:(country?liveCountryFlag(country)+" "+country+" · ":"🏳️ ")+league,rank:100,league};
 }
 function renderLivePanel(id,matches,title,mode){
  const el=$(id);if(!el)return;

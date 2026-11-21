@@ -357,16 +357,20 @@ function fixtureFinished(m){
  if(m.completed===true||m.finished===true||m.is_finished===true||m.isFinished===true)return true;
  const status=[m.status,m.state,m.match_status,m.status_short,m.status_long,m.fixture_status,m.phase]
   .filter(v=>typeof v==="string"||typeof v==="number").join(" ").toLocaleLowerCase("tr");
- return /(^|\\b)(ft|aet|pen|finished|complete|completed|ended|final|full time|ma[cç] bitti|sonu[cç]land[iı]|live|in.?progress|in.?play|halftime|half.?time|devre aras[iı]|canl[iı]|uzatmalar)(\\b|$)/i.test(status);
+ const normalized=" "+status.replace(/[^a-z0-9çğıöşü]+/g," ")+" ";
+ const terms=[" ft "," aet "," pen "," finished "," complete "," completed "," ended "," final "," full time "," maç bitti "," sonuçlandı "," live "," in progress "," inplay "," halftime "," half time "," devre arası "," canlı "," uzatmalar "];
+ return terms.some(term=>normalized.includes(term));
 }
 function macBasladiMi(m){
  if(fixtureFinished(m))return true;
  const date=String(m.date||"").slice(0,10);
- const match=String(m.time||"").match(/^(\\d{1,2}):(\\d{2})/);
+ const parts=String(m.time||"").split(":");
  if(!date)return false;
  if(date<today())return true;
- if(!match)return false;
- const kickoff=new Date(date+"T"+String(match[1]).padStart(2,"0")+":"+match[2]+":00");
+ if(parts.length<2)return false;
+ const hour=Number(parts[0]),minute=Number(parts[1]);
+ if(!Number.isFinite(hour)||!Number.isFinite(minute)||hour<0||hour>23||minute<0||minute>59)return false;
+ const kickoff=new Date(date+"T"+String(hour).padStart(2,"0")+":"+String(minute).padStart(2,"0")+":00");
  return !Number.isNaN(kickoff.getTime())&&kickoff.getTime()<=Date.now();
 }
 function saatiGecenMaclariKaldir(){

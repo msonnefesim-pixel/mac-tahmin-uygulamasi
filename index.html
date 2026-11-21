@@ -168,6 +168,7 @@ th{color:var(--yellow)}
 
 /* GENEL VERİLER */
 let FIXTURES=[], HISTORY=[];
+let fixtureResultIndex=new Set();
 let footballRefreshBusy=false, predictionCache=new Map();
 let fixtureDateIndex=new Map(), historyDateIndex=new Map(), listRenderToken=0;
 function makeDateIndex(rows){const map=new Map();for(const m of rows){const d=String(m.date||"");if(!map.has(d))map.set(d,[]);map.get(d).push(m)}return map;}
@@ -353,6 +354,20 @@ function ligleriKaydet(){
  try{localStorage.setItem("yapaycinHiddenLeagues",JSON.stringify([...hiddenLeagues]))}catch(e){}
  fillLeagues();$("ligSec").value="all";$("ligYonetim").classList.add("hidden");listele();
 }
+function fixtureTeamNorm(value){
+ return String(value||"").toLocaleLowerCase("tr").replace(/ı/g,"i").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim().replace(/\\s+/g," ");
+}
+function fixtureHistoryKey(m,date){
+ return [String(m.league_id||""),date,fixtureTeamNorm(m.home),fixtureTeamNorm(m.away)].join("|");
+}
+function buildFixtureResultIndex(){
+ fixtureResultIndex=new Set();
+ for(const m of HISTORY){
+  if(!num(m.ft_home)||!num(m.ft_away))continue;
+  const date=String(m.date||"").slice(0,10);
+  if(date)fixtureResultIndex.add(fixtureHistoryKey(m,date));
+ }
+}
 function fixtureFinished(m){
  if(m.completed===true||m.finished===true||m.is_finished===true||m.isFinished===true)return true;
  const status=[m.status,m.state,m.match_status,m.status_short,m.status_long,m.fixture_status,m.phase]
@@ -363,6 +378,13 @@ function fixtureFinished(m){
 }
 function macBasladiMi(m){
  if(fixtureFinished(m))return true;
+ const matchDate=String(m.date||"").slice(0,10);
+ if(matchDate){
+  // Fikstür kaynağı saati yanlış/eksik verse bile sonuç arşivine düşen maç yaklaşan listesinde kalmasın.
+  const dates=[matchDate];
+  try{dates.push(dateAdd(matchDate,-1),dateAdd(matchDate,1))}catch(e){}
+  if(dates.some(d=>fixtureResultIndex.has(fixtureHistoryKey(m,d))))return true;
+ }
  const date=String(m.date||"").slice(0,10);
  const parts=String(m.time||"").split(":");
  if(!date)return false;
@@ -461,6 +483,7 @@ async function baslat(force=false){
   const r=await fetch("./data.json"+(force?"?v="+Date.now():""),{cache:force?"no-store":"default"});
   if(!r.ok)throw new Error("data.json yüklenemedi ("+r.status+")");
   const data=await r.json();FIXTURES=Array.isArray(data.fixtures)?data.fixtures:[];HISTORY=Array.isArray(data.history)?data.history:[];
+  buildFixtureResultIndex();
   predictionCache.clear();
   fixtureDateIndex=makeDateIndex(FIXTURES);historyDateIndex=makeDateIndex(HISTORY);
   buildIndexes();

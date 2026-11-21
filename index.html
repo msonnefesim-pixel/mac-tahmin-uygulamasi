@@ -915,16 +915,21 @@ function liveList(data){
  for(const key of ["data","result"])if(data[key]&&typeof data[key]==="object"){const found=liveList(data[key]);if(found.length)return found}
  return [];
 }
-function sofaLiveList(payload){
+function espnLiveList(payload){
  const events=payload&&Array.isArray(payload.events)?payload.events:[];
  return events.map(e=>{
-  const st=e.status||{},home=e.homeTeam||{},away=e.awayTeam||{},t=e.tournament||{},cat=t.category||{};
-  const hs=e.homeScore||{},as=e.awayScore||{},tm=e.time||{};
-  const periodStart=Number(tm.currentPeriodStartTimestamp||0);
-  let minute=null;
-  if(periodStart){minute=Math.max(0,Math.floor((Date.now()/1000-periodStart)/60));if(/second|2nd/i.test(st.description||""))minute+=45;}
-  return {id:e.id,slug:String(e.id||""),home:home.name||"Ev sahibi",away:away.name||"Deplasman",home_score:hs.current??hs.display??null,away_score:as.current??as.display??null,competition:[cat.name,t.name].filter(Boolean).join(" · ")||t.name||"Diğer Lig",status:st.type||"inprogress",status_text:st.description||"CANLI",minute,start_time:e.startTimestamp?new Date(e.startTimestamp*1000).toISOString():"",__feedStatus:"live"};
- });
+  const c=(e.competitions||[])[0]||{},teams=c.competitors||[];
+  const home=teams.find(t=>t.homeAway==="home")||{},away=teams.find(t=>t.homeAway==="away")||{};
+  const status=c.status||e.status||{},type=status.type||{},state=String(type.state||"").toLowerCase();
+  if(state!=="in"||type.completed===true)return null;
+  const clock=Number(status.clock||0),display=type.shortDetail||type.detail||type.description||"CANLI",period=Number(status.period||0);
+  let minute=clock?Math.floor(clock/60):null;
+  if(!minute){const match=String(status.displayClock||"").match(/^(\\d+)/);if(match)minute=Number(match[1]);}
+  if(period>=2&&minute!==null&&minute<45)minute+=45;
+  const notes=(c.notes||[]).map(n=>n.headline||n.text||"").filter(Boolean);
+  const league=e.league&&e.league.name||e.season&&e.season.slug||notes[0]||e.name||"Futbol";
+  return {id:e.id,slug:String(e.id||""),home:home.team&&(home.team.displayName||home.team.name)||home.displayName||home.name||"Ev sahibi",away:away.team&&(away.team.displayName||away.team.name)||away.displayName||away.name||"Deplasman",home_score:home.score??null,away_score:away.score??null,competition:league,status:"inprogress",status_text:display,minute,start_time:e.date||c.date||"",__feedStatus:"live"};
+ }).filter(Boolean);
 }
 function liveNorm(v){return String(v||"").toLocaleLowerCase("tr").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ")}
 function liveMinuteLabel(m){
@@ -1005,7 +1010,7 @@ function renderLivePanel(id,matches,title,mode){
  list.forEach(m=>{const info=liveLeagueInfo(m);if(!groups.has(info.key))groups.set(info.key,{info,matches:[]});groups.get(info.key).matches.push(m)});
  const ordered=[...groups.values()].sort((a,b)=>a.info.rank-b.info.rank||a.info.league.localeCompare(b.info.league,"tr"));
  const groupedHtml=ordered.map(group=>"<div class=\"live-league-group\"><div class=\"live-league-heading\"><span>"+liveEsc(group.info.label)+"</span><span>"+group.matches.length+" maç</span></div>"+group.matches.map(liveScoreCard).join("")+"</div>").join("");
- el.innerHTML=(title?"<b>"+title+"</b>":"")+groupedHtml+"<div class=\"live-source\">Canlı skorlar <a href=\"https://www.sofascore.com/\" target=\"_blank\" rel=\"noopener\">SofaScore</a> · maç sonuçları <a href=\"https://sportscore.com/\" target=\"_blank\" rel=\"noopener\">SportScore</a> kaynaklıdır. · Son kontrol: "+liveEsc(new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}))+"</div>";
+ el.innerHTML=(title?"<b>"+title+"</b>":"")+groupedHtml+"<div class=\"live-source\">Canlı skorlar <a href=\"https://www.espn.com/soccer/\" target=\"_blank\" rel=\"noopener\">ESPN</a> · maç sonuçları <a href=\"https://sportscore.com/\" target=\"_blank\" rel=\"noopener\">SportScore</a> kaynaklıdır. · Son kontrol: "+liveEsc(new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}))+"</div>";
 }
 function liveFilterSet(mode){
  liveViewMode=mode;
@@ -1045,7 +1050,7 @@ async function liveScoresLoad(){
  try{
   const day=liveLocalDate(),yesterday=dateAdd(day,-1),dateChanged=!!liveScoresDate&&liveScoresDate!==day;
   const urls=[
-   "https://www.sofascore.com/api/v1/sport/football/events/live",
+   "https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard",
    "https://sportscore.com/api/v1/fixtures/?sport=football&date="+day+"&status=finished&limit=200&src=yapaycin",
    "https://sportscore.com/api/v1/fixtures/?sport=football&date="+day+"&limit=200&src=yapaycin",
    "https://sportscore.com/api/v1/fixtures/?sport=football&date="+yesterday+"&limit=200&src=yapaycin"
@@ -1053,7 +1058,7 @@ async function liveScoresLoad(){
   const results=await Promise.allSettled(urls.map(url=>fetch(url,{cache:"no-store",mode:"cors",headers:{"Accept":"application/json"}}).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.json()})));
   const ok=results.filter(x=>x.status==="fulfilled").length;
   if(!ok)throw new Error("Canlı skor ve sonuç kaynaklarına ulaşılamadı");
-  const lists=results.map((x,i)=>x.status==="fulfilled"?(i===0?sofaLiveList(x.value):liveList(x.value)):[]);
+  const lists=results.map((x,i)=>x.status==="fulfilled"?(i===0?espnLiveList(x.value):liveList(x.value)):[]);
   const merged=new Map();
   const add=(m,source)=>{
    const key=liveMatchKey(m);if(key==="||")return;
@@ -1085,7 +1090,7 @@ async function liveScoresLoad(){
   const liveCount=current.filter(m=>liveState(m)==="live").length;
   const doneCount=current.filter(m=>liveState(m)==="finished").length;
   const status=$("liveResultsStatus");
-  if(status)status.textContent="Canlı: "+liveCount+" · Biten: "+doneCount+" · SofaScore canlı: "+lists[0].length+(results[0].status==="rejected"?" (hata: "+String(results[0].reason?.message||"erişim")+")":"")+", sonuç kaynakları: bugün "+lists[1].length+"/"+lists[2].length+", dün "+lists[3].length+" · Başarılı kaynak: "+ok+"/4 · Son kontrol: "+new Date(liveScoresLastFetch).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
+  if(status)status.textContent="Canlı: "+liveCount+" · Biten: "+doneCount+" · ESPN canlı: "+lists[0].length+(results[0].status==="rejected"?" (hata: "+String(results[0].reason?.message||"erişim")+")":"")+", sonuç kaynakları: bugün "+lists[1].length+"/"+lists[2].length+", dün "+lists[3].length+" · Başarılı kaynak: "+ok+"/4 · Son kontrol: "+new Date(liveScoresLastFetch).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
  }catch(e){
   console.warn("Canlı skor güncellemesi:",e.message);
   const status=$("liveResultsStatus");if(status)status.textContent="Canlı skor bağlantı hatası: "+e.message+" · Önceki skorlar korunuyor.";

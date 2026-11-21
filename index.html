@@ -313,7 +313,7 @@ function highest(t){return t?Math.max(t.one,t.draw,t.two,t.over35,t.six,t.btts,t
 function predictionBox(name,value){return `<div class="pred"><span class="pred-name">${name}</span><span class="pred-value">${pct(value)}</span></div>`}
 function matchCard(m,t,past=false,rank=0){
  const finalPrediction=!past&&t?iddaaAdjustedPrediction(m,t):t;
- return `<div class="match"><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?("#"+rank+" · "+pct(highest(finalPrediction))):"Tahmin yok"}</span>`:""}</div>
+ return `<div class="match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}"`}><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?("#"+rank+" · "+pct(highest(finalPrediction))):"Tahmin yok"}</span>`:""}</div>
  <div class="meta-row"><div class="meta">${leagueView(m)}</div><div class="kickoff">${m.time||"Saat yok"}</div></div>
  ${past?`<div class="result">Maç sonucu: ${m.ft_home}-${m.ft_away}</div>`:`<div class="predictions">
  ${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}
@@ -352,6 +352,34 @@ function ligleriKaydet(){
  try{localStorage.setItem("yapaycinHiddenLeagues",JSON.stringify([...hiddenLeagues]))}catch(e){}
  fillLeagues();$("ligSec").value="all";$("ligYonetim").classList.add("hidden");listele();
 }
+function macBasladiMi(m){
+ if(String(m.date||"")!==today())return false;
+ const match=String(m.time||"").match(/^(\\d{1,2}):(\\d{2})/);
+ if(!match)return false;
+ const now=new Date(),kickoff=Number(match[1])*60+Number(match[2]);
+ return now.getHours()*60+now.getMinutes()>=kickoff;
+}
+function saatiGecenMaclariKaldir(){
+ if(($("tarih").value||today())!==today())return;
+ const alan=$("maclar");if(!alan)return;
+ const cards=alan.querySelectorAll('.match[data-auto-hide="1"]');
+ let removed=0;
+ cards.forEach(card=>{
+  const date=card.dataset.matchDate||"",time=(card.dataset.matchTime||"").match(/^(\\d{1,2}):(\\d{2})/);
+  if(date!==today()||!time)return;
+  const now=new Date(),kickoff=Number(time[1])*60+Number(time[2]);
+  if(now.getHours()*60+now.getMinutes()>=kickoff){card.remove();removed++}
+ });
+ if(removed){
+  const remaining=alan.querySelectorAll('.match[data-auto-hide="1"]');
+  const count=[...remaining].filter(card=>!((card.querySelector(".rank")||{}).textContent||"").includes("Tahmin yok")).length;
+  const nums=$("macOzet").querySelectorAll(".summary-number");
+  if(nums.length>=3){nums[0].textContent=remaining.length;nums[1].textContent=count;nums[2].textContent=remaining.length-count}
+  if(!remaining.length)alan.textContent="Başlama saati geçen maç kalmadı.";
+ }
+}
+setInterval(saatiGecenMaclariKaldir,15000);
+
 function listele(){
  if(!FIXTURES.length&&!HISTORY.length)return;
  const token=++listRenderToken;
@@ -370,6 +398,7 @@ function listele(){
   const stop=Math.min(i+prepareSize,source.length);
   for(;i<stop;i++){
    const m=source[i],ln=m.league||"Diğer";
+   if(!past&&macBasladiMi(m))continue;
    if(hiddenLeagues.has(ln))continue;
    if(league!=="all"&&encodeURIComponent(ln)!==league)continue;
    const country=countryInfo(m),searchText=(m.home+" "+m.away+" "+ln+" "+country.name).toLocaleLowerCase("tr");

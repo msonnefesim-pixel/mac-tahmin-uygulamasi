@@ -78,6 +78,10 @@ jobs:
                               match_time = "Saat açıklanmadı"
 
                           if today <= match_date <= end_date:
+                              # Saatler CET-1 (UTC+1) sabit formatindan +2 ile Istanbul'a cevrildi.
+                              # Baslama zamani gecmis maclari veri dosyasina hic ekleme.
+                              if raw_time and kickoff <= now.replace(tzinfo=None):
+                                  continue
                               fixtures.append({
                                   "league_id": league_id,
                                   "league": league,

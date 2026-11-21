@@ -39,7 +39,7 @@ button.secondary,.tab-button{background:#292929;color:#fff;border:1px solid #555
 .pred-name{display:block;font-size:10px;color:#bbb}
 .pred-value{display:block;color:var(--yellow);font-weight:bold;margin-top:3px}
 .rank{font-size:11px;color:var(--yellow);white-space:nowrap}
-.live-league-group{margin:12px 0 18px}.live-league-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 10px;margin:10px 0 7px;background:#2a1a1d;border:1px solid #a8323e;border-left:4px solid #ff3030;border-radius:7px;color:#ff4545;font-weight:800;font-size:17px}.live-league-heading span:last-child{font-size:11px;color:#f5c400;white-space:nowrap} .live-score-card{background:#211416;border:1px solid #653036;border-left:4px solid var(--red);border-radius:8px;padding:9px;margin:7px 0}
+.coupon-card{background:#1b1b1b;border:1px solid #555;border-left:4px solid var(--yellow);border-radius:10px;padding:11px;margin:10px 0}.coupon-match{padding:9px 0;border-top:1px solid #444;margin-top:8px}.coupon-status{font-weight:bold;white-space:nowrap}.coupon-status.hit{color:#7ee081}.coupon-status.miss{color:#ff7777}.coupon-status.pending{color:#f5c400}.coupon-meta{font-size:11px;color:#bbb;margin-top:4px}.live-league-group{margin:12px 0 18px}.live-league-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 10px;margin:10px 0 7px;background:#2a1a1d;border:1px solid #a8323e;border-left:4px solid #ff3030;border-radius:7px;color:#ff4545;font-weight:800;font-size:17px}.live-league-heading span:last-child{font-size:11px;color:#f5c400;white-space:nowrap} .live-score-card{background:#211416;border:1px solid #653036;border-left:4px solid var(--red);border-radius:8px;padding:9px;margin:7px 0}
 .live-score-card.finished{background:#142018;border-color:#315c3c;border-left-color:#45b866}
 .live-score-top{display:flex;justify-content:space-between;gap:8px;color:#bbb;font-size:11px}
 .live-score-teams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center;margin-top:7px;font-weight:bold}
@@ -64,7 +64,7 @@ th{color:var(--yellow)}
  <button id="futbolButon" class="tab-button active" onclick="sekmeAc('futbol')">⚽ FUTBOL</button>
  <button id="iymsButon" class="tab-button" onclick="sekmeAc('iyms')">🎯 İY/MS</button>
  <button id="nbaButon" class="tab-button" onclick="sekmeAc('nba')">🏀 NBA</button>
- <button id="liveButon" class="tab-button" onclick="sekmeAc('live')">🔴 CANLI SONUÇLAR</button>
+ <button id="couponButon" class="tab-button" onclick="sekmeAc('coupons')">🎟️ HAZIR KUPONLAR</button>
  <!-- İDDAA arka planda çalışır; kullanıcı sekmesi gösterilmez. -->
 </div>
 
@@ -112,18 +112,7 @@ th{color:var(--yellow)}
  </div>
 </section>
 
-<section id="liveBolumu" class="hidden">
- <h2>🔴 CANLI SONUÇLAR</h2>
- <p class="small" style="color:#f5c400;font-weight:bold">⏱️ Skorlar 5 dakikada bir güncellenir.</p>
- <div class="panel">
-  <div class="controls">
-   <button id="liveOnlyButton" class="secondary" onclick="liveFilterSet('live')">✓ Sadece canlı maçlar</button>
-   <button id="finishedOnlyButton" class="secondary" onclick="liveFilterSet('finished')">✓ Biten maçlar</button>
-  </div>
-  <div id="liveResultsStatus" class="small">Canlı sonuçlar yükleniyor...</div>
-  <div id="liveResultsPanel"></div>
- </div>
-</section>
+<section id="couponsBolumu" class="hidden"><h2>🎟️ GÜNLÜK HAZIR KUPONLAR</h2><div class="panel"><div id="couponDate">Günün kuponları hazırlanıyor...</div><div id="couponStats"></div><button onclick="kuponlariYenile()">Kuponları Yeniden Oluştur</button><p>Her kupon en fazla 5 maç içerir. Yeterli analiz verisi olmayan maçlar eklenmez. Tahminler garanti değildir.</p></div><div id="couponCards"></div><p class="small">Kupon geçmişi bu cihazın tarayıcısında saklanır.</p></section>
 
 <section id="iymsBolumu" class="hidden">
  <h2>🎯 İLK YARI / MAÇ SONU ANALİZİ</h2>
@@ -504,10 +493,10 @@ async function baslat(force=false){
  finally{footballRefreshBusy=false}
 }
 function sekmeAc(name){
- const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",nba:"nbaBolumu",live:"liveBolumu",iddaa:"iddaaBolumu"};
+ const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",nba:"nbaBolumu",coupons:"couponsBolumu",iddaa:"iddaaBolumu"};
  Object.keys(ids).forEach(k=>$(ids[k]).classList.toggle("hidden",k!==name));
- $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");$("nbaButon").classList.toggle("active",name==="nba");$("liveButon").classList.toggle("active",name==="live");
- if(name==="live"){renderLiveResults();if(Date.now()-liveScoresLastFetch>30000)liveScoresLoad();}
+ $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");$("nbaButon").classList.toggle("active",name==="nba");$("couponButon").classList.toggle("active",name==="coupons");
+ if(name==="coupons"){kuponlariGoster();if(Date.now()-liveScoresLastFetch>30000)liveScoresLoad();}
  if(name==="iyms"&&!iymsYuklendi)iymsBaslat();
  if(name==="nba"&&!nbaYuklendi)nbaBaslat();
  if(name==="iddaa"){if(!iddaaYuklendi)iddaaBaslat();else iddaaListele();}

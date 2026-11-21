@@ -1035,6 +1035,7 @@ async function liveScoresLoad(){
   const day=liveLocalDate(),yesterday=dateAdd(day,-1),dateChanged=!!liveScoresDate&&liveScoresDate!==day;
   const urls=[
    "https://sportscore.com/api/widget/matches/?sport=football&limit=50&src=yapaycin",
+   "https://sportscore.com/api/v1/fixtures/?sport=football&status=live&limit=200&src=yapaycin",
    "https://sportscore.com/api/v1/fixtures/?sport=football&date="+day+"&status=finished&limit=200&src=yapaycin",
    "https://sportscore.com/api/v1/fixtures/?sport=football&date="+day+"&limit=200&src=yapaycin",
    "https://sportscore.com/api/v1/fixtures/?sport=football&date="+yesterday+"&limit=200&src=yapaycin"
@@ -1047,6 +1048,7 @@ async function liveScoresLoad(){
   const add=(m,source)=>{
    const key=liveMatchKey(m);if(key==="||")return;
    const incoming={...m};
+   if(source==="live-endpoint")incoming.__feedStatus="live";
    if(source==="finished")incoming.__feedStatus="finished";
    const previous=merged.get(key);
    if(!previous){merged.set(key,incoming);return}
@@ -1054,9 +1056,11 @@ async function liveScoresLoad(){
    if(after==="finished"||after==="live"&&before!=="finished"||before==="other")merged.set(key,incoming);
   };
   lists[0].forEach(m=>add(m,"widget"));
-  lists[1].forEach(m=>add(m,"finished"));
-  lists[2].forEach(m=>add(m,"today"));
-  lists[3].forEach(m=>add(m,"yesterday"));
+  // status=live filtresinin döndürdüğü kayıtlar, kendi status alanı eksik olsa da canlıdır.
+  lists[1].forEach(m=>add(m,"live-endpoint"));
+  lists[2].forEach(m=>add(m,"finished"));
+  lists[3].forEach(m=>add(m,"today"));
+  lists[4].forEach(m=>add(m,"yesterday"));
   let current=[...merged.values()].filter(m=>liveState(m)!=="other");
   if(dateChanged){
    for(const old of liveFootballMatches.filter(m=>liveState(m)==="live")){

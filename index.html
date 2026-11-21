@@ -927,6 +927,9 @@ function liveLeagueInfo(m){
  const n=liveNorm(league),cn=liveNorm(country),all=liveNorm(league+" "+country);
  const hasCountry=(...terms)=>terms.some(x=>cn.includes(liveNorm(x))||(!cn&&all.includes(liveNorm(x))));
  const is=(...terms)=>terms.some(x=>n===liveNorm(x)||n.includes(liveNorm(x)));
+ // Kadın, genç, rezerv ve alt yaş kategorilerini öncelikli erkek A takım liglerinden ayrı tut.
+ const womenYouthReserve=/(^| )(women|woman|womens|ladies|female|femenina|feminine|femminile|frauen|frau|dam|damen|kad[ıi]nlar?|kadin|u ?\d{1,2}|under ?\d{1,2}|youth|junior|juniores|reserves?|ii|b team|academy)( |$)/i;
+ const isWomenYouthReserve=womenYouthReserve.test(" "+liveNorm(league)+" "+liveNorm(country)+" ");
  const priority=[
   {key:"de-1",label:"🇩🇪 ALMANYA · Bundesliga",rank:0,match:()=>hasCountry("GER","germany","deutschland","almanya")&&is("bundesliga")&&!is("2 bundesliga")},
   {key:"de-2",label:"🇩🇪 ALMANYA · 2. Bundesliga",rank:1,match:()=>hasCountry("germany","deutschland","almanya")&&is("2 bundesliga")},
@@ -940,7 +943,7 @@ function liveLeagueInfo(m){
   {key:"fr-1",label:"🇫🇷 FRANSA · Ligue 1",rank:9,match:()=>hasCountry("FRA","france","fransa")&&is("ligue 1")},
   {key:"nl-1",label:"🇳🇱 HOLLANDA · Eredivisie",rank:10,match:()=>hasCountry("NED","HOL","netherlands","holland","hollanda")&&is("eredivisie")}
  ];
- for(const item of priority)if(item.match())return {key:"priority:"+item.key,label:item.label,rank:item.rank,league};
+ if(!isWomenYouthReserve)for(const item of priority)if(item.match())return {key:"priority:"+item.key,label:item.label,rank:item.rank,league};
  return {key:"other:"+liveNorm(league+" "+country),label:(country?country+" · ":"")+league,rank:100,league};
 }
 function renderLivePanel(id,matches,title,mode){

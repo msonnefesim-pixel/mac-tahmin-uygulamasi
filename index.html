@@ -922,37 +922,33 @@ function liveScoreCard(m){
  return "<div class=\"live-score-card "+(state==="finished"?"finished":"")+"\"><div class=\"live-score-top\"><span>"+liveEsc(league)+"</span><span class=\""+(state==="live"?"live-now":"live-finished")+"\">"+(state==="live"?"<span class=\"live-dot\"></span> CANLI · "+liveEsc(minuteLabel):liveEsc(status))+"</span></div><div class=\"live-score-teams\"><span>"+liveEsc(home)+"</span><strong class=\"live-score-value\">"+(hs==null||as==null?"– : –":liveEsc(hs+" : "+as))+"</strong><span>"+liveEsc(away)+"</span></div><div class=\"live-score-top\"><span>"+liveEsc(time)+"</span><span>"+(state==="live"?liveEsc(minuteLabel):"MAÇ BİTTİ")+"</span></div></div>";
 }
 function liveLeagueInfo(m){
- const league=String(m.competition||m.league||m.tournament||m.competition_name||"");
+ const league=String(m.competition||m.league||m.tournament||m.competition_name||"Diğer Lig");
  const country=String(m.country||m.country_name||m.region||"");
  const n=liveNorm(league),cn=liveNorm(country),all=liveNorm(league+" "+country);
  const selected=[
-  {key:"ingiltere",label:"🏴 İNGİLTERE",rank:0,countries:["england","ingiltere","united kingdom","uk"],leagues:["premier league"]},
-  {key:"italya",label:"🇮🇹 İTALYA",rank:1,countries:["italy","italia","italya"],leagues:["serie a"]},
-  {key:"ispanya",label:"🇪🇸 İSPANYA",rank:2,countries:["spain","espana","ispanya"],leagues:["laliga","la liga"]},
-  {key:"almanya",label:"🇩🇪 ALMANYA",rank:3,countries:["germany","deutschland","almanya"],leagues:["bundesliga"]},
-  {key:"fransa",label:"🇫🇷 FRANSA",rank:4,countries:["france","fransa"],leagues:["ligue 1"]},
+  {key:"almanya",label:"🇩🇪 ALMANYA",rank:0,countries:["germany","deutschland","almanya"],leagues:["bundesliga","2 bundesliga","2. bundesliga"]},
+  {key:"turkiye",label:"🇹🇷 TÜRKİYE",rank:1,countries:["turkey","turkiye","turkiye"],leagues:["super lig","superlig","1 lig","1. lig","trendyol super lig"]},
+  {key:"ingiltere",label:"🏴 İNGİLTERE",rank:2,countries:["england","ingiltere"],leagues:["premier league"]},
+  {key:"ispanya",label:"🇪🇸 İSPANYA",rank:3,countries:["spain","espana","ispanya"],leagues:["laliga","la liga"]},
+  {key:"italya",label:"🇮🇹 İTALYA",rank:4,countries:["italy","italia","italya"],leagues:["serie a","serie b"]},
   {key:"portekiz",label:"🇵🇹 PORTEKİZ",rank:5,countries:["portugal","portekiz"],leagues:["liga portugal","primeira liga"]},
-  {key:"belcika",label:"🇧🇪 BELÇİKA",rank:6,countries:["belgium","belgie","belcika"],leagues:["pro league","jupiler pro league","jupiler league"]},
-  {key:"hollanda",label:"🇳🇱 HOLLANDA",rank:7,countries:["netherlands","holland","hollanda"],leagues:["eredivisie"]},
-  {key:"turkiye",label:"🇹🇷 TÜRKİYE",rank:8,countries:["turkey","turkiye","turkiye"],leagues:["trendyol super lig","super lig","superlig"]},
-  {key:"yunanistan",label:"🇬🇷 YUNANİSTAN",rank:9,countries:["greece","hellas","yunanistan"],leagues:["super league","super league 1"]}
+  {key:"fransa",label:"🇫🇷 FRANSA",rank:6,countries:["france","fransa"],leagues:["ligue 1"]},
+  {key:"hollanda",label:"🇳🇱 HOLLANDA",rank:7,countries:["netherlands","holland","hollanda"],leagues:["eredivisie"]}
  ];
  for(const item of selected){
   const countryMatch=item.countries.some(x=>cn.includes(liveNorm(x)));
   const leagueMatch=item.leagues.some(x=>n.includes(liveNorm(x)));
   const combinedMatch=item.leagues.some(x=>all.includes(liveNorm(x)))&&item.countries.some(x=>all.includes(liveNorm(x)));
   if((countryMatch&&leagueMatch)||(!country&&leagueMatch)||combinedMatch){
-   // Yunanistan ve Türkiye gibi adı genel olan liglerde ülke doğrulaması şart.
-   if((item.key==="yunanistan"||item.key==="turkiye")&&!countryMatch&&!combinedMatch)continue;
    return {key:item.key,label:item.label+" · "+league,rank:item.rank,league};
   }
  }
- return null;
+ return {key:"other:"+liveNorm(league+" "+country),label:(country?country+" · ":"")+league,rank:100,league};
 }
 function renderLivePanel(id,matches,title,mode){
  const el=$(id);if(!el)return;
  const wanted=mode||liveViewMode;
- const list=matches.filter(m=>(id!=="liveResultsPanel"||!!liveLeagueInfo(m))&&(mode==="all"?liveState(m)!=="other":liveState(m)===wanted));
+ const list=matches.filter(m=>mode==="all"?liveState(m)!=="other":liveState(m)===wanted);
  if(!list.length){el.innerHTML="<p>"+(wanted==="live"?"Şu anda canlı maç bulunamadı.":wanted==="finished"?"Gösterilecek bitmiş maç bulunamadı.":"Gösterilecek maç bulunamadı.")+"</p>";return}
  const groups=new Map();
  list.forEach(m=>{const info=liveLeagueInfo(m);if(!groups.has(info.key))groups.set(info.key,{info,matches:[]});groups.get(info.key).matches.push(m)});
@@ -971,7 +967,7 @@ function liveFilterSet(mode){
 function renderLiveResults(){
  const el=$("liveResultsPanel");if(!el)return;
  renderLivePanel("liveResultsPanel",liveFootballMatches,"",liveViewMode);
- const count=liveFootballMatches.filter(m=>!!liveLeagueInfo(m)&&liveState(m)===liveViewMode).length;
+ const count=liveFootballMatches.filter(m=>liveState(m)===liveViewMode).length;
  $("liveResultsStatus").textContent=(liveViewMode==="live"?"Canlı maç":"Biten maç")+" sayısı: "+count+" · Son kontrol: "+(liveScoresLastFetch?new Date(liveScoresLastFetch).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}):"bekleniyor");
 }
 function renderLiveScores(){

@@ -1,6 +1,9 @@
 name: Canli Skorlari Guncelle
 
 on:
+  push:
+    paths:
+      - ".github/workflows/canli-skorlar.yml"
   workflow_dispatch:
   schedule:
     - cron: "*/5 * * * *"

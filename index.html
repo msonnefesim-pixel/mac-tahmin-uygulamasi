@@ -994,7 +994,7 @@ function renderLivePanel(id,matches,title,mode){
  list.forEach(m=>{const info=liveLeagueInfo(m);if(!groups.has(info.key))groups.set(info.key,{info,matches:[]});groups.get(info.key).matches.push(m)});
  const ordered=[...groups.values()].sort((a,b)=>a.info.rank-b.info.rank||a.info.league.localeCompare(b.info.league,"tr"));
  const groupedHtml=ordered.map(group=>"<div class=\"live-league-group\"><div class=\"live-league-heading\"><span>"+liveEsc(group.info.label)+"</span><span>"+group.matches.length+" maç</span></div>"+group.matches.map(liveScoreCard).join("")+"</div>").join("");
- el.innerHTML=(title?"<b>"+title+"</b>":"")+groupedHtml+"<div class=\"live-source\">Canlı skor verileri <a href=\"https://sportscore.com/\" target=\"_blank\" rel=\"noopener\">Powered by SportScore</a> tarafından sağlanır. · Son kontrol: "+liveEsc(new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}))+"</div>";
+ el.innerHTML=(title?"<b>"+title+"</b>":"")+groupedHtml+"<div class=\"live-source\">Canlı skorlar <a href=\"https://www.sofascore.com/\" target=\"_blank\" rel=\"noopener\">SofaScore</a> · maç sonuçları <a href=\"https://sportscore.com/\" target=\"_blank\" rel=\"noopener\">SportScore</a> kaynaklıdır. · Son kontrol: "+liveEsc(new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}))+"</div>";
 }
 function liveFilterSet(mode){
  liveViewMode=mode;

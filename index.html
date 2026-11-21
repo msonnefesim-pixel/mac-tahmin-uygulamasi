@@ -881,6 +881,9 @@ async function iddaaBaslat(force=false){
 /* CANLI SKORLAR - SportScore ücretsiz API */
 function liveEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function liveState(m){
+ // Durum filtresiyle gelen API kayıtlarında sağlayıcının sorgu sonucunu esas al.
+ if(m&&m.__feedStatus==="live")return "live";
+ if(m&&m.__feedStatus==="finished")return "finished";
  const st=m.status&&typeof m.status==="object"?m.status:{};
  const raw=[m.status,m.match_status,m.state,m.status_text,m.statusText,m.status_label,m.status_code,m.status_short,m.period,m.phase,st.type,st.short,st.long,st.description]
   .filter(v=>v!==null&&v!==undefined).map(v=>String(v)).join(" ").toLowerCase().replace(/[ -]+/g,"_");
@@ -1022,7 +1025,7 @@ async function liveScoresLoad(){
   ]);
   if(widgetResult.status==="rejected"&&finishedResult.status==="rejected")throw widgetResult.reason;
   const widgetMatches=widgetResult.status==="fulfilled"?liveList(widgetResult.value):[];
-  const finishedMatches=finishedResult.status==="fulfilled"?liveList(finishedResult.value):[];
+  const finishedMatches=finishedResult.status==="fulfilled"?liveList(finishedResult.value).map(m=>({...m,__feedStatus:"finished"})):[];
   const merged=new Map();
   [...widgetMatches,...finishedMatches].forEach(m=>{
    const key=liveMatchKey(m);if(key!=="||")merged.set(key,m);
@@ -1037,7 +1040,7 @@ async function liveScoresLoad(){
   ));
   liveResults.forEach(result=>{
    if(result.status!=="fulfilled")return;
-   liveList(result.value).forEach(m=>{const key=liveMatchKey(m);if(key!=="||")merged.set(key,m)});
+   liveList(result.value).forEach(m=>{const key=liveMatchKey(m);if(key!=="||")merged.set(key,{...m,__feedStatus:"live"})});
   });
   current=[...merged.values()].filter(m=>liveState(m)!=="other");
   // Gün değişiminde servis kısa süre boş yanıt verirse, önceki kontrolde canlı olan maçı kaybetme.

@@ -955,7 +955,15 @@ function liveLeagueInfo(m){
  };
  const comp=m.competition||m.league||m.tournament||m.competition_name||m.competitionName||m.league_name||m.leagueName||{};
  const league=fieldText(comp)||"Diğer Lig";
- return {key:"league:"+liveNorm(league),label:league,rank:100,league};
+ const normalized=liveNorm(league);
+ const womenOrYouth=/(women|woman|ladies|female|femen|frauen|女子|kadın|kadin|youth|u\s?\d{1,2}|junior|reserve|reserves|b team|ii\b)/i.test(normalized);
+ let rank=100;
+ if(!womenOrYouth){
+  if(/\bbundesliga\b/.test(normalized))rank=1;
+  else if(/\blaliga\b|\bla liga\b/.test(normalized))rank=2;
+  else if(/\bpremier league\b|\benglish premier\b/.test(normalized))rank=3;
+ }
+ return {key:"league:"+normalized,label:league,rank,league};
 }
 function renderLivePanel(id,matches,title,mode){
  const el=$(id);if(!el)return;

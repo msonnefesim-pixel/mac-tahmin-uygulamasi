@@ -923,7 +923,7 @@ function liveScoreCard(m){
 }
 function liveLeagueInfo(m){
  const league=String(m.competition||m.league||m.tournament||m.competition_name||"Diğer Lig");
- const country=String(m.country||m.country_name||m.region||"");
+ const country=String(m.country||m.country_name||m.country_code||m.countryCode||m.region||"");
  const n=liveNorm(league),cn=liveNorm(country),all=liveNorm(league+" "+country);
  const hasCountry=(...terms)=>terms.some(x=>cn.includes(liveNorm(x))||(!cn&&all.includes(liveNorm(x))));
  const is=(...terms)=>terms.some(x=>n===liveNorm(x)||n.includes(liveNorm(x)));
@@ -933,8 +933,8 @@ function liveLeagueInfo(m){
  const priority=[
   {key:"de-1",label:"🇩🇪 ALMANYA · Bundesliga",rank:0,match:()=>hasCountry("GER","germany","deutschland","almanya")&&is("bundesliga")&&!is("2 bundesliga")},
   {key:"de-2",label:"🇩🇪 ALMANYA · 2. Bundesliga",rank:1,match:()=>hasCountry("germany","deutschland","almanya")&&is("2 bundesliga")},
-  {key:"tr-1",label:"🇹🇷 TÜRKİYE · Süper Lig",rank:2,match:()=>hasCountry("TUR","turkey","turkiye")&&is("trendyol super lig","super lig","superlig")},
-  {key:"tr-2",label:"🇹🇷 TÜRKİYE · 1. Lig",rank:3,match:()=>hasCountry("turkey","turkiye")&&is("1 lig","trendyol 1 lig")},
+  {key:"tr-1",label:"🇹🇷 TÜRKİYE · Süper Lig",rank:2,match:()=>hasCountry("TR","TUR","turkey","turkiye")&&is("trendyol super lig","super lig","superlig")},
+  {key:"tr-2",label:"🇹🇷 TÜRKİYE · 1. Lig",rank:3,match:()=>hasCountry("TR","TUR","turkey","turkiye")&&is("1 lig","trendyol 1 lig")},
   {key:"eng-1",label:"🏴 İNGİLTERE · Premier League",rank:4,match:()=>hasCountry("ENG","england","ingiltere")&&is("premier league")},
   {key:"es-1",label:"🇪🇸 İSPANYA · LaLiga",rank:5,match:()=>hasCountry("ESP","spain","espana","ispanya")&&is("laliga","la liga")},
   {key:"it-1",label:"🇮🇹 İTALYA · Serie A",rank:6,match:()=>hasCountry("ITA","italy","italia","italya")&&is("serie a")},

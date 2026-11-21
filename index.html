@@ -947,28 +947,34 @@ function liveCountryFlag(country){
  return "🏳️";
 }
 function liveLeagueInfo(m){
- const league=String(m.competition||m.league||m.tournament||m.competition_name||"Diğer Lig");
- const country=String(m.country||m.country_name||m.country_code||m.countryCode||m.region||"");
+ const fieldText=v=>{
+  if(v===null||v===undefined)return "";
+  if(typeof v==="string"||typeof v==="number")return String(v);
+  if(typeof v==="object")return String(v.name||v.title||v.short_name||v.code||v.country_name||v.country_code||"");
+  return "";
+ };
+ const competition=m.competition||m.league||m.tournament||m.competition_name||m.competitionName||m.league_name||m.leagueName||"Diğer Lig";
+ const league=fieldText(competition)||"Diğer Lig";
+ const country=fieldText(m.country)||fieldText(m.country_name)||fieldText(m.country_code)||fieldText(m.countryCode)||fieldText(m.region)||fieldText(m.area)||"";
  const n=liveNorm(league),cn=liveNorm(country),all=liveNorm(league+" "+country);
- const hasCountry=(...terms)=>terms.some(x=>cn.includes(liveNorm(x))||all.includes(liveNorm(x)));
+ const hasCountry=(...terms)=>terms.some(x=>cn===liveNorm(x)||all.split(" ").includes(liveNorm(x)));
  const is=(...terms)=>terms.some(x=>n===liveNorm(x)||n.includes(liveNorm(x)));
- // Kadın, genç, rezerv ve alt yaş kategorilerini öncelikli erkek A takım liglerinden ayrı tut.
  const womenYouthReserve=/(^| )(women|woman|womens|ladies|female|femenina|feminine|femminile|frauen|frau|dam|damen|kad[ıi]nlar?|kadin|u ?\d{1,2}|under ?\d{1,2}|youth|junior|juniores|reserves?|ii|b team|academy)( |$)/i;
- const isWomenYouthReserve=womenYouthReserve.test(" "+liveNorm(league)+" "+liveNorm(country)+" ");
+ const excluded=womenYouthReserve.test(" "+liveNorm(league)+" ");
  const priority=[
-  {key:"de-1",label:"🇩🇪 ALMANYA · Bundesliga",rank:0,match:()=>hasCountry("GER","germany","deutschland","almanya")&&is("bundesliga")&&!is("2 bundesliga")},
-  {key:"de-2",label:"🇩🇪 ALMANYA · 2. Bundesliga",rank:1,match:()=>hasCountry("GER","DE","germany","deutschland","almanya")&&is("2 bundesliga")},
-  {key:"tr-1",label:"🇹🇷 TÜRKİYE · Süper Lig",rank:2,match:()=>hasCountry("TR","TUR","turkey","turkiye")&&is("trendyol super lig","super lig","superlig")},
-  {key:"tr-2",label:"🇹🇷 TÜRKİYE · 1. Lig",rank:3,match:()=>hasCountry("TR","TUR","turkey","turkiye")&&is("1 lig","trendyol 1 lig")},
-  {key:"eng-1",label:"🏴 İNGİLTERE · Premier League",rank:4,match:()=>hasCountry("ENG","england","ingiltere")&&is("premier league")},
-  {key:"es-1",label:"🇪🇸 İSPANYA · LaLiga",rank:5,match:()=>hasCountry("ESP","spain","espana","ispanya")&&is("laliga","la liga")},
-  {key:"it-1",label:"🇮🇹 İTALYA · Serie A",rank:6,match:()=>hasCountry("ITA","italy","italia","italya")&&is("serie a")},
-  {key:"it-2",label:"🇮🇹 İTALYA · Serie B",rank:7,match:()=>hasCountry("ITA","IT","italy","italia","italya")&&is("serie b")},
-  {key:"pt-1",label:"🇵🇹 PORTEKİZ · Liga Portugal",rank:8,match:()=>hasCountry("POR","portugal","portekiz")&&is("liga portugal","primeira liga")},
-  {key:"fr-1",label:"🇫🇷 FRANSA · Ligue 1",rank:9,match:()=>hasCountry("FRA","france","fransa")&&is("ligue 1")},
-  {key:"nl-1",label:"🇳🇱 HOLLANDA · Eredivisie",rank:10,match:()=>hasCountry("NED","HOL","netherlands","holland","hollanda")&&is("eredivisie")}
+  {key:"de-1",label:"🇩🇪 ALMANYA · Bundesliga",rank:0,match:()=>is("bundesliga")&&!is("2 bundesliga")&&(hasCountry("GER","DE","germany","deutschland","almanya")||n==="bundesliga")},
+  {key:"de-2",label:"🇩🇪 ALMANYA · 2. Bundesliga",rank:1,match:()=>is("2 bundesliga")&&(hasCountry("GER","DE","germany","deutschland","almanya")||n.includes("bundesliga"))},
+  {key:"tr-1",label:"🇹🇷 TÜRKİYE · Süper Lig",rank:2,match:()=>is("super lig","superlig")},
+  {key:"tr-2",label:"🇹🇷 TÜRKİYE · 1. Lig",rank:3,match:()=>is("trendyol 1 lig")||(hasCountry("TR","TUR","turkey","turkiye","turkiye")&&is("1 lig"))},
+  {key:"eng-1",label:"🏴 İNGİLTERE · Premier League",rank:4,match:()=>is("premier league")&&(hasCountry("ENG","GB","GBR","england","ingiltere","united kingdom")||n==="premier league")},
+  {key:"es-1",label:"🇪🇸 İSPANYA · LaLiga",rank:5,match:()=>is("laliga","la liga")&&(hasCountry("ESP","ES","spain","espana","ispanya")||n==="laliga"||n==="la liga")},
+  {key:"it-1",label:"🇮🇹 İTALYA · Serie A",rank:6,match:()=>n==="serie a"&&(hasCountry("ITA","IT","italy","italia","italya")||n==="serie a")},
+  {key:"it-2",label:"🇮🇹 İTALYA · Serie B",rank:7,match:()=>n==="serie b"&&(hasCountry("ITA","IT","italy","italia","italya")||n==="serie b")},
+  {key:"pt-1",label:"🇵🇹 PORTEKİZ · Liga Portugal",rank:8,match:()=>is("liga portugal","primeira liga")},
+  {key:"fr-1",label:"🇫🇷 FRANSA · Ligue 1",rank:9,match:()=>is("ligue 1")},
+  {key:"nl-1",label:"🇳🇱 HOLLANDA · Eredivisie",rank:10,match:()=>is("eredivisie")}
  ];
- if(!isWomenYouthReserve)for(const item of priority)if(item.match())return {key:"priority:"+item.key,label:item.label,rank:item.rank,league};
+ if(!excluded)for(const item of priority)if(item.match())return {key:"priority:"+item.key,label:item.label,rank:item.rank,league};
  return {key:"other:"+liveNorm(league+" "+country),label:(country?liveCountryFlag(country)+" "+country+" · ":"🏳️ ")+league,rank:100,league};
 }
 function renderLivePanel(id,matches,title,mode){

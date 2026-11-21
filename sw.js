@@ -1,4 +1,4 @@
-const CACHE_NAME = "yapaycin-mac-analiz-v65";
+const CACHE_NAME = "yapaycin-mac-analiz-v66";
 
 const FILES_TO_CACHE = ["./","./index.html","./manifest.json","./icon.png"];
 

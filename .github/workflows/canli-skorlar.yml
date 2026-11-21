@@ -1,0 +1,93 @@
+name: Canli Skorlari Guncelle
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-scores-feed
+  cancel-in-progress: true
+
+jobs:
+  live-skor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Depoyu indir
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Canli kaynaklari sunucudan al
+        run: |
+          python3 - <<'PY'
+          import json
+          import urllib.request
+          from datetime import datetime, timezone
+
+          today = datetime.now(timezone.utc).date().isoformat()
+          urls = {
+              "widget": "https://sportscore.com/api/widget/matches/?sport=football&limit=100&src=yapaycin",
+              "fixtures": f"https://sportscore.com/api/v1/fixtures/?sport=football&date={today}&status=live&limit=200&src=yapaycin",
+              "espn": "https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard"
+          }
+
+          sources = {}
+          errors = {}
+          for name, url in urls.items():
+              try:
+                  req = urllib.request.Request(url, headers={
+                      "Accept": "application/json",
+                      "User-Agent": "Mozilla/5.0 YaPaYCiN-LiveScores/1.0"
+                  })
+                  with urllib.request.urlopen(req, timeout=25) as response:
+                      if response.status != 200:
+                          raise RuntimeError(f"HTTP {response.status}")
+                      sources[name] = json.loads(response.read().decode("utf-8"))
+                  print(name, "OK")
+              except Exception as exc:
+                  errors[name] = str(exc)[:240]
+                  print(name, "HATA:", errors[name])
+
+          if not sources:
+              raise SystemExit("Canli skor kaynaklarinin hicbirine ulasilamadi; onceki live.json korunuyor.")
+
+          from pathlib import Path
+          path = Path("live.json")
+          old = {}
+          if path.exists():
+              try:
+                  old = json.loads(path.read_text(encoding="utf-8"))
+              except Exception:
+                  old = {}
+
+          # Gereksiz GitHub Pages yayinlarini onlemek icin yalnizca kaynak verisi
+          # degistiginde dosyayi ve zaman damgasini yenile.
+          old_sources = old.get("sources", {})
+          if sources != old_sources or errors != old.get("errors", {}):
+              data = {
+                  "updated_at": datetime.now(timezone.utc).isoformat(),
+                  "sources": sources,
+                  "errors": errors
+              }
+              path.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+              print("live.json guncellendi.")
+          else:
+              print("Skor verisi degismedi; gereksiz yayin yapilmadi.")
+          PY
+
+      - name: Degisen skoru yayinla
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add live.json
+          if git diff --cached --quiet; then
+            echo "Yayinlanacak yeni skor yok."
+            exit 0
+          fi
+          git commit -m "Canli skor verilerini guncelle"
+          git pull --rebase origin main
+          git push origin HEAD:main

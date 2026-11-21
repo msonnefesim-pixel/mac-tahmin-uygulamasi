@@ -315,7 +315,7 @@ function highest(t){return t?Math.max(t.one,t.draw,t.two,t.over35,t.six,t.btts,t
 function predictionBox(name,value){return `<div class="pred"><span class="pred-name">${name}</span><span class="pred-value">${pct(value)}</span></div>`}
 function matchCard(m,t,past=false,rank=0){
  const finalPrediction=!past&&t?iddaaAdjustedPrediction(m,t):t;
- return `<div class="match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}"`}><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?("#"+rank+" · "+pct(highest(finalPrediction))):"Tahmin yok"}</span>`:""}</div>
+ return `<div class="match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}"`}><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?("#"+rank+" · "+pct(highest(finalPrediction))):"Tahmin yok"}</span>`:""}</div>
  <div class="meta-row"><div class="meta">${leagueView(m)}</div><div class="kickoff">${m.time||"Saat yok"}</div></div>
  ${past?`<div class="result">Maç sonucu: ${m.ft_home}-${m.ft_away}</div>`:`<div class="predictions">
  ${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}
@@ -378,6 +378,7 @@ function fixtureFinished(m){
 }
 function macBasladiMi(m){
  if(fixtureFinished(m))return true;
+ if(fixtureConfirmedByLiveFeed(m))return true;
  const matchDate=String(m.date||"").slice(0,10);
  if(matchDate){
   // Fikstür kaynağı saati yanlış/eksik verse bile sonuç arşivine düşen maç yaklaşan listesinde kalmasın.
@@ -401,9 +402,10 @@ function saatiGecenMaclariKaldir(){
  const cards=alan.querySelectorAll('.match[data-auto-hide="1"]');
  let removed=0;
  cards.forEach(card=>{
-  const date=card.dataset.matchDate||"",time=(card.dataset.matchTime||"").match(/^(\d{1,2}):(\d{2})/);
-  if(!time)return;
-  if(macBasladiMi({date,time:card.dataset.matchTime})){card.remove();removed++}
+  const date=card.dataset.matchDate||"";
+  let home="",away="";
+  try{home=decodeURIComponent(card.dataset.matchHome||"");away=decodeURIComponent(card.dataset.matchAway||"")}catch(e){}
+  if(macBasladiMi({date,time:card.dataset.matchTime,home,away})){card.remove();removed++}
  });
  if(removed){
   const remaining=alan.querySelectorAll('.match[data-auto-hide="1"]');
@@ -968,6 +970,26 @@ function espnLiveList(payload){
  }).filter(Boolean);
 }
 function liveNorm(v){return String(v||"").toLocaleLowerCase("tr").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ")}
+function fixtureConfirmedByLiveFeed(fixture){
+ if(!fixture||!fixture.home||!fixture.away||!Array.isArray(liveFootballMatches)||!liveFootballMatches.length)return false;
+ const home=liveNorm(fixture.home),away=liveNorm(fixture.away),date=String(fixture.date||"").slice(0,10);
+ const sameTeam=(a,b)=>a===b||(Math.min(a.length,b.length)>=6&&(a.startsWith(b)||b.startsWith(a)));
+ return liveFootballMatches.some(match=>{
+  const state=liveState(match);
+  if(state!=="live"&&state!=="finished")return false;
+  const mh=liveNorm(match.home||match.home_team||match.homeTeam||match.home_name||"");
+  const ma=liveNorm(match.away||match.away_team||match.awayTeam||match.away_name||"");
+  if(!mh||!ma||!sameTeam(home,mh)||!sameTeam(away,ma))return false;
+  const rawDate=match.start_time||match.time||match.kickoff||match.date||(match.fixture&&match.fixture.date)||"";
+  const eventDate=String(rawDate).slice(0,10);
+  if(date&&eventDate){
+   const allowed=[date];
+   try{allowed.push(dateAdd(date,-1),dateAdd(date,1))}catch(e){}
+   if(!allowed.includes(eventDate))return false;
+  }
+  return true;
+ });
+}
 function liveMinuteLabel(m){
  const raw=[m.status_text,m.statusText,m.status_label,m.status,m.match_status,m.period,m.phase].filter(v=>typeof v==="string").join(" ");
  if(/half.?time|halftime|devre arası|interval/i.test(raw))return "DEVRE ARASI";
@@ -1132,6 +1154,8 @@ async function liveScoresLoad(){
    current=[...merged.values()].filter(m=>liveState(m)!=="other");
   }
   liveFootballMatches=current;
+  // Kaynakta saati bos olan maclari da dogrulanmis canli/biten durumuyla listeden kaldir.
+  saatiGecenMaclariKaldir();
   try{
    const basketballResponse=await fetch("https://sportscore.com/api/widget/matches/?sport=basketball&limit=50&src=yapaycin",{cache:"no-store",mode:"cors"});
    if(basketballResponse.ok)liveBasketballMatches=liveList(await basketballResponse.json());

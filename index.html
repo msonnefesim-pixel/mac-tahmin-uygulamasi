@@ -39,7 +39,7 @@ button.secondary,.tab-button{background:#292929;color:#fff;border:1px solid #555
 .pred-name{display:block;font-size:10px;color:#bbb}
 .pred-value{display:block;color:var(--yellow);font-weight:bold;margin-top:3px}
 .rank{font-size:11px;color:var(--yellow);white-space:nowrap}
-.live-league-group{margin:12px 0 18px}.live-league-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 10px;margin:10px 0 7px;background:#2a1a1d;border:1px solid #75404a;border-left:4px solid var(--yellow);border-radius:7px;color:#fff;font-weight:bold;font-size:14px}.live-league-heading span:last-child{font-size:11px;color:#f5c400;white-space:nowrap} .live-score-card{background:#211416;border:1px solid #653036;border-left:4px solid var(--red);border-radius:8px;padding:9px;margin:7px 0}
+.live-league-group{margin:12px 0 18px}.live-league-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 10px;margin:10px 0 7px;background:#2a1a1d;border:1px solid #a8323e;border-left:4px solid #ff3030;border-radius:7px;color:#ff4545;font-weight:800;font-size:17px}.live-league-heading span:last-child{font-size:11px;color:#f5c400;white-space:nowrap} .live-score-card{background:#211416;border:1px solid #653036;border-left:4px solid var(--red);border-radius:8px;padding:9px;margin:7px 0}
 .live-score-card.finished{background:#142018;border-color:#315c3c;border-left-color:#45b866}
 .live-score-top{display:flex;justify-content:space-between;gap:8px;color:#bbb;font-size:11px}
 .live-score-teams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center;margin-top:7px;font-weight:bold}
@@ -950,20 +950,20 @@ function liveLeagueInfo(m){
  const league=String(m.competition||m.league||m.tournament||m.competition_name||"Diğer Lig");
  const country=String(m.country||m.country_name||m.country_code||m.countryCode||m.region||"");
  const n=liveNorm(league),cn=liveNorm(country),all=liveNorm(league+" "+country);
- const hasCountry=(...terms)=>terms.some(x=>cn.includes(liveNorm(x))||(!cn&&all.includes(liveNorm(x))));
+ const hasCountry=(...terms)=>terms.some(x=>cn.includes(liveNorm(x))||all.includes(liveNorm(x)));
  const is=(...terms)=>terms.some(x=>n===liveNorm(x)||n.includes(liveNorm(x)));
  // Kadın, genç, rezerv ve alt yaş kategorilerini öncelikli erkek A takım liglerinden ayrı tut.
  const womenYouthReserve=/(^| )(women|woman|womens|ladies|female|femenina|feminine|femminile|frauen|frau|dam|damen|kad[ıi]nlar?|kadin|u ?\d{1,2}|under ?\d{1,2}|youth|junior|juniores|reserves?|ii|b team|academy)( |$)/i;
  const isWomenYouthReserve=womenYouthReserve.test(" "+liveNorm(league)+" "+liveNorm(country)+" ");
  const priority=[
   {key:"de-1",label:"🇩🇪 ALMANYA · Bundesliga",rank:0,match:()=>hasCountry("GER","germany","deutschland","almanya")&&is("bundesliga")&&!is("2 bundesliga")},
-  {key:"de-2",label:"🇩🇪 ALMANYA · 2. Bundesliga",rank:1,match:()=>hasCountry("germany","deutschland","almanya")&&is("2 bundesliga")},
+  {key:"de-2",label:"🇩🇪 ALMANYA · 2. Bundesliga",rank:1,match:()=>hasCountry("GER","DE","germany","deutschland","almanya")&&is("2 bundesliga")},
   {key:"tr-1",label:"🇹🇷 TÜRKİYE · Süper Lig",rank:2,match:()=>hasCountry("TR","TUR","turkey","turkiye")&&is("trendyol super lig","super lig","superlig")},
   {key:"tr-2",label:"🇹🇷 TÜRKİYE · 1. Lig",rank:3,match:()=>hasCountry("TR","TUR","turkey","turkiye")&&is("1 lig","trendyol 1 lig")},
   {key:"eng-1",label:"🏴 İNGİLTERE · Premier League",rank:4,match:()=>hasCountry("ENG","england","ingiltere")&&is("premier league")},
   {key:"es-1",label:"🇪🇸 İSPANYA · LaLiga",rank:5,match:()=>hasCountry("ESP","spain","espana","ispanya")&&is("laliga","la liga")},
   {key:"it-1",label:"🇮🇹 İTALYA · Serie A",rank:6,match:()=>hasCountry("ITA","italy","italia","italya")&&is("serie a")},
-  {key:"it-2",label:"🇮🇹 İTALYA · Serie B",rank:7,match:()=>hasCountry("italy","italia","italya")&&is("serie b")},
+  {key:"it-2",label:"🇮🇹 İTALYA · Serie B",rank:7,match:()=>hasCountry("ITA","IT","italy","italia","italya")&&is("serie b")},
   {key:"pt-1",label:"🇵🇹 PORTEKİZ · Liga Portugal",rank:8,match:()=>hasCountry("POR","portugal","portekiz")&&is("liga portugal","primeira liga")},
   {key:"fr-1",label:"🇫🇷 FRANSA · Ligue 1",rank:9,match:()=>hasCountry("FRA","france","fransa")&&is("ligue 1")},
   {key:"nl-1",label:"🇳🇱 HOLLANDA · Eredivisie",rank:10,match:()=>hasCountry("NED","HOL","netherlands","holland","hollanda")&&is("eredivisie")}

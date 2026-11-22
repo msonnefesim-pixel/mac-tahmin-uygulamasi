@@ -1222,11 +1222,10 @@ function halfBothRender(){
 async function halfBothBuild(force){
  if(halfBothBuilding)return;
  const start=today(),end=dateAdd(start,7),saved=halfBothArchive();
- if(!force&&saved&&saved.start===start&&saved.end===end&&saved.pools){if(!couponIYMSRows)await cGetIYMS();halfBothRender();$("halfBothStatus").textContent="Hazır · "+start+" – "+end+" tarihleri · "+(saved.scanned||0)+" maç tarandı.";return}
+ if(!force&&saved&&saved.start===start&&saved.end===end&&saved.pools){halfBothRender();if(!couponIYMSRows)cGetIYMS().then(()=>halfBothRender());$("halfBothStatus").textContent="Hazır · "+start+" – "+end+" tarihleri · "+(saved.scanned||0)+" maç tarandı.";return}
  if(!FIXTURES.length){$("halfBothStatus").textContent="Futbol verileri yükleniyor; maçlar hazır olduğunda kuponlar oluşturulacak.";return}
  halfBothBuilding=true;$("halfBothStatus").textContent="Önümüzdeki 7 günün maçları analiz ediliyor...";
  try{
-  if(!couponIYMSRows)await cGetIYMS();
   const fixtures=FIXTURES.filter(m=>{const d=String(m.date||"").slice(0,10);return d>=start&&d<=end&&/^\d{1,2}:\d{2}$/.test(String(m.time||""))&&!macBasladiMi(m)});
   const pools={yes_yes:[],no_yes:[],yes_no:[]};
   let scanned=0;
@@ -1246,7 +1245,7 @@ async function halfBothBuild(force){
   Object.keys(pools).forEach(k=>pools[k].sort((a,b)=>b.prob-a.prob));
   const chosen={};for(const k of Object.keys(pools))chosen[k]=pools[k].slice(0,5);
   const archive={start,end,scanned,generatedAt:new Date().toISOString(),pools:chosen};
-  halfBothSave(archive);halfBothRender();
+  halfBothSave(archive);halfBothRender();if(!couponIYMSRows)cGetIYMS().then(()=>halfBothRender());
   $("halfBothStatus").textContent="Hazır · "+start+" – "+end+" tarihleri · "+scanned+" maç tarandı · "+Math.max(0,...Object.values(pools).map(x=>x.length))+" uygun maç bulundu.";
  }catch(e){$("halfBothStatus").textContent="Kupon oluşturma hatası: "+e.message}
  finally{halfBothBuilding=false}

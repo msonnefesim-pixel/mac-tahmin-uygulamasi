@@ -884,20 +884,20 @@ function iddaaAdjustedPrediction(fixture,p){
  const two=iddaaFairProbability(m1,["2","Deplasman","Away"]);
  // 1-X-2 pazarı ancak üç olasılık birlikte yaklaşık %100 ediyorsa kullanılır.
  if(one!==null&&draw!==null&&two!==null&&Math.abs(one+draw+two-1)<.035){
-  out.one=iddaaBlendProbability(p.one,one);
-  out.draw=iddaaBlendProbability(p.draw,draw);
-  out.two=iddaaBlendProbability(p.two,two);
+  out.one=p?iddaaBlendProbability(p.one,one):one;
+  out.draw=p?iddaaBlendProbability(p.draw,draw):draw;
+  out.two=p?iddaaBlendProbability(p.two,two):two;
   const sum=out.one+out.draw+out.two;
   if(sum>0){out.one/=sum;out.draw/=sum;out.two/=sum;}
  }
  const kg=iddaaFairProbability(bttsM,["Var","Evet","Yes","Karşılıklı Gol Var"]);
- if(kg!==null)out.btts=iddaaBlendProbability(p.btts,kg);
+ if(kg!==null)out.btts=p?iddaaBlendProbability(p.btts,kg):kg;
  if(ou){
   const line=String(ou.sov??"").replace(",",".");
   const has35=line==="3.5"||ou.o.some(x=>/3[,.]5/.test(String(x.n||x.name||"")));
   if(has35){
    const over=iddaaFairProbability(ou,["Üst","Over","Üst 3.5","Over 3.5"]);
-   if(over!==null)out.over35=iddaaBlendProbability(p.over35,over);
+   if(over!==null)out.over35=p?iddaaBlendProbability(p.over35,over):over;
   }
  }
  if(goal&&Array.isArray(goal.o)){

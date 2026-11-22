@@ -10,7 +10,7 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "./genie.svg?v=99",
+      "src": "./icon.svg?v=100",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"

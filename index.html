@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#c8102e">
-<link rel="manifest" href="./manifest.json?v=94">
+<link rel="manifest" href="./manifest.json?v=95">
 <link rel="icon" href="./icon.png" type="image/png">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
@@ -58,7 +58,7 @@ th{color:var(--yellow)}
 .brand-banner{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:112px;margin:2px 0 12px;padding:18px 10px 13px;border:1px solid #6f1825;border-radius:15px;background:radial-gradient(ellipse at 50% 0%,#45121b 0%,#211014 48%,#111 100%);box-shadow:0 5px 18px #0008,inset 0 0 22px #c8102e18;overflow:visible}
 .brand-wordmark{display:flex;align-items:center;justify-content:center;gap:0;font-family:Arial,sans-serif;font-size:clamp(29px,8vw,39px);font-weight:1000;letter-spacing:-1.8px;line-height:1.05;color:#f5c400;text-shadow:0 2px 0 #7a1b00,0 0 13px #f5c40038}
 .brand-y{position:relative;display:inline-block;color:#fff;text-shadow:0 2px 0 #8c101f,0 0 12px #fff5;margin-right:1px}
-.brand-y img{position:absolute;width:43px;height:43px;object-fit:contain;left:-10px;top:-34px;filter:drop-shadow(0 2px 3px #000)}
+.brand-y img{position:absolute;width:56px;height:56px;object-fit:contain;left:-16px;top:-43px;filter:drop-shadow(0 2px 3px #000)}
 .brand-analysis{margin-top:7px;color:#fff;font-size:13px;font-weight:900;letter-spacing:5px;text-indent:5px}
 .brand-tagline{margin:6px 0 0;color:#c9b8a0;font-size:9px;letter-spacing:1.2px;text-transform:uppercase}
 
@@ -74,7 +74,7 @@ th{color:var(--yellow)}
 
 
 <header class="brand-banner" aria-label="YaPaYCiN Analiz">
- <div class="brand-wordmark"><span class="brand-y">Y<img src="./genie.svg" alt=""></span><span>aPaYCiN</span></div>
+ <div class="brand-wordmark"><span class="brand-y">Y<img src="./genie-logo.jpg?v=95" alt=""></span><span>aPaYCiN</span></div>
  <div class="brand-analysis">ANALİZ</div>
  <div class="brand-tagline">Bağımsız maç tahmin ve analiz sistemi</div>
 </header>
@@ -1351,7 +1351,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=94",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=95",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

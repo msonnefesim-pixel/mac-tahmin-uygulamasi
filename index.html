@@ -468,28 +468,34 @@ function listele(){
  const list=[];
  let i=0;
  // Geçmiş günlerde tahmin hesaplanmadığı için kayıtları daha büyük gruplarla hazırla.
- const prepareSize=past?100:10;
- macAlan.textContent=past?"Geçmiş maçlar hazırlanıyor... 0 / "+source.length:"Maçlar hazırlanıyor...";
+ const prepareSize=past?100:20;
+ macAlan.textContent=(past?"Geçmiş maçlar hazırlanıyor... ":"Maçlar hazırlanıyor... ")+ "0 / "+source.length;
  function prepareBatch(){
   if(token!==listRenderToken)return;
   const stop=Math.min(i+prepareSize,source.length);
   for(;i<stop;i++){
-   const m=source[i],ln=m.league||"Diğer";
-   if(!past&&(!/^\d{1,2}:\d{2}$/.test(String(m.time||"").trim())||macBasladiMi(m)))continue;
-   if(hiddenLeagues.has(ln))continue;
-   if(league!=="all"&&encodeURIComponent(ln)!==league)continue;
-   const country=countryInfo(m),searchText=(m.home+" "+m.away+" "+ln+" "+country.name).toLocaleLowerCase("tr");
-   if(query&&!searchText.includes(query))continue;
-   if(past){list.push({m,t:null,rank:-1});continue}
-   const key=[m.league_id,m.date,m.time,m.home,m.away].join("|");
-   let t;
-   if(predictionCache.has(key))t=predictionCache.get(key);
-   else{t=predictFootball(m);predictionCache.set(key,t)}
-   if(!filterMatch(t,filter))continue;
-   list.push({m,t,rank:highest(t)});
+   const m=source[i];
+   try{
+    const ln=m.league||"Diğer";
+    if(!past&&(!/^\d{1,2}:\d{2}$/.test(String(m.time||"").trim())||macBasladiMi(m)))continue;
+    if(hiddenLeagues.has(ln))continue;
+    if(league!=="all"&&encodeURIComponent(ln)!==league)continue;
+    const country=countryInfo(m),searchText=(m.home+" "+m.away+" "+ln+" "+country.name).toLocaleLowerCase("tr");
+    if(query&&!searchText.includes(query))continue;
+    if(past){list.push({m,t:null,rank:-1});continue}
+    const key=[m.league_id,m.date,m.time,m.home,m.away].join("|");
+    let t;
+    if(predictionCache.has(key))t=predictionCache.get(key);
+    else{t=predictFootball(m);predictionCache.set(key,t)}
+    if(!filterMatch(t,filter))continue;
+    list.push({m,t,rank:highest(t)});
+   }catch(err){
+    console.warn("Maç analiz hatası:",m&&m.home,m&&m.away,err);
+    if(!past&&filter==="all")list.push({m,t:null,rank:-1});
+   }
   }
   if(i<source.length){
-   if(past)macAlan.textContent="Geçmiş maçlar hazırlanıyor... "+i+" / "+source.length;
+   macAlan.textContent=(past?"Geçmiş maçlar hazırlanıyor... ":"Maçlar hazırlanıyor... ")+i+" / "+source.length;
    setTimeout(prepareBatch,0);return
   }
   if(token!==listRenderToken)return;

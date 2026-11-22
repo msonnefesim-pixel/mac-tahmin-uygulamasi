@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#c8102e">
-<link rel="manifest" href="./manifest.json">
-<link rel="icon" href="./icon.png" type="image/png">
+<link rel="manifest" href="./manifest.json?v=91">
+<link rel="icon" href="./icon.svg?v=91" type="image/svg+xml"><link rel="apple-touch-icon" href="./icon.svg?v=91">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
 :root{--red:#c8102e;--yellow:#f5c400;--bg:#101010;--panel:#1b1b1b;--line:#383838;--muted:#bbb}
@@ -74,7 +74,7 @@ th{color:var(--yellow)}
 </head>
 <body>
 <div id="yapaycinSplash" aria-label="YaPaYCiN Maç Analiz açılıyor">
- <img src="./icon.svg" alt="">
+ <img src="./icon.svg?v=91" alt="">
  <div class="splash-name">YaPaYCiN</div>
  <div class="splash-sub">MAÇ ANALİZ</div>
  <div class="splash-line"></div>
@@ -1358,7 +1358,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=91",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 <script>

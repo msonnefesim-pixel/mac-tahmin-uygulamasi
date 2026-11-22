@@ -572,7 +572,8 @@ function sekmeAc(name){
   if(activeTabName!==name)return;
   if(name==="coupons"){
    kuponlariGoster();
-   const savedDay=cArchive()[today()]||{};
+   const couponDate=$("tarih")?.value||today();
+   const savedDay=cArchive()[couponDate]||{};
    const savedPickCount=COUPON_TYPES.reduce((n,type)=>n+((savedDay[type[0]]||[]).length),0);
    if((savedDay.version!==3||savedPickCount===0)&&!couponBuildBusy)kuponlariYenile();
    if(couponIYMSRows===null&&!couponIYMSLoading){couponIYMSLoading=true;cGetIYMS().then(()=>{if(activeTabName==="coupons")kuponlariGoster()}).finally(()=>{couponIYMSLoading=false})}
@@ -1124,7 +1125,7 @@ function couponIddaaOdds(x){
  return odd?{odd,event:e,missing:false}:{odd:1,event:e,missing:true};
 }
 async function kuponlariYenile(){
- if(couponBuildBusy)return;couponBuildBusy=true;const date=today(),archive=cArchive();$("couponDate").textContent="Altı kupon hazırlanıyor...";
+ if(couponBuildBusy)return;couponBuildBusy=true;const date=$("tarih")?.value||today(),archive=cArchive();$("couponDate").textContent="Altı kupon hazırlanıyor...";
  try{
   const iyRows=await cGetIYMS(),fixtures=FIXTURES.filter(m=>String(m.date).slice(0,10)===date&&/^\d{1,2}:\d{2}$/.test(String(m.time||""))&&!macBasladiMi(m));
   const rows=fixtures.map(m=>{const key=[m.league_id,m.date,m.time,m.home,m.away].join("|");let t=predictionCache.get(key);if(!t){t=predictFootball(m);predictionCache.set(key,t)}if(!t)return null;
@@ -1141,7 +1142,7 @@ async function kuponlariYenile(){
  }catch(e){$("couponDate").textContent="Kupon hazırlanamadı: "+e.message}finally{couponBuildBusy=false}
 }
 function kuponlariGoster(){
- if(!$("couponCards"))return;const date=today(),day=cArchive()[date]||{};let total=0,done=0,hits=0,html="";$("couponDate").textContent=date+" · Her kupon 5 farklı maçtan oluşur; güçlü maçlarda iki ayrı tahmin olabilir.";
+ if(!$("couponCards"))return;const date=$("tarih")?.value||today(),day=cArchive()[date]||{};let total=0,done=0,hits=0,html="";$("couponDate").textContent=date+" · Her kupon 5 farklı maçtan oluşur; güçlü maçlarda iki ayrı tahmin olabilir.";
  COUPON_TYPES.forEach(type=>{const id=type[0],name=type[1],items=day[id]||[];total+=items.length;const oddsList=[];html+="<div class=\"coupon-card\"><b class=\"coupon-heading\">"+name+" · "+items.length+"/5 maç</b>";if(!items.length)html+="<p>Bu kategori için yeterli veriye sahip maç bulunamadı. Zayıf tahmin eklenmedi.</p>";
   items.forEach((x,i)=>{const result=cResult(x);if(result!==null){done++;if(result)hits++}const oddsInfo=couponIddaaOdds(x);oddsList.push(oddsInfo);let status="<span class=\"coupon-status pending\">◷ BEKLİYOR</span>";if(result===true)status="<span class=\"coupon-status hit\">✓ TUTTU</span>";if(result===false)status="<span class=\"coupon-status miss\">✕ YATTI</span>";const confidence=x.risk==="Düşük"?"Güvenli":x.risk==="Orta"?"Orta":"Riskli";html+="<div class=\"coupon-match\"><div class=\"match-top\"><b>"+(i+1)+". "+x.home+" - "+x.away+"</b>"+status+"</div><div class=\"coupon-pick\">🎯 TAHMİN: "+x.pick+"</div><div class=\"coupon-meta\">"+x.league+" · "+x.time+" · Olasılık: <b>%"+(x.prob*100).toFixed(1)+"</b> · Güven: <b>"+confidence+"</b><br>Analiz: "+x.reason+" · Veri: "+x.quality+"</div><div class=\"coupon-odds\">🇹🇷 İDDAA ORANI: "+(oddsInfo.missing?"Oran bulunamadı":oddsInfo.odd.toFixed(2))+"</div></div>"});
   if(items.length){if(!iddaaYuklendi)html+="<div class=\"coupon-total\">Toplam oran: İddaa bülteni bekleniyor...</div>";else if(oddsList.length&&oddsList.every(x=>!x.missing))html+="<div class=\"coupon-total\">TOPLAM İDDAA ORANI: "+oddsList.reduce((n,v)=>n*v.odd,1).toFixed(2)+"</div>";else html+="<div class=\"coupon-total\">Toplam oran hesaplanamadı: tüm seçimlerde eşleşen oran bulunamadı.</div>"}html+="</div>"});

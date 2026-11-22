@@ -458,7 +458,7 @@ function listele(){
   const stop=Math.min(i+prepareSize,source.length);
   for(;i<stop;i++){
    const m=source[i],ln=m.league||"Diğer";
-   if(!past&&macBasladiMi(m))continue;
+   if(!past&&(!/^\d{1,2}:\d{2}$/.test(String(m.time||"").trim())||macBasladiMi(m)))continue;
    if(hiddenLeagues.has(ln))continue;
    if(league!=="all"&&encodeURIComponent(ln)!==league)continue;
    const country=countryInfo(m),searchText=(m.home+" "+m.away+" "+ln+" "+country.name).toLocaleLowerCase("tr");

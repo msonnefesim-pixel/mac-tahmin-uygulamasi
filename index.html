@@ -481,7 +481,7 @@ async function baslat(force=false){
   try{hiddenLeagues=new Set(JSON.parse(localStorage.getItem("yapaycinHiddenLeagues")||"[]"))}catch(e){hiddenLeagues=new Set()}
   fillLeagues();if(!$("couponsBolumu").classList.contains("hidden"))kuponlariGoster();$("durum").innerHTML="<span class='good'>Futbol verileri yüklendi</span>";
   $("sayilar").textContent="Gelecek maç: "+FIXTURES.length+" · Geçmiş maç: "+HISTORY.length+" · Güncelleme: "+(data.updated||"bilinmiyor");
-  fetch("./sw.js",{cache:"no-store"}).then(r=>r.text()).then(t=>{const m=t.match(/yapaycin-mac-analiz-v(\\d+)/);$("sayilar").textContent+=" · S.v"+(m?m[1]:"?")}).catch(()=>{$("sayilar").textContent+=" · S.v?"});
+  fetch("./sw.js",{cache:"no-store"}).then(r=>r.text()).then(t=>{const m=t.match(/yapaycin-mac-analiz-v([0-9]+)/);$("sayilar").textContent+=" · S.v"+(m?m[1]:"?")}).catch(()=>{$("sayilar").textContent+=" · S.v?"});
   listele();
   // Önce futbol ekranını göster; İddaa bültenini kısa bir gecikmeyle boşta çalıştır.
   setTimeout(()=>{

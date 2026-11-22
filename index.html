@@ -55,10 +55,10 @@ th,td{padding:7px 5px;text-align:center;border-bottom:1px solid #444}
 th{color:var(--yellow)}
 @media(max-width:360px){body{padding:7px}.teams{font-size:13px}.predictions{gap:3px}.pred{padding:5px 1px}.pred-name{font-size:9px}.tab-button{font-size:12px}}
 
-.brand-banner{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:112px;margin:2px 0 12px;padding:18px 10px 13px;border:1px solid #6f1825;border-radius:15px;background:radial-gradient(ellipse at 50% 0%,#45121b 0%,#211014 48%,#111 100%);box-shadow:0 5px 18px #0008,inset 0 0 22px #c8102e18;overflow:visible}
+.brand-banner{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:112px;margin:2px 0 12px;padding:18px 10px 13px;border:1px solid #6f1825;border-radius:15px;background:#211014;box-shadow:none;overflow:visible}
 .brand-wordmark{display:flex;align-items:center;justify-content:center;gap:0;font-family:Arial,sans-serif;font-size:clamp(29px,8vw,39px);font-weight:1000;letter-spacing:-1.8px;line-height:1.05;color:#f5c400;text-shadow:0 2px 0 #7a1b00,0 0 13px #f5c40038}
 .brand-y{position:relative;display:inline-block;color:#fff;text-shadow:0 2px 0 #8c101f,0 0 12px #fff5;margin-right:1px}
-.brand-y img{position:absolute;width:56px;height:56px;object-fit:contain;left:-16px;top:-43px;filter:drop-shadow(0 2px 3px #000)}
+.brand-y img{position:absolute;width:56px;height:56px;object-fit:contain;left:-16px;top:-43px;filter:none}
 .brand-analysis{margin-top:7px;color:#fff;font-size:13px;font-weight:900;letter-spacing:5px;text-indent:5px}
 .brand-tagline{margin:6px 0 0;color:#c9b8a0;font-size:9px;letter-spacing:1.2px;text-transform:uppercase}
 
@@ -1017,7 +1017,37 @@ function couponIddaaOdds(x){
  }
  return odd?{odd,event:e,missing:false}:{odd:1,event:e,missing:true};
 }
-async function kuponlariYenile(){$("couponDate").textContent="Kuponlar analiz ediliyor...";const date=today(),archive=cArchive(),day=archive[date]||{},iy=await cGetIYMS();const rows=FIXTURES.filter(m=>String(m.date).slice(0,10)===date&&/^\d{1,2}:\d{2}$/.test(String(m.time||""))&&!macBasladiMi(m)).map(m=>{const key=[m.league_id,m.date,m.time,m.home,m.away].join("|");let t=predictionCache.get(key);if(!t){t=predictFootball(m);predictionCache.set(key,t)}if(!t)return null;const ip=cIYMS(m,iy),rp=[["1",t.one],["X",t.draw],["2",t.two]].sort((a,b)=>b[1]-a[1])[0];return {m,t,ip,rp}}).filter(Boolean);COUPON_TYPES.forEach(([id,name,threshold])=>{if(day[id])return;const pool=rows.map(x=>{let p=0,pick="";if(id==="over35"){p=x.t.over35;pick="3,5 Üst"}if(id==="six"){p=x.t.six;pick="6+ Gol"}if(id==="btts"){p=x.t.btts;pick="KG Var"}if(id==="result"){p=x.rp[1];pick=x.rp[0]}if(id==="iyms"&&x.ip){p=x.ip.p;pick=x.ip.pick}return {x,p,pick}}).filter(x=>x.pick&&x.p>=threshold).sort((a,b)=>b.p-a.p).slice(0,5);day[id]=pool.map(x=>({type:id,pick:x.pick,prob:x.p,date:x.x.m.date,time:x.x.m.time||"",home:x.x.m.home,away:x.x.m.away,league:x.x.m.league||""}))});archive[date]=day;cSave(archive);kuponlariGoster()}
+async function kuponlariYenile(){
+ const date=today(),archive=cArchive(),day=archive[date]||{};
+ $("couponDate").textContent="Kuponlar hazırlanıyor...";
+ const rows=FIXTURES.filter(m=>String(m.date).slice(0,10)===date&&/^\d{1,2}:\d{2}$/.test(String(m.time||""))&&!macBasladiMi(m)).map(m=>{
+  const key=[m.league_id,m.date,m.time,m.home,m.away].join("|");
+  let t=predictionCache.get(key);if(!t){t=predictFootball(m);predictionCache.set(key,t)}
+  if(!t)return null;
+  const rp=[["1",t.one],["X",t.draw],["2",t.two]].sort((a,b)=>b[1]-a[1])[0];
+  return {m,t,rp};
+ }).filter(Boolean);
+ const saveType=(id,threshold,iyRows)=>{
+  if(day[id])return;
+  const pool=rows.map(x=>{
+   let p=0,pick="";
+   if(id==="over35"){p=x.t.over35;pick="3,5 Üst"}
+   if(id==="six"){p=x.t.six;pick="6+ Gol"}
+   if(id==="btts"){p=x.t.btts;pick="KG Var"}
+   if(id==="result"){p=x.rp[1];pick=x.rp[0]}
+   if(id==="iyms"&&iyRows){const ip=cIYMS(x.m,iyRows);if(ip){p=ip.p;pick=ip.pick}}
+   return {x,p,pick};
+  }).filter(x=>x.pick&&x.p>=threshold).sort((a,b)=>b.p-a.p).slice(0,5);
+  day[id]=pool.map(x=>({type:id,pick:x.pick,prob:x.p,date:x.x.m.date,time:x.x.m.time||"",home:x.x.m.home,away:x.x.m.away,league:x.x.m.league||""}));
+ };
+ COUPON_TYPES.filter(([id])=>id!=="iyms").forEach(([id,,threshold])=>saveType(id,threshold,null));
+ archive[date]=day;cSave(archive);kuponlariGoster();
+ if(!day.iyms){
+  $("couponDate").textContent=date+" · Diğer kuponlar hazır, İY/MS hazırlanıyor...";
+  const iy=await cGetIYMS();saveType("iyms",.16,iy);archive[date]=day;cSave(archive);
+  if(activeTabName==="coupons")kuponlariGoster();
+ }
+}
 function kuponlariGoster(){
  if(!$("couponCards"))return;
  const date=today(),day=cArchive()[date]||{};let total=0,done=0,hits=0,html="";
@@ -1101,25 +1131,32 @@ function espnLiveList(payload){
  }).filter(Boolean);
 }
 function liveNorm(v){return String(v||"").toLocaleLowerCase("tr").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ")}
+let liveFixtureLookup=new Map();
+function rebuildLiveFixtureLookup(){
+ const index=new Map(),bucket=v=>v.length>=6?v.slice(0,6):v;
+ for(const match of liveFootballMatches||[]){
+  const state=liveState(match);if(state!=="live"&&state!=="finished")continue;
+  const home=liveNorm(match.home||match.home_team||match.homeTeam||match.home_name||"");
+  const away=liveNorm(match.away||match.away_team||match.awayTeam||match.away_name||"");
+  const raw=match.start_time||match.time||match.kickoff||match.date||(match.fixture&&match.fixture.date)||"";
+  const date=String(raw).slice(0,10);if(!home||!away||!date)continue;
+  const key=date+"|"+bucket(home);if(!index.has(key))index.set(key,[]);
+  index.get(key).push({home,away});
+ }
+ liveFixtureLookup=index;
+}
 function fixtureConfirmedByLiveFeed(fixture){
- if(!fixture||!fixture.home||!fixture.away||!Array.isArray(liveFootballMatches)||!liveFootballMatches.length)return false;
+ if(!fixture||!fixture.home||!fixture.away||!liveFixtureLookup.size)return false;
  const home=liveNorm(fixture.home),away=liveNorm(fixture.away),date=String(fixture.date||"").slice(0,10);
+ if(!home||!away||!date)return false;
+ const bucket=v=>v.length>=6?v.slice(0,6):v;
  const sameTeam=(a,b)=>a===b||(Math.min(a.length,b.length)>=6&&(a.startsWith(b)||b.startsWith(a)));
- return liveFootballMatches.some(match=>{
-  const state=liveState(match);
-  if(state!=="live"&&state!=="finished")return false;
-  const mh=liveNorm(match.home||match.home_team||match.homeTeam||match.home_name||"");
-  const ma=liveNorm(match.away||match.away_team||match.awayTeam||match.away_name||"");
-  if(!mh||!ma||!sameTeam(home,mh)||!sameTeam(away,ma))return false;
-  const rawDate=match.start_time||match.time||match.kickoff||match.date||(match.fixture&&match.fixture.date)||"";
-  const eventDate=String(rawDate).slice(0,10);
-  if(date&&eventDate){
-   const allowed=[date];
-   try{allowed.push(dateAdd(date,-1),dateAdd(date,1))}catch(e){}
-   if(!allowed.includes(eventDate))return false;
-  }
-  return true;
- });
+ const dates=[date];try{dates.push(dateAdd(date,-1),dateAdd(date,1))}catch(e){}
+ for(const d of dates){
+  const candidates=liveFixtureLookup.get(d+"|"+bucket(home))||[];
+  if(candidates.some(m=>sameTeam(home,m.home)&&sameTeam(away,m.away)))return true;
+ }
+ return false;
 }
 function liveMinuteLabel(m){
  const raw=[m.status_text,m.statusText,m.status_label,m.status,m.match_status,m.period,m.phase].filter(v=>typeof v==="string").join(" ");
@@ -1287,13 +1324,18 @@ async function liveScoresLoad(){
    current=[...merged.values()].filter(m=>liveState(m)!=="other");
   }
   liveFootballMatches=current;
+  rebuildLiveFixtureLookup();
   // Kaynakta saati bos olan maclari da dogrulanmis canli/biten durumuyla listeden kaldir.
   saatiGecenMaclariKaldir();
-  try{
-   const basketballResponse=await fetch("https://sportscore.com/api/widget/matches/?sport=basketball&limit=50&src=yapaycin",{cache:"no-store",mode:"cors"});
-   if(basketballResponse.ok)liveBasketballMatches=liveList(await basketballResponse.json());
-  }catch(e){console.warn("NBA canlı skor kaynağı:",e.message)}
-  liveScoresDate=day;liveScoresLastFetch=Date.now();renderLiveScores();if(typeof kuponlariGoster==="function")kuponlariGoster();
+  liveScoresDate=day;liveScoresLastFetch=Date.now();
+  renderLiveResults();
+  if(activeTabName==="nba")renderLiveScores();
+  if(activeTabName==="coupons"&&typeof kuponlariGoster==="function")kuponlariGoster();
+  // Basketbol kaynağı futbol/kupon ekranını bekletmesin.
+  fetch("https://sportscore.com/api/widget/matches/?sport=basketball&limit=50&src=yapaycin",{cache:"no-store",mode:"cors"})
+   .then(r=>r.ok?r.json():null).then(data=>{
+    if(data){liveBasketballMatches=liveList(data);if(activeTabName==="nba")renderLiveScores()}
+   }).catch(e=>console.warn("NBA canlı skor kaynağı:",e.message));
   const liveCount=current.filter(m=>liveState(m)==="live").length;
   const feedErrors=feed&&feed.errors?Object.entries(feed.errors).filter(([,v])=>v).map(([k,v])=>k+": "+v).join("; "):"";
   const status=$("liveResultsStatus");

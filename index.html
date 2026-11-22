@@ -65,7 +65,7 @@ th{color:var(--yellow)}
 
 
 
-.compact-status{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;margin:6px 0}.status-copy{min-width:0;flex:1}.status-copy #durum{font-size:14px;font-weight:bold}.status-copy #sayilar{font-size:10px;line-height:1.35;overflow-wrap:anywhere}.status-refresh{width:auto;flex:0 0 auto;padding:8px 11px;margin:0;font-size:12px;white-space:nowrap}.filter-toggle{margin:0 0 8px;padding:10px;text-align:left}.filter-toggle[aria-expanded="true"]{border-color:var(--yellow);color:var(--yellow)}#matchFilters{padding-top:2px}#matchFilters.hidden{display:none!important}
+.coupon-datebar{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;margin:0 0 9px}.coupon-datebar input{margin:0;padding:9px 7px;min-width:0}.coupon-datebar button{width:auto;margin:0;padding:9px 10px;font-size:12px;white-space:nowrap}.coupon-date-label{grid-column:1/-1;color:#f5c400;font-size:12px;font-weight:bold;margin-bottom:-2px}.compact-status{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;margin:6px 0}.status-copy{min-width:0;flex:1}.status-copy #durum{font-size:14px;font-weight:bold}.status-copy #sayilar{font-size:10px;line-height:1.35;overflow-wrap:anywhere}.status-refresh{width:auto;flex:0 0 auto;padding:8px 11px;margin:0;font-size:12px;white-space:nowrap}.filter-toggle{margin:0 0 8px;padding:10px;text-align:left}.filter-toggle[aria-expanded="true"]{border-color:var(--yellow);color:var(--yellow)}#matchFilters{padding-top:2px}#matchFilters.hidden{display:none!important}
 </style>
 </head>
 <body>
@@ -129,7 +129,7 @@ th{color:var(--yellow)}
  </div>
 </section>
 
-<section id="couponsBolumu" class="hidden"><h2>🎟️ GÜNLÜK HAZIR KUPONLAR</h2><div class="panel"><div id="couponDate">Günün kuponları hazırlanıyor...</div><div id="couponStats"></div><div id="iddaaCouponStatus" class="coupon-meta">İddaa bülteni arka planda yükleniyor...</div><button class="secondary" onclick="iddaaBaslat(true)">İddaa Oranlarını Yenile</button><button onclick="kuponlariYenile()">Kuponları Yeniden Oluştur</button><p>Her kupon en fazla 5 maç içerir. Yeterli analiz verisi olmayan maçlar eklenmez. Tahminler garanti değildir.</p></div><div id="couponCards"></div><p class="small">Kupon geçmişi bu cihazın tarayıcısında saklanır.</p></section>
+<section id="couponsBolumu" class="hidden"><h2>🎟️ GÜNLÜK HAZIR KUPONLAR</h2><div class="panel"><div class="coupon-datebar"><label class="coupon-date-label" for="couponTarih">📅 Kupon tarihi</label><button type="button" class="secondary" onclick="couponTarihKaydir(-1)">◀</button><input type="date" id="couponTarih" aria-label="Kupon tarihi" onchange="couponTarihiDegisti()"><button type="button" class="secondary" onclick="couponTarihKaydir(1)">▶</button></div><div id="couponDate">Günün kuponları hazırlanıyor...</div><div id="couponStats"></div><div id="iddaaCouponStatus" class="coupon-meta">İddaa bülteni arka planda yükleniyor...</div><button class="secondary" onclick="iddaaBaslat(true)">İddaa Oranlarını Yenile</button><button onclick="kuponlariYenile()">Kuponları Yeniden Oluştur</button><p>Her kupon en fazla 5 maç içerir. Yeterli analiz verisi olmayan maçlar eklenmez. Tahminler garanti değildir.</p></div><div id="couponCards"></div><p class="small">Kupon geçmişi bu cihazın tarayıcısında saklanır.</p></section>
 
 <section id="iymsBolumu" class="hidden">
  <h2>🎯 İLK YARI / MAÇ SONU ANALİZİ</h2>
@@ -572,7 +572,7 @@ function sekmeAc(name){
   if(activeTabName!==name)return;
   if(name==="coupons"){
    kuponlariGoster();
-   const couponDate=$("tarih")?.value||today();
+   const couponDate=$("couponTarih")?.value||today();
    const savedDay=cArchive()[couponDate]||{};
    const savedPickCount=COUPON_TYPES.reduce((n,type)=>n+((savedDay[type[0]]||[]).length),0);
    if((savedDay.version!==3||savedPickCount===0)&&!couponBuildBusy)kuponlariYenile();
@@ -1125,7 +1125,7 @@ function couponIddaaOdds(x){
  return odd?{odd,event:e,missing:false}:{odd:1,event:e,missing:true};
 }
 async function kuponlariYenile(){
- if(couponBuildBusy)return;couponBuildBusy=true;const date=$("tarih")?.value||today(),archive=cArchive();$("couponDate").textContent="Altı kupon hazırlanıyor...";
+ if(couponBuildBusy)return;couponBuildBusy=true;const date=$("couponTarih")?.value||today(),archive=cArchive();$("couponDate").textContent="Altı kupon hazırlanıyor...";
  try{
   const iyRows=await cGetIYMS(),fixtures=FIXTURES.filter(m=>String(m.date).slice(0,10)===date&&/^\d{1,2}:\d{2}$/.test(String(m.time||""))&&!macBasladiMi(m));
   const rows=fixtures.map(m=>{const key=[m.league_id,m.date,m.time,m.home,m.away].join("|");let t=predictionCache.get(key);if(!t){t=predictFootball(m);predictionCache.set(key,t)}if(!t)return null;
@@ -1141,8 +1141,10 @@ async function kuponlariYenile(){
   archive[date]={version:3,safe1:pack(safe1),safe2:pack(safe2),surprise1:pack(surprise1),surprise2:pack(surprise2),mixed1:pack(mixed1),mixed2:pack(mixed2)};cSave(archive);if(activeTabName==="coupons")kuponlariGoster();const pickCount=[safe1,safe2,surprise1,surprise2,mixed1,mixed2].reduce((n,a)=>n+a.length,0);$("couponDate").textContent=pickCount?date+" · "+pickCount+" seçim hazırlandı · Her kupon en fazla 5 farklı maç":date+" · Bugün kupon kriterlerine uyan yeterli maç bulunamadı.";
  }catch(e){$("couponDate").textContent="Kupon hazırlanamadı: "+e.message}finally{couponBuildBusy=false}
 }
+function couponTarihKaydir(n){const el=$("couponTarih");if(!el)return;el.value=dateAdd(el.value||today(),n);couponTarihiDegisti()}
+function couponTarihiDegisti(){kuponlariGoster();const date=$("couponTarih")?.value||today(),day=cArchive()[date]||{},count=COUPON_TYPES.reduce((n,type)=>n+((day[type[0]]||[]).length),0);if((day.version!==3||count===0)&&!couponBuildBusy)kuponlariYenile()}
 function kuponlariGoster(){
- if(!$("couponCards"))return;const date=$("tarih")?.value||today(),day=cArchive()[date]||{};let total=0,done=0,hits=0,html="";$("couponDate").textContent=date+" · Her kupon 5 farklı maçtan oluşur; güçlü maçlarda iki ayrı tahmin olabilir.";
+ if(!$("couponCards"))return;const date=$("couponTarih")?.value||today(),day=cArchive()[date]||{};let total=0,done=0,hits=0,html="";$("couponDate").textContent=date+" · Her kupon 5 farklı maçtan oluşur; güçlü maçlarda iki ayrı tahmin olabilir.";
  COUPON_TYPES.forEach(type=>{const id=type[0],name=type[1],items=day[id]||[];total+=items.length;const oddsList=[];html+="<div class=\"coupon-card\"><b class=\"coupon-heading\">"+name+" · "+items.length+"/5 maç</b>";if(!items.length)html+="<p>Bu kategori için yeterli veriye sahip maç bulunamadı. Zayıf tahmin eklenmedi.</p>";
   items.forEach((x,i)=>{const result=cResult(x);if(result!==null){done++;if(result)hits++}const oddsInfo=couponIddaaOdds(x);oddsList.push(oddsInfo);let status="<span class=\"coupon-status pending\">◷ BEKLİYOR</span>";if(result===true)status="<span class=\"coupon-status hit\">✓ TUTTU</span>";if(result===false)status="<span class=\"coupon-status miss\">✕ YATTI</span>";const confidence=x.risk==="Düşük"?"Güvenli":x.risk==="Orta"?"Orta":"Riskli";html+="<div class=\"coupon-match\"><div class=\"match-top\"><b>"+(i+1)+". "+x.home+" - "+x.away+"</b>"+status+"</div><div class=\"coupon-pick\">🎯 TAHMİN: "+x.pick+"</div><div class=\"coupon-meta\">"+x.league+" · "+x.time+" · Olasılık: <b>%"+(x.prob*100).toFixed(1)+"</b> · Güven: <b>"+confidence+"</b><br>Analiz: "+x.reason+" · Veri: "+x.quality+"</div><div class=\"coupon-odds\">🇹🇷 İDDAA ORANI: "+(oddsInfo.missing?"Oran bulunamadı":oddsInfo.odd.toFixed(2))+"</div></div>"});
   if(items.length){if(!iddaaYuklendi)html+="<div class=\"coupon-total\">Toplam oran: İddaa bülteni bekleniyor...</div>";else if(oddsList.length&&oddsList.every(x=>!x.missing))html+="<div class=\"coupon-total\">TOPLAM İDDAA ORANI: "+oddsList.reduce((n,v)=>n*v.odd,1).toFixed(2)+"</div>";else html+="<div class=\"coupon-total\">Toplam oran hesaplanamadı: tüm seçimlerde eşleşen oran bulunamadı.</div>"}html+="</div>"});
@@ -1478,6 +1480,7 @@ async function nbaBaslat(force=false){
 
 /* AÇILIŞ */
 $("tarih").value=today();
+$("couponTarih").value=today();
 baslat();
 </script>
 <script>

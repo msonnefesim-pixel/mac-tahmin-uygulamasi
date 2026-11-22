@@ -39,7 +39,7 @@ button.secondary,.tab-button{background:#292929;color:#fff;border:1px solid #555
 .pred-name{display:block;font-size:10px;color:#bbb}
 .pred-value{display:block;color:var(--yellow);font-size:13px!important;font-weight:bold;margin-top:3px}
 .rank{font-size:11px;color:var(--yellow);white-space:nowrap}
-.coupon-card{background:#1b1b1b;border:1px solid #555;border-left:4px solid var(--yellow);border-radius:10px;padding:11px;margin:10px 0}.coupon-heading{display:block;color:#ff3030;font-size:17px;font-weight:900;line-height:1.4;margin-bottom:5px}.coupon-match{padding:11px 0;border-top:1px solid #444;margin-top:9px}.coupon-match .match-top>b{font-size:15px;line-height:1.4;color:#7ee081!important}.coupon-status{font-weight:bold;white-space:nowrap;font-size:12px}.coupon-status.hit{color:#7ee081}.coupon-status.miss{color:#ff7777}.coupon-status.pending{color:#f5c400}.coupon-pick{display:block;margin-top:9px;padding:9px 10px;background:#302600;border:1px solid #8a6b00;border-left:4px solid var(--yellow);border-radius:7px;color:#ffe36a;font-size:17px!important;font-weight:800;line-height:1.35}#iymsFutureList .panel > b:nth-of-type(2){color:#7ee081!important}.coupon-meta{font-size:12px;color:#ccc;margin-top:7px;line-height:1.5}.live-league-group{margin:12px 0 18px}.live-league-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 10px;margin:10px 0 7px;background:#2a1a1d;border:1px solid #a8323e;border-left:4px solid #ff3030;border-radius:7px;color:#ff4545;font-weight:800;font-size:17px}.live-league-heading span:last-child{font-size:11px;color:#f5c400;white-space:nowrap} .live-score-card{background:#211416;border:1px solid #653036;border-left:4px solid var(--red);border-radius:8px;padding:9px;margin:7px 0}
+.coupon-card{background:#1b1b1b;border:1px solid #555;border-left:4px solid var(--yellow);border-radius:10px;padding:11px;margin:10px 0}.coupon-heading{display:block;color:#ff3030;font-size:17px;font-weight:900;line-height:1.4;margin-bottom:5px}.coupon-match{padding:11px 0;border-top:1px solid #444;margin-top:9px}.coupon-match .match-top>b{font-size:15px;line-height:1.4;color:#7ee081!important}.coupon-status{font-weight:bold;white-space:nowrap;font-size:12px}.coupon-status.hit{color:#7ee081}.coupon-status.miss{color:#ff7777}.coupon-status.pending{color:#f5c400}.coupon-pick{display:block;margin-top:9px;padding:9px 10px;background:#302600;border:1px solid #8a6b00;border-left:4px solid var(--yellow);border-radius:7px;color:#ffe36a;font-size:17px!important;font-weight:800;line-height:1.35}#iymsFutureList .panel > b:nth-of-type(2){color:#7ee081!important}.coupon-meta{font-size:12px;color:#ccc;margin-top:7px;line-height:1.5}.coupon-odds{display:inline-block;margin-top:7px;padding:5px 8px;border:1px solid #8a6b00;border-radius:6px;color:#ffe36a;font-weight:800;background:#302600}.coupon-total{margin-top:9px;padding:9px;background:#191919;border:1px solid #625000;border-radius:7px;color:#ffe36a;font-weight:800}.coupon-no-odds{color:#aaa;font-size:11px;margin-top:6px}.live-league-group{margin:12px 0 18px}.live-league-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 10px;margin:10px 0 7px;background:#2a1a1d;border:1px solid #a8323e;border-left:4px solid #ff3030;border-radius:7px;color:#ff4545;font-weight:800;font-size:17px}.live-league-heading span:last-child{font-size:11px;color:#f5c400;white-space:nowrap} .live-score-card{background:#211416;border:1px solid #653036;border-left:4px solid var(--red);border-radius:8px;padding:9px;margin:7px 0}
 .live-score-card.finished{background:#142018;border-color:#315c3c;border-left-color:#45b866}
 .live-score-top{display:flex;justify-content:space-between;gap:8px;color:#bbb;font-size:11px}
 .live-score-teams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center;margin-top:7px;font-weight:bold}
@@ -138,7 +138,7 @@ th{color:var(--yellow)}
  </div>
 </section>
 
-<section id="couponsBolumu" class="hidden"><h2>🎟️ GÜNLÜK HAZIR KUPONLAR</h2><div class="panel"><div id="couponDate">Günün kuponları hazırlanıyor...</div><div id="couponStats"></div><button onclick="kuponlariYenile()">Kuponları Yeniden Oluştur</button><p>Her kupon en fazla 5 maç içerir. Yeterli analiz verisi olmayan maçlar eklenmez. Tahminler garanti değildir.</p></div><div id="couponCards"></div><p class="small">Kupon geçmişi bu cihazın tarayıcısında saklanır.</p></section>
+<section id="couponsBolumu" class="hidden"><h2>🎟️ GÜNLÜK HAZIR KUPONLAR</h2><div class="panel"><div id="couponDate">Günün kuponları hazırlanıyor...</div><div id="couponStats"></div><div id="iddaaCouponStatus" class="coupon-meta">İddaa bülteni arka planda yükleniyor...</div><button class="secondary" onclick="iddaaBaslat(true)">İddaa Oranlarını Yenile</button><button onclick="kuponlariYenile()">Kuponları Yeniden Oluştur</button><p>Her kupon en fazla 5 maç içerir. Yeterli analiz verisi olmayan maçlar eklenmez. Tahminler garanti değildir.</p></div><div id="couponCards"></div><p class="small">Kupon geçmişi bu cihazın tarayıcısında saklanır.</p></section>
 
 <section id="iymsBolumu" class="hidden">
  <h2>🎯 İLK YARI / MAÇ SONU ANALİZİ</h2>
@@ -906,6 +906,7 @@ function iddaaListele(reset=true){
 async function iddaaBaslat(force=false){
  if(iddaaLoading)return;
  iddaaLoading=true;
+ const couponStatus=$("iddaaCouponStatus");if(couponStatus)couponStatus.textContent="İddaa oranları yenileniyor...";
  const status=$("iddaaDurum");status.textContent="İddaa bülteni kaynaktan okunuyor...";$("iddaaMaclar").innerHTML="";
  try{
   const urls=["https://sportsbookv2.iddaa.com/sportsbook/events?st=1&type=0&version=0","https://sportsbookv2.iddaa.com/sportsbook/competitions?st=1"];
@@ -925,11 +926,14 @@ async function iddaaBaslat(force=false){
   iddaaYuklendi=true;
   iddaaTarihleriHazirla();
   status.innerHTML="<span class='good'>Güncel bülten arka planda hazır.</span> · "+events.length+" etkinlik kaydı · Kaynak okuma: "+iddaaUpdated;
+  const couponStatus=$("iddaaCouponStatus");if(couponStatus)couponStatus.innerHTML="<span class='good'>İddaa bülteni güncellendi.</span> · "+events.length+" kayıt · "+iddaaUpdated;
+  if($("couponsBolumu")&&!$("couponsBolumu").classList.contains("hidden"))kuponlariGoster();
   // Gizli İddaa sekmesinin maç kartlarını ve futbol listesini arka planda yeniden çizme.
   // İddaa ekranı kullanıcıya kapalı; veriler yalnızca tahmin eşleştirmesinde kullanılır.
  }catch(e){
   status.innerHTML="Oran kaynağına doğrudan erişilemedi: "+String(e.message||e)+
    "<br><span class='small'>Tarayıcı kaynak erişimini (CORS) engelliyor olabilir. Bu durumda izinli bir sunucu bağlantısı gerekir; otomatik arşivleme yapılmadı.</span>";
+  const couponStatus=$("iddaaCouponStatus");if(couponStatus)couponStatus.textContent="İddaa oranları şu an alınamadı. Daha sonra yeniden deneyebilirsin."; 
  }finally{iddaaLoading=false}
 }
 
@@ -946,6 +950,40 @@ function cFindNear(rows,x,homeKey,awayKey){const h=cTeamNorm(x.home),a=cTeamNorm
 function cResult(x){if(x.type==="iyms"){if(!couponIYMSRows)return null;const exact=couponIYMSRows.find(y=>y.date===String(x.date||"").slice(0,10)&&y.home===cNorm(x.home)&&y.away===cNorm(x.away));const row=exact||cFindNear(couponIYMSRows,x,"home","away");return row?row.pick===x.pick:null}let rec=cBuildResultIndex().get(cKey(x));if(!rec){const hh=cTeamNorm(x.home),aa=cTeamNorm(x.away),dd=String(x.date||"").slice(0,10);if(hh==="chapecoense"&&aa==="cruzeiro"&&(dd==="2026-11-21"||dd==="2026-11-22"))rec={h:1,a:2}}if(!rec){const row=cFindNear(HISTORY,x,"home","away");if(row&&row.ft_home!==null&&row.ft_home!==undefined&&row.ft_home!==""&&row.ft_away!==null&&row.ft_away!==undefined&&row.ft_away!=="")rec={h:Number(row.ft_home),a:Number(row.ft_away)}}if(!rec)return null;const {h,a}=rec;if(x.type==="over35")return h+a>=4;if(x.type==="six")return h+a>=6;if(x.type==="btts")return h>0&&a>0;if(x.type==="result")return (h>a?"1":h<a?"2":"X")===x.pick;return null}
 async function cGetIYMS(){if(couponIYMSRows)return couponIYMSRows;try{const r=await fetch("./iyms-veri.json");const d=await r.json();couponIYMSRows=(d.matches||[]).map(m=>{const g=ks=>{for(const k of ks)if(m[k]!==undefined&&m[k]!==null&&m[k]!=="")return Number(m[k]);return null};const hh=g(["ht_home","home_ht","halftime_home"]),ha=g(["ht_away","away_ht","halftime_away"]),fh=g(["ft_home","home_ft","home_score"]),fa=g(["ft_away","away_ft","away_score"]);if([hh,ha,fh,fa].some(v=>!Number.isFinite(v)))return null;const o=(v,w)=>v>w?"1":v<w?"2":"X";return {home:cNorm(m.home||m.home_team||m.home_name),away:cNorm(m.away||m.away_team||m.away_name),date:String(m.date||m.match_date||m.fixture_date||"").slice(0,10),pick:o(hh,ha)+"/"+o(fh,fa)}}).filter(x=>x&&x.home&&x.away);couponIYMSIndex=new Map(couponIYMSRows.map(x=>[[x.date,x.home,x.away].join("|"),x.pick]));return couponIYMSRows}catch(e){couponIYMSRows=[];couponIYMSIndex=new Map();return []}}
 function cIYMS(m,rows){const h=rows.filter(x=>x.home===cNorm(m.home)&&x.date<m.date).slice(-12),a=rows.filter(x=>x.away===cNorm(m.away)&&x.date<m.date).slice(-12);if(h.length<3||a.length<3)return null;const opts=["1/1","1/X","1/2","X/1","X/X","X/2","2/1","2/X","2/2"];const p=opts.map(k=>({k,v:Math.sqrt(((h.filter(x=>x.pick===k).length+.5)/(h.length+4.5))*((a.filter(x=>x.pick===k[2]+"/"+k[0]).length+.5)/(a.length+4.5)))})).sort((x,y)=>y.v-x.v);const sum=p.reduce((n,x)=>n+x.v,0);return {pick:p[0].k,p:sum?p[0].v/sum:0}}
+function couponOddsOutcome(m,aliases){
+ if(!m||!Array.isArray(m.o))return null;
+ const keys=aliases.map(iddaaNorm);
+ for(const o of m.o){
+  const labels=[o.n,o.name,o.no].filter(v=>v!==undefined&&v!==null).map(iddaaNorm);
+  if(labels.some(k=>keys.includes(k))){
+   const odd=iddaaOdds(o);if(odd)return odd;
+  }
+ }
+ return null;
+}
+function couponIddaaOdds(x){
+ if(!iddaaYuklendi||!Array.isArray(IDDAA_EVENTS)||!IDDAA_EVENTS.length)return null;
+ const e=iddaaFindEventForFixture(x);if(!e)return null;
+ const markets=iddaaMarkets(e);let odd=null;
+ if(x.type==="over35"){
+  const list=markets.filter(m=>String(m.t)==="2"&&String(m.st)==="101");
+  let m=list.find(v=>String(v.sov??"").replace(",",".")==="3.5");
+  if(!m)m=list.find(v=>v.o.some(o=>/3[,.]5/.test(String(o.n||o.name||""))));
+  if(m)odd=couponOddsOutcome(m,["Üst","Over","Üst 3,5","Üst 3.5","Over 3.5"]);
+ }else if(x.type==="six"){
+  odd=couponOddsOutcome(iddaaMarket(e,2,4),["6+","6 +","6+ Gol","6 ve üzeri","6 veya daha fazla"]);
+ }else if(x.type==="btts"){
+  odd=couponOddsOutcome(iddaaMarket(e,2,89),["Var","Evet","Yes","Karşılıklı Gol Var"]);
+ }else if(x.type==="result"){
+  const aliases=x.pick==="X"?["X","0","Beraberlik","Beraber","Draw"]:x.pick==="1"?["1","Ev sahibi","Home"]:["2","Deplasman","Away"];
+  odd=couponOddsOutcome(iddaaMarket(e,1,1),aliases);
+ }else if(x.type==="iyms"){
+  const code=String(x.pick||"").replace(/X/g,"0"),valid=["1/1","1/0","1/2","0/1","0/0","0/2","2/1","2/0","2/2"];
+  const market=markets.find(m=>valid.filter(k=>m.o.some(o=>iddaaNorm(o.n||o.name||o.no||"")===iddaaNorm(k))).length>=7);
+  if(market)odd=couponOddsOutcome(market,[code]);
+ }
+ return odd?{odd,event:e}:null;
+}
 async function kuponlariYenile(){$("couponDate").textContent="Kuponlar analiz ediliyor...";const date=today(),archive=cArchive(),day=archive[date]||{},iy=await cGetIYMS();const rows=FIXTURES.filter(m=>String(m.date).slice(0,10)===date&&/^\d{1,2}:\d{2}$/.test(String(m.time||""))&&!macBasladiMi(m)).map(m=>{const key=[m.league_id,m.date,m.time,m.home,m.away].join("|");let t=predictionCache.get(key);if(!t){t=predictFootball(m);predictionCache.set(key,t)}if(!t)return null;const ip=cIYMS(m,iy),rp=[["1",t.one],["X",t.draw],["2",t.two]].sort((a,b)=>b[1]-a[1])[0];return {m,t,ip,rp}}).filter(Boolean);COUPON_TYPES.forEach(([id,name,threshold])=>{if(day[id])return;const pool=rows.map(x=>{let p=0,pick="";if(id==="over35"){p=x.t.over35;pick="3,5 Üst"}if(id==="six"){p=x.t.six;pick="6+ Gol"}if(id==="btts"){p=x.t.btts;pick="KG Var"}if(id==="result"){p=x.rp[1];pick=x.rp[0]}if(id==="iyms"&&x.ip){p=x.ip.p;pick=x.ip.pick}return {x,p,pick}}).filter(x=>x.pick&&x.p>=threshold).sort((a,b)=>b.p-a.p).slice(0,5);day[id]=pool.map(x=>({type:id,pick:x.pick,prob:x.p,date:x.x.m.date,time:x.x.m.time||"",home:x.x.m.home,away:x.x.m.away,league:x.x.m.league||""}))});archive[date]=day;cSave(archive);kuponlariGoster()}
 function kuponlariGoster(){
  if(!$("couponCards"))return;
@@ -957,13 +995,22 @@ function kuponlariGoster(){
   if(!items.length)html+="<p>Yeterli güven düzeyinde maç bulunamadı.</p>";
   items.forEach(function(x,i){
    const result=cResult(x);if(result!==null){done++;if(result)hits++;}
+   const oddsInfo=couponIddaaOdds(x);
    let status="<span class=\"coupon-status pending\">◷ BEKLİYOR</span>";
    if(result===true)status="<span class=\"coupon-status hit\">✓ TUTTU</span>";
    if(result===false)status="<span class=\"coupon-status miss\">✕ YATTI</span>";
    html+="<div class=\"coupon-match\"><div class=\"match-top\"><b>"+(i+1)+". "+x.home+" - "+x.away+"</b>"+status+"</div>";
    html+="<div class=\"coupon-pick\">🎯 TAHMİN: "+x.pick+"</div>";
-   html+="<div class=\"coupon-meta\">"+x.league+" · "+x.time+" · Güven: <b>%"+(x.prob*100).toFixed(1)+"</b></div></div>";
+   html+="<div class=\"coupon-meta\">"+x.league+" · "+x.time+" · Güven: <b>%"+(x.prob*100).toFixed(1)+"</b></div>";
+   html+=oddsInfo?"<div class=\"coupon-odds\">🇹🇷 İDDAA ORANI: "+oddsInfo.odd.toFixed(2)+"</div>":(iddaaYuklendi?"<div class=\"coupon-no-odds\">İddaa oranı bu maç / tahmin için bültende bulunamadı.</div>":"<div class=\"coupon-no-odds\">İddaa oranı yükleniyor...</div>");
+   html+="</div>";
   });
+  if(items.length){
+   const oddsList=items.map(couponIddaaOdds);
+   if(!iddaaYuklendi)html+="<div class=\"coupon-total\">Toplam İddaa oranı: bülten yükleniyor...</div>";
+   else if(oddsList.every(Boolean)){const totalOdd=oddsList.reduce((n,v)=>n*v.odd,1);html+="<div class=\"coupon-total\">TOPLAM İDDAA ORANI: "+totalOdd.toFixed(2)+"</div>";}
+   else html+="<div class=\"coupon-no-odds\">Toplam oran hesaplanamadı: en az bir maçın İddaa oranı bulunamadı.</div>";
+  }
   html+="</div>";
  });
  $("couponCards").innerHTML=html;

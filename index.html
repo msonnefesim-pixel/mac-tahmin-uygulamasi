@@ -911,9 +911,9 @@ function iddaaBlendProbability(model,market){
 }
 function iddaaAdjustedPrediction(fixture,p){
  const e=iddaaFindEventForFixture(fixture);if(!e)return p;
- const m1=iddaaMarket(e,1,1),ou=iddaaMarketLine(e,2,101,"3.5")||iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89),goal=iddaaMarket(e,2,4);
+ const m1=iddaaMarket(e,1,1),ou25=iddaaMarketLine(e,2,101,"2.5"),ou=iddaaMarketLine(e,2,101,"3.5")||iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89),goal=iddaaMarket(e,2,4);
  // Model için yeterli geçmişi olmayan maçlarda da marjsız İddaa olasılıklarını göster.
- const out={one:null,draw:null,two:null,over35:null,six:null,btts:null,first:null,second:null,...(p||{}),marketOnly:!p};
+ const out={one:null,draw:null,two:null,over25:null,over35:null,six:null,btts:null,first:null,second:null,firstOver15:null,...(p||{}),marketOnly:!p};
  const one=iddaaFairProbability(m1,["1","Ev sahibi","Home"]);
  const draw=iddaaFairProbability(m1,["X","0","Beraberlik","Beraber","Draw"]);
  const two=iddaaFairProbability(m1,["2","Deplasman","Away"]);
@@ -925,6 +925,8 @@ function iddaaAdjustedPrediction(fixture,p){
   const sum=out.one+out.draw+out.two;
   if(sum>0){out.one/=sum;out.draw/=sum;out.two/=sum;}
  }
+ const over25Market=iddaaFairProbability(ou25,["Üst","Over","Üst 2.5","Over 2.5"]);
+ if(over25Market!==null)out.over25=p?iddaaBlendProbability(p.over25,over25Market):over25Market;
  const kg=iddaaFairProbability(bttsM,["Var","Evet","Yes","Karşılıklı Gol Var"]);
  if(kg!==null)out.btts=p?iddaaBlendProbability(p.btts,kg):kg;
  if(ou){
@@ -940,12 +942,13 @@ function iddaaAdjustedPrediction(fixture,p){
   if(sixMarket!==null)out.six=p?iddaaBlendProbability(p.six,sixMarket):sixMarket;
  }
  if(!p){
-  const vals=[out.one,out.draw,out.two,out.over35,out.six,out.btts];
+  const vals=[out.one,out.draw,out.two,out.over25,out.over35,out.six,out.btts];
   if(!vals.some(Number.isFinite))return null;
   return out;
  }
  // Oran hareketi yalnızca küçük ek sinyaldir; mevcut model/piyasa tahmininin yerine geçmez.
  if(m1){const d=[["1",["1","Ev sahibi","Home"]],["draw",["X","0","Beraberlik","Beraber","Draw"]],["2",["2","Deplasman","Away"]]].map(([k,a])=>[k,iddaaMovementDelta(e,m1,a)]);if(d.every(x=>x[1]!==null)){d.forEach(([k,v])=>out[k]=Math.max(0,Math.min(1,out[k]+v*.15)));const sum=out.one+out.draw+out.two;if(sum){out.one/=sum;out.draw/=sum;out.two/=sum}}}
+ if(ou25){const dOver25=iddaaMovementDelta(e,ou25,["Üst","Over","Üst 2.5","Over 2.5"]);if(dOver25!==null)out.over25=Math.max(0,Math.min(1,out.over25+dOver25*.15))}
  const dKg=iddaaMovementDelta(e,bttsM,["Var","Evet","Yes","Karşılıklı Gol Var"]);if(dKg!==null)out.btts=Math.max(0,Math.min(1,out.btts+dKg*.15));
  if(ou){const dOver=iddaaMovementDelta(e,ou,["Üst","Over","Üst 3.5","Over 3.5"]);if(dOver!==null)out.over35=Math.max(0,Math.min(1,out.over35+dOver*.15))}
  if(goal){const dSix=iddaaMovementDelta(e,goal,["6+","6 +","6+ Gol","6 ve üzeri","6 veya daha fazla"]);if(dSix!==null)out.six=Math.max(0,Math.min(1,out.six+dSix*.15))}

@@ -304,27 +304,35 @@ function halfPrediction(home,away,match,period){
  const la=avg(d.map(m=>get(m,away,true)))*avg(e.map(m=>get(m,home,false)))/avgLeague;
  return btts(lh,la);
 }
+function weightedTeamGoals(matches,team,scored){
+ let total=0,weight=0;for(let i=0;i<matches.length;i++){const m=matches[i],home=m.home===team,own=Number(home?m.ft_home:m.ft_away),opp=Number(home?m.ft_away:m.ft_home),w=Math.pow(.88,matches.length-1-i);total+=(scored?own:opp)*w;weight+=w}return weight?total/weight:0;
+}
 function predictFootball(m){
- const home=previousMatches(m.home,m.league_id,m.date,10),away=previousMatches(m.away,m.league_id,m.date,10);
- if(home.length<5||away.length<5)return null;
+ const home=previousMatches(m.home,m.league_id,m.date,10),away=previousMatches(m.away,m.league_id,m.date,10);if(home.length<5||away.length<5)return null;
  const league=leagueAverage(m.league_id,m.date);if(!league)return null;
- const lh=teamGoals(home,m.home,true)*teamGoals(away,m.away,false)/league;
- const la=teamGoals(away,m.away,true)*teamGoals(home,m.home,false)/league;
- const r=poissonResult(lh,la);
- return {one:r.one,draw:r.draw,two:r.two,over35:totalOver35(lh,la),six:sixPlus(lh,la),btts:btts(lh,la),
-  first:halfPrediction(m.home,m.away,m,"first"),second:halfPrediction(m.home,m.away,m,"second")};
+ const rawH=teamGoals(home,m.home,true)*teamGoals(away,m.away,false)/league,rawA=teamGoals(away,m.away,true)*teamGoals(home,m.home,false)/league;
+ const recentH=weightedTeamGoals(home,m.home,true)*weightedTeamGoals(away,m.away,false)/league,recentA=weightedTeamGoals(away,m.away,true)*weightedTeamGoals(home,m.home,false)/league;
+ const reliability=Math.min(1,Math.min(home.length,away.length)/10),lh=Math.max(.12,(rawH*.65+recentH*.35)*reliability+league*(1-reliability)),la=Math.max(.12,(rawA*.65+recentA*.35)*reliability+league*(1-reliability));
+ const r=poissonResult(lh,la),base=poissonResult(rawH,rawA),recent=poissonResult(recentH,recentA),agreement=Math.max(0,Math.min(1,1-avg([Math.abs(base.one-recent.one),Math.abs(base.draw-recent.draw),Math.abs(base.two-recent.two)])*1.5));
+ const first=halfPrediction(m.home,m.away,m,"first"),second=halfPrediction(m.home,m.away,m,"second"),prefix=leaguePrefix.get(String(m.league_id)),leagueSamples=prefix?prefix.count[lowerDate(prefix.arr,m.date)]:0;
+ const qualityScore=Math.min(1,Math.min(home.length,away.length)/10)*.5+Math.min(1,leagueSamples/100)*.3+(first!==null&&second!==null?.2:0);
+ return {one:r.one,draw:r.draw,two:r.two,over35:totalOver35(lh,la),six:sixPlus(lh,la),btts:btts(lh,la),first,second,expectedHome:lh,expectedAway:la,homeSamples:home.length,awaySamples:away.length,leagueSamples,methodAgreement:agreement,quality:qualityScore>=.78?"İyi":qualityScore>=.52?"Orta":"Sınırlı"};
 }
 function highest(t){return t?Math.max(t.one,t.draw,t.two,t.over35,t.six,t.btts,t.first??0,t.second??0):-1}
 function predictionBox(name,value){return `<div class="pred"><span class="pred-name">${name}</span><span class="pred-value">${pct(value)}</span></div>`}
+function matchInsight(m,t){
+ if(!t)return "";
+ const labels=[["1",t.one],["X",t.draw],["2",t.two],["3,5 Üst",t.over35],["6+ Gol",t.six],["KG Var",t.btts],["İlk Yarı KG",t.first],["İkinci Yarı KG",t.second]].filter(x=>Number.isFinite(x[1])).sort((a,b)=>b[1]-a[1]);
+ const best=labels[0],level=best[1]>=.68&&t.methodAgreement>=.78&&t.quality==="İyi"?"Güvenli":best[1]>=.55?"Orta":"Riskli",surprise=Math.min(t.one,t.two),alarm=surprise>=.27&&Math.max(t.one,t.two)<=.62;
+ const scenario=t.expectedHome+t.expectedAway>=3.25?"Gollü maç senaryosu öne çıkıyor":t.expectedHome+t.expectedAway<=2.25?"Düşük skorlu maç senaryosu öne çıkıyor":"Orta gol beklentisi";
+ const why=["1","X","2"].includes(best[0])?"Takımların geçmiş gol üretimi, savunma verileri ve lig ortalaması birlikte değerlendirildi.":"Gol beklentisi ve iki takımın gol bulma olasılığı bu seçeneği öne çıkarıyor.";
+ return `<div class="analysis-box"><b>🧠 Model değerlendirmesi</b><br>Öne çıkan: <b>${best[0]} (%${(best[1]*100).toFixed(1)})</b> · Güven: <b>${level}</b><br><small>Veri kalitesi: ${t.quality} · Ev/dep. geçmişi: ${t.homeSamples}/${t.awaySamples} maç · Model uyumu: %${(t.methodAgreement*100).toFixed(0)}</small><br><small>${why} ${scenario}.</small>${alarm?`<br><span style="color:#ff9b6b;font-weight:bold">⚠️ Sürpriz alarmı: ${t.one<t.two?"Ev sahibi":"Deplasman"} galibiyeti ihtimali dikkate değer (%${(surprise*100).toFixed(1)}).</span>`:""}<br><small>Diğer güçlü seçenekler: ${labels.slice(1,3).map(x=>x[0]+" %"+(x[1]*100).toFixed(1)).join(" · ")}</small></div>`;
+}
 function matchCard(m,t,past=false,rank=0){
  const finalPrediction=!past&&t?iddaaAdjustedPrediction(m,t):t;
- return `<div class="match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}"`}><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?("#"+rank+" · "+pct(highest(finalPrediction))):"Tahmin yok"}</span>`:""}</div>
+ return `<div class="match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}`}><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?("#"+rank+" · "+pct(highest(finalPrediction))):"Tahmin yok"}</span>`:""}</div>
  <div class="meta-row"><div class="meta">${leagueView(m)}</div><div class="kickoff">${m.time||"Saat yok"}</div></div>
- ${past?`<div class="result">Maç sonucu: ${m.ft_home}-${m.ft_away}</div>`:`<div class="predictions">
- ${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}
- ${predictionBox("3,5 Üst",finalPrediction?.over35)}${predictionBox("6+ Gol",finalPrediction?.six)}
- ${predictionBox("KG Var",finalPrediction?.btts)}${predictionBox("KG Yok",finalPrediction?.btts==null?null:1-finalPrediction.btts)}
- </div>`}</div>`;
+ ${past?`<div class="result">Maç sonucu: ${m.ft_home}-${m.ft_away}</div>`:`<div class="predictions">${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}${predictionBox("3,5 Üst",finalPrediction?.over35)}${predictionBox("6+ Gol",finalPrediction?.six)}${predictionBox("KG Var",finalPrediction?.btts)}${predictionBox("KG Yok",finalPrediction?.btts==null?null:1-finalPrediction.btts)}</div>${matchInsight(m,finalPrediction)}`}</div>`;
 }
 function filterMatch(t,f){
  if(f==="all")return true;if(!t)return false;

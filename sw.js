@@ -1,6 +1,6 @@
-const CACHE_NAME = "yapaycin-mac-analiz-v90";
+const CACHE_NAME = "yapaycin-mac-analiz-v91";
 
-const FILES_TO_CACHE = ["./","./index.html","./manifest.json","./icon.svg","./genie.svg"];
+const FILES_TO_CACHE = ["./","./index.html","./manifest.json","./icon.svg?v=91","./genie.svg"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE)).then(() => self.skipWaiting()));

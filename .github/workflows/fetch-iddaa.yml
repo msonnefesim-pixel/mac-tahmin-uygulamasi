@@ -1,0 +1,34 @@
+name: Update Iddaa Odds
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/fetch_iddaa.py"
+      - ".github/workflows/fetch-iddaa.yml"
+permissions:
+  contents: write
+concurrency:
+  group: update-iddaa-odds
+  cancel-in-progress: false
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Fetch Iddaa bulletin
+        run: python scripts/fetch_iddaa.py
+      - name: Commit updated bulletin
+        run: |
+          if git diff --quiet -- iddaa.json; then
+            echo "Iddaa bulletin unchanged."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add iddaa.json
+          git commit -m "Update Iddaa odds bulletin"
+          git push

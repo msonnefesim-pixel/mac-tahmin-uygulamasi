@@ -878,7 +878,7 @@ function iddaaAdjustedPrediction(fixture,p){
  const e=iddaaFindEventForFixture(fixture);if(!e)return p;
  const m1=iddaaMarket(e,1,1),ou=iddaaMarketLine(e,2,101,"3.5")||iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89),goal=iddaaMarket(e,2,4);
  // Model için yeterli geçmişi olmayan maçlarda da marjsız İddaa olasılıklarını göster.
- const out={...(p||{}),marketOnly:!p};
+ const out={one:null,draw:null,two:null,over35:null,six:null,btts:null,first:null,second:null,...(p||{}),marketOnly:!p};
  const one=iddaaFairProbability(m1,["1","Ev sahibi","Home"]);
  const draw=iddaaFairProbability(m1,["X","0","Beraberlik","Beraber","Draw"]);
  const two=iddaaFairProbability(m1,["2","Deplasman","Away"]);

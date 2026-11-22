@@ -326,10 +326,16 @@ function predictionBox(name,value){return `<div class="pred"><span class="pred-n
 function matchInsight(m,t){
  if(!t)return "";
  const labels=[["1",t.one],["X",t.draw],["2",t.two],["3,5 Üst",t.over35],["6+ Gol",t.six],["KG Var",t.btts],["İlk Yarı KG",t.first],["İkinci Yarı KG",t.second]].filter(x=>Number.isFinite(x[1])).sort((a,b)=>b[1]-a[1]);
- const best=labels[0],level=best[1]>=.68&&t.methodAgreement>=.78&&t.quality==="İyi"?"Güvenli":best[1]>=.55?"Orta":"Riskli",surprise=Math.min(t.one,t.two),alarm=surprise>=.27&&Math.max(t.one,t.two)<=.62;
- const scenario=t.expectedHome+t.expectedAway>=3.25?"Gollü maç senaryosu öne çıkıyor":t.expectedHome+t.expectedAway<=2.25?"Düşük skorlu maç senaryosu öne çıkıyor":"Orta gol beklentisi";
- const why=["1","X","2"].includes(best[0])?"Takımların geçmiş gol üretimi, savunma verileri ve lig ortalaması birlikte değerlendirildi.":"Gol beklentisi ve iki takımın gol bulma olasılığı bu seçeneği öne çıkarıyor.";
- return `<div class="analysis-box"><b>🧠 Model değerlendirmesi</b><br>Öne çıkan: <b>${best[0]} (%${(best[1]*100).toFixed(1)})</b> · Güven: <b>${level}</b><br><small>Veri kalitesi: ${t.quality} · Ev/dep. geçmişi: ${t.homeSamples}/${t.awaySamples} maç · Model uyumu: %${(t.methodAgreement*100).toFixed(0)}</small><br><small>${why} ${scenario}.</small>${alarm?`<br><span style="color:#ff9b6b;font-weight:bold">⚠️ Sürpriz alarmı: ${t.one<t.two?"Ev sahibi":"Deplasman"} galibiyeti ihtimali dikkate değer (%${(surprise*100).toFixed(1)}).</span>`:""}<br><small>Diğer güçlü seçenekler: ${labels.slice(1,3).map(x=>x[0]+" %"+(x[1]*100).toFixed(1)).join(" · ")}</small></div>`;
+ const best=labels[0],agreement=t.methodAgreement*.65+(t.marketAgreement??t.methodAgreement)*.35,quality=t.quality;
+ const level=best[1]>=.64&&agreement>=.72&&quality==="İyi"?"Güvenli":best[1]>=.50&&agreement>=.52&&quality!=="Sınırlı"?"Orta":"Riskli";
+ const strong=labels.filter(([name,p])=>p>=(name==="6+ Gol"?.20:name==="KG Var"?.50:name==="3,5 Üst"?.52:name.includes("Yarı")?.40:.34)&&agreement>=.48).slice(0,4);
+ const underdog=t.one>=t.two?t.two:t.one,favorite=t.one>=t.two?"Ev sahibi":"Deplasman";
+ const upset=underdog>=.22&&underdog<=.46&&Math.max(t.one,t.two)-underdog>=.10;
+ const drawRisk=t.draw>=.27&&Math.max(t.one,t.two)<=.62;
+ const total=t.expectedHome+t.expectedAway,scenario=total>=3.35?"Yüksek tempolu ve gollü maç":total<=2.20?"Düşük tempolu, az gollü maç":"Dengeli gol beklentili maç";
+ const score=t.scoreline?t.scoreline.home+"-"+t.scoreline.away:"-";
+ const why="Ev sahibi gol beklentisi "+t.expectedHome.toFixed(2)+", deplasman gol beklentisi "+t.expectedAway.toFixed(2)+".";
+ return "<div class='analysis-box'><b>🧠 Çoklu model değerlendirmesi</b><br>En güçlü seçenek: <b>"+best[0]+" (%"+(best[1]*100).toFixed(1)+")</b> · Güven: <b>"+level+"</b><br><small>Olası skor: <b>"+score+"</b> · Senaryo: "+scenario+"</small><br><small>Veri kalitesi: "+quality+" · Ev/dep. geçmişi: "+t.homeSamples+"/"+t.awaySamples+" maç · Model uyumu: %"+(agreement*100).toFixed(0)+"</small><br><small>"+why+" Temel Poisson, son form ve birleşik model birlikte değerlendirildi.</small>"+(strong.length?"<br><small>Güçlü adaylar: "+strong.map(x=>x[0]+" %"+(x[1]*100).toFixed(1)).join(" · ")+"</small>":"")+(upset?"<br><span style='color:#ff9b6b;font-weight:bold'>⚠️ Sürpriz alarmı: Favori olmayan "+(favorite==="Ev sahibi"?"deplasman":"ev sahibi")+" galibiyeti ihtimali %"+(underdog*100).toFixed(1)+". Favorinin üstünlüğü kesin değil.</span>":"")+(drawRisk?"<br><span style='color:#ffcf5a;font-weight:bold'>⚠️ Beraberlik/sürpriz alarmı: X olasılığı %"+(t.draw*100).toFixed(1)+"</span>":"")+"</div>";
 }
 function matchCard(m,t,past=false,rank=0){
  const finalPrediction=!past&&t?iddaaAdjustedPrediction(m,t):t;

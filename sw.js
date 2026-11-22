@@ -1,4 +1,4 @@
-const CACHE_NAME = "yapaycin-mac-analiz-v115";
+const CACHE_NAME = "yapaycin-mac-analiz-v116";
 
 const FILES_TO_CACHE = ["./","./index.html","./manifest.json","./icon.png","./genie-logo.jpg"];
 
@@ -28,6 +28,20 @@ self.addEventListener("fetch", event => {
         cached || refreshPromise.then(fresh => fresh || cache.match("./").then(root => root || Response.error()))
       )
     ));
+    return;
+  }
+
+  if (url.pathname.endsWith("/iddaa.json")) {
+    event.respondWith(fetch(event.request, { cache: "no-store" }).then(async response => {
+      if (response.ok) {
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put(new Request(url.origin + url.pathname), response.clone());
+      }
+      return response;
+    }).catch(async () => {
+      const cache = await caches.open(CACHE_NAME);
+      return (await cache.match(new Request(url.origin + url.pathname))) || Response.error();
+    }));
     return;
   }
 

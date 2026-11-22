@@ -189,7 +189,7 @@ let fixtureDateIndex=new Map(), historyDateIndex=new Map(), listRenderToken=0;
 function makeDateIndex(rows){const map=new Map();for(const m of rows){const d=String(m.date||"");if(!map.has(d))map.set(d,[]);map.get(d).push(m)}return map;}
 let teamIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map();
 let hiddenLeagues=new Set();
-let iymsYuklendi=false, nbaYuklendi=false, iddaaYuklendi=false, iddaaLoading=false, analysisRunning=false;
+let iymsYuklendi=false, iymsLoading=false, nbaYuklendi=false, nbaLoading=false, couponBuildBusy=false, activeTabName="futbol", iddaaYuklendi=false, iddaaLoading=false, analysisRunning=false;
 let NBA_GAMES_CACHE=[], liveFootballMatches=[], liveBasketballMatches=[], liveScoresBusy=false, liveScoresTimer=null, liveScoresLastFetch=0, liveScoresDate="";
 let liveViewMode="live";
 let IDDAA_EVENTS=[], IDDAA_COMPETITIONS=new Map(), IDDAA_INDEX=new Map(), IDDAA_BY_DATE=new Map(), IDDAA_MATCH_CACHE=new Map(), iddaaUpdated="", iddaaShown=20;
@@ -521,12 +521,20 @@ async function baslat(force=false){
 }
 function sekmeAc(name){
  const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",nba:"nbaBolumu",coupons:"couponsBolumu",iddaa:"iddaaBolumu"};
+ activeTabName=name;
  Object.keys(ids).forEach(k=>$(ids[k]).classList.toggle("hidden",k!==name));
  $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");$("nbaButon").classList.toggle("active",name==="nba");$("couponButon").classList.toggle("active",name==="coupons");
- if(name==="coupons"){kuponlariGoster();if(!cArchive()[today()])kuponlariYenile();}
- if(name==="iyms"&&!iymsYuklendi)iymsBaslat();
- if(name==="nba"&&!nbaYuklendi)nbaBaslat();
- if(name==="iddaa"){if(!iddaaYuklendi)iddaaBaslat();else iddaaListele();}
+ // Sekme önce anında görünür; ağır hesaplar ilk çizimden sonra başlar.
+ setTimeout(()=>{
+  if(activeTabName!==name)return;
+  if(name==="coupons"){
+   kuponlariGoster();
+   if(!cArchive()[today()]&&!couponBuildBusy){couponBuildBusy=true;kuponlariYenile().finally(()=>{couponBuildBusy=false})}
+  }
+  if(name==="iyms"&&!iymsYuklendi&&!iymsLoading)iymsBaslat();
+  if(name==="nba"&&!nbaYuklendi&&!nbaLoading)nbaBaslat();
+  if(name==="iddaa"){if(!iddaaYuklendi&&!iddaaLoading)iddaaBaslat();else iddaaListele();}
+ },25);
 }
 
 /* FUTBOL GEÇMİŞ TESTİ - İSTEĞE BAĞLI */
@@ -573,6 +581,7 @@ async function testleriHesapla(){
 
 /* İY/MS - DOKUZ SEÇENEK */
 async function iymsBaslat(){
+ if(iymsLoading||iymsYuklendi)return;iymsLoading=true;
  const status=$("iymsDurum"),summary=$("iymsOzet"),area=$("iymsMaclar");
  status.textContent="İY/MS verileri yükleniyor...";summary.innerHTML="";area.innerHTML="";
  const options=["1/1","1/X","1/2","X/1","X/X","X/2","2/1","2/X","2/2"];
@@ -654,6 +663,7 @@ async function iymsBaslat(){
   $("iymsClear").addEventListener("click",()=>{area.querySelectorAll(".iyms-date").forEach(c=>c.checked=false);leagueEl.value="all";updateList()});
   iymsYuklendi=true;status.innerHTML+="<br><span class='good'>İY/MS analizi tamamlandı.</span>";
  }catch(e){status.textContent="İY/MS veri hatası: "+e.message}
+ finally{iymsLoading=false}
 }
 
 
@@ -1317,6 +1327,7 @@ function nbaPredict(g,games){
  return {hs,as,diff,total,favorite,confidence:Math.max(50,Math.min(78,Math.round(50+Math.min(20,Math.abs(diff)*1.15)+Math.min(8,Math.min(home.n,away.n)*.8)))),ou200:ou(200.5),ou220:ou(220.5),ou240:ou(240.5)};
 }
 async function nbaBaslat(force=false){
+ if(nbaLoading||(!force&&nbaYuklendi))return;nbaLoading=true;
  $("nbaDurum").textContent="NBA verileri yükleniyor...";$("nbaMaclar").innerHTML="";
  try{
   const r=await fetch("./nba.json"+(force?"?v="+Date.now():""),{cache:force?"no-store":"default"});if(!r.ok)throw new Error("nba.json bulunamadı");
@@ -1325,7 +1336,7 @@ async function nbaBaslat(force=false){
   const now=new Date(),future=games.filter(g=>!nbaDone(g)&&nbaDate(g)>=now).sort((a,b)=>nbaDate(a)-nbaDate(b));
   const finished=games.filter(nbaDone).sort((a,b)=>nbaDate(b)-nbaDate(a));
   let correct=0,tested=0;
-  finished.forEach(g=>{const p=nbaPredict(g,games);if(!p.diff)return;tested++;if((Number(g.home_score)>Number(g.away_score))===(p.diff>0))correct++});
+  for(let i=0;i<finished.length;i++){const g=finished[i],p=nbaPredict(g,games);if(p.diff){tested++;if((Number(g.home_score)>Number(g.away_score))===(p.diff>0))correct++}if(i%25===24)await new Promise(resolve=>setTimeout(resolve,0));}
   let html=`<div class="nba-card"><b>📊 Geçmiş kazanan testi:</b> ${tested?"%"+(correct/tested*100).toFixed(1):"Yeterli veri yok"} (${correct}/${tested})</div>`;
   if(future.length){
    html+="<h3>🏀 Yaklaşan NBA maçları</h3>";
@@ -1338,6 +1349,7 @@ async function nbaBaslat(force=false){
   $("nbaDurum").textContent="NBA verileri yüklendi · Toplam kayıt: "+games.length+" · Yaklaşan maç: "+future.length+" · Kaynak: "+(data.source||"Belirtilmemiş");
   $("nbaMaclar").innerHTML=html;nbaYuklendi=true;
  }catch(e){$("nbaDurum").textContent="NBA veri hatası: "+e.message}
+ finally{nbaLoading=false}
 }
 
 /* AÇILIŞ */

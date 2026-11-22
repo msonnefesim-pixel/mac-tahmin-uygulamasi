@@ -20,8 +20,8 @@ input,select,button{width:100%;padding:11px;margin:5px 0;border-radius:8px;font-
 input,select{background:#101010;color:#fff;border:1px solid #666}
 button{background:var(--yellow);color:#171000;border:0;font-weight:bold}
 button.secondary,.tab-button{background:#292929;color:#fff;border:1px solid #555}
-.tabbar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:14px 0}
-.tab-button{padding:13px 4px;font-weight:bold}
+.tabbar{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:8px 0}
+.tab-button{padding:9px 3px;font-weight:bold;font-size:13px;line-height:1.2}
 .tab-button.active{background:var(--yellow);color:#171000;border-color:var(--yellow)}
 .hidden{display:none!important}
 .controls{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -55,16 +55,17 @@ th,td{padding:7px 5px;text-align:center;border-bottom:1px solid #444}
 th{color:var(--yellow)}
 @media(max-width:360px){body{padding:7px}.teams{font-size:13px}.predictions{gap:3px}.pred{padding:5px 1px}.pred-name{font-size:9px}.tab-button{font-size:12px}}
 
-.brand-banner{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:112px;margin:2px 0 12px;padding:18px 10px 13px;border:1px solid #6f1825;border-radius:15px;background:#211014;box-shadow:none;overflow:visible}
-.brand-wordmark{display:flex;align-items:center;justify-content:center;gap:0;font-family:Arial,sans-serif;font-size:clamp(29px,8vw,39px);font-weight:1000;letter-spacing:-1.8px;line-height:1.05;color:#f5c400;text-shadow:0 2px 0 #7a1b00,0 0 13px #f5c40038}
+.brand-banner{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:76px;margin:0 0 8px;padding:10px 8px 8px;border:1px solid #6f1825;border-radius:15px;background:#211014;box-shadow:none;overflow:visible}
+.brand-wordmark{display:flex;align-items:center;justify-content:center;gap:0;font-family:Arial,sans-serif;font-size:clamp(25px,7vw,32px);font-weight:1000;letter-spacing:-1.8px;line-height:1.05;color:#f5c400;text-shadow:0 2px 0 #7a1b00,0 0 13px #f5c40038}
 .brand-y{position:relative;display:inline-block;color:#fff;text-shadow:0 2px 0 #8c101f,0 0 12px #fff5;margin-right:1px}
-.brand-y img{position:absolute;width:56px;height:56px;object-fit:contain;left:-16px;top:-43px;filter:none}
-.brand-analysis{margin-top:7px;color:#fff;font-size:13px;font-weight:900;letter-spacing:5px;text-indent:5px}
-.brand-tagline{margin:6px 0 0;color:#c9b8a0;font-size:9px;letter-spacing:1.2px;text-transform:uppercase}
+.brand-y img{position:absolute;width:42px;height:42px;object-fit:contain;left:-12px;top:-32px;filter:none}
+.brand-analysis{margin-top:4px;color:#fff;font-size:11px;font-weight:900;letter-spacing:5px;text-indent:5px}
+.brand-tagline{margin:3px 0 0;color:#c9b8a0;font-size:8px;letter-spacing:1.2px;text-transform:uppercase}
 
 
 
 
+.compact-status{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;margin:6px 0}.status-copy{min-width:0;flex:1}.status-copy #durum{font-size:14px;font-weight:bold}.status-copy #sayilar{font-size:10px;line-height:1.35;overflow-wrap:anywhere}.status-refresh{width:auto;flex:0 0 auto;padding:8px 11px;margin:0;font-size:12px;white-space:nowrap}.filter-toggle{margin:0 0 8px;padding:10px;text-align:left}.filter-toggle[aria-expanded="true"]{border-color:var(--yellow);color:var(--yellow)}#matchFilters{padding-top:2px}#matchFilters.hidden{display:none!important}
 </style>
 </head>
 <body>
@@ -83,13 +84,14 @@ th{color:var(--yellow)}
 </div>
 
 <section id="futbolBolumu">
- <div class="panel">
-  <div id="durum">Veriler yükleniyor...</div>
-  <div id="sayilar" class="small"></div>
-  <button onclick="baslat(true)">Verileri Yenile</button>
+ <div class="panel compact-status">
+  <div class="status-copy"><div id="durum">Veriler yükleniyor...</div><div id="sayilar" class="small"></div></div>
+  <button class="status-refresh" onclick="baslat(true)">↻ Yenile</button>
  </div>
  <h2>Maç Takvimi</h2>
  <div class="panel">
+  <button type="button" id="matchFiltersToggle" class="secondary filter-toggle" aria-expanded="false" aria-controls="matchFilters" onclick="matchFiltersToggle()">☰ Maç Takvimi Filtrelerini Göster ▼</button>
+  <div id="matchFilters" class="hidden">
   <label><b>Tarih seç</b></label>
   <input type="date" id="tarih" onchange="listele()">
   <div class="controls">
@@ -114,6 +116,7 @@ th{color:var(--yellow)}
    <option value="first">İlk Yarı KG</option><option value="second">İkinci Yarı KG</option>
   </select>
   <p>6+ Gol ve KG Var birbirinden bağımsız tahminlerdir. Olasılıklar garanti değildir.</p>
+  </div>
   <div id="macOzet" class="summary"></div>
   <div id="maclar">Maçlar hazırlanıyor...</div>
  </div>
@@ -218,6 +221,7 @@ function leagueTR(s){
  return map[s]||s||"Diğer";
 }
 function leagueView(m){const c=countryInfo(m);return c.flag+" "+c.name+" · "+leagueTR(m.league)}
+function matchFiltersToggle(){const box=$("matchFilters"),btn=$("matchFiltersToggle");if(!box||!btn)return;const opening=box.classList.contains("hidden");box.classList.toggle("hidden",!opening);btn.setAttribute("aria-expanded",String(opening));btn.textContent=opening?"☰ Maç Takvimi Filtrelerini Gizle ▲":"☰ Maç Takvimi Filtrelerini Göster ▼";}
 function dateAdd(s,n){const d=new Date(s+"T12:00:00");d.setDate(d.getDate()+n);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 function dateText(s){return new Date(s+"T12:00:00").toLocaleDateString("tr-TR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})}
 
@@ -1476,7 +1480,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=95",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=96",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

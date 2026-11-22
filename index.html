@@ -325,6 +325,7 @@ function highest(t){return t?Math.max(t.one,t.draw,t.two,t.over35,t.six,t.btts,t
 function predictionBox(name,value){return `<div class="pred"><span class="pred-name">${name}</span><span class="pred-value">${pct(value)}</span></div>`}
 function matchInsight(m,t){
  if(!t)return "";
+ if(t.marketOnly)return "<div class='analysis-box'><b>📊 İddaa piyasa verisi</b><br><small>Bu maçta model için yeterli geçmiş karşılaşma bulunmadığından tahminler, İddaa oranlarının marjı çıkarılarak hesaplanan piyasa olasılıklarıdır. Model tahmini değildir.</small></div>";
  const labels=[["1",t.one],["X",t.draw],["2",t.two],["3,5 Üst",t.over35],["6+ Gol",t.six],["KG Var",t.btts],["İlk Yarı KG",t.first],["İkinci Yarı KG",t.second]].filter(x=>Number.isFinite(x[1])).sort((a,b)=>b[1]-a[1]);
  const best=labels[0],agreement=t.methodAgreement*.65+(t.marketAgreement??t.methodAgreement)*.35,quality=t.quality;
  const level=best[1]>=.64&&agreement>=.72&&quality==="İyi"?"Güvenli":best[1]>=.50&&agreement>=.52&&quality!=="Sınırlı"?"Orta":"Riskli";
@@ -338,7 +339,7 @@ function matchInsight(m,t){
  return "<div class='analysis-box'><b>🧠 Çoklu model değerlendirmesi</b><br>En güçlü seçenek: <b>"+best[0]+" (%"+(best[1]*100).toFixed(1)+")</b> · Güven: <b>"+level+"</b><br><small>Olası skor: <b>"+score+"</b> · Senaryo: "+scenario+"</small><br><small>Veri kalitesi: "+quality+" · Ev/dep. geçmişi: "+t.homeSamples+"/"+t.awaySamples+" maç · Model uyumu: %"+(agreement*100).toFixed(0)+"</small><br><small>"+why+" Temel Poisson, son form ve birleşik model birlikte değerlendirildi.</small>"+(strong.length?"<br><small>Güçlü adaylar: "+strong.map(x=>x[0]+" %"+(x[1]*100).toFixed(1)).join(" · ")+"</small>":"")+(upset?"<br><span style='color:#ff9b6b;font-weight:bold'>⚠️ Sürpriz alarmı: Favori olmayan "+(favorite==="Ev sahibi"?"deplasman":"ev sahibi")+" galibiyeti ihtimali %"+(underdog*100).toFixed(1)+". Favorinin üstünlüğü kesin değil.</span>":"")+(drawRisk?"<br><span style='color:#ffcf5a;font-weight:bold'>⚠️ Beraberlik/sürpriz alarmı: X olasılığı %"+(t.draw*100).toFixed(1)+"</span>":"")+"</div>";
 }
 function matchCard(m,t,past=false,rank=0){
- const finalPrediction=!past&&t?iddaaAdjustedPrediction(m,t):t;
+ const finalPrediction=!past?iddaaAdjustedPrediction(m,t):t;
  return `<div class="match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}`}><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?("#"+rank+" · "+pct(highest(finalPrediction))):"Tahmin yok"}</span>`:""}</div>
  <div class="meta-row"><div class="meta">${leagueView(m)}</div><div class="kickoff">${m.time||"Saat yok"}</div></div>
  ${past?`<div class="result">Maç sonucu: ${m.ft_home}-${m.ft_away}</div>`:`<div class="predictions">${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}${predictionBox("3,5 Üst",finalPrediction?.over35)}${predictionBox("6+ Gol",finalPrediction?.six)}${predictionBox("KG Var",finalPrediction?.btts)}${predictionBox("KG Yok",finalPrediction?.btts==null?null:1-finalPrediction.btts)}</div>${matchInsight(m,finalPrediction)}`}</div>`;
@@ -874,10 +875,10 @@ function iddaaBlendProbability(model,market){
  return Math.max(0,Math.min(1,(model+market)/2));
 }
 function iddaaAdjustedPrediction(fixture,p){
- if(!p)return p;
  const e=iddaaFindEventForFixture(fixture);if(!e)return p;
  const m1=iddaaMarket(e,1,1),ou=iddaaMarketLine(e,2,101,"3.5")||iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89),goal=iddaaMarket(e,2,4);
- const out={...p};
+ // Model için yeterli geçmişi olmayan maçlarda da marjsız İddaa olasılıklarını göster.
+ const out={...(p||{}),marketOnly:!p};
  const one=iddaaFairProbability(m1,["1","Ev sahibi","Home"]);
  const draw=iddaaFairProbability(m1,["X","0","Beraberlik","Beraber","Draw"]);
  const two=iddaaFairProbability(m1,["2","Deplasman","Away"]);
@@ -901,7 +902,12 @@ function iddaaAdjustedPrediction(fixture,p){
  }
  if(goal&&Array.isArray(goal.o)){
   const sixMarket=iddaaFairProbability(goal,["6+","6 +","6+ Gol","6 ve üzeri","6 veya daha fazla"]);
-  if(sixMarket!==null)out.six=iddaaBlendProbability(p.six,sixMarket);
+  if(sixMarket!==null)out.six=p?iddaaBlendProbability(p.six,sixMarket):sixMarket;
+ }
+ if(!p){
+  const vals=[out.one,out.draw,out.two,out.over35,out.six,out.btts];
+  if(!vals.some(Number.isFinite))return null;
+  return out;
  }
  // Oran hareketi yalnızca küçük ek sinyaldir; mevcut model/piyasa tahmininin yerine geçmez.
  if(m1){const d=[["1",["1","Ev sahibi","Home"]],["draw",["X","0","Beraberlik","Beraber","Draw"]],["2",["2","Deplasman","Away"]]].map(([k,a])=>[k,iddaaMovementDelta(e,m1,a)]);if(d.every(x=>x[1]!==null)){d.forEach(([k,v])=>out[k]=Math.max(0,Math.min(1,out[k]+v*.15)));const sum=out.one+out.draw+out.two;if(sum){out.one/=sum;out.draw/=sum;out.two/=sum}}}

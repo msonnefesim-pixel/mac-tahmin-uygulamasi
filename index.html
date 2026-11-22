@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#c8102e">
-<link rel="manifest" href="./manifest.json?v=92">
-<link rel="icon" href="./icon.svg?v=92" type="image/svg+xml"><link rel="apple-touch-icon" href="./icon.svg?v=92">
+<link rel="manifest" href="./manifest.json?v=93">
+<link rel="icon" href="./icon.png" type="image/png">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
 :root{--red:#c8102e;--yellow:#f5c400;--bg:#101010;--panel:#1b1b1b;--line:#383838;--muted:#bbb}
@@ -63,9 +63,26 @@ th{color:var(--yellow)}
 .brand-tagline{margin:6px 0 0;color:#c9b8a0;font-size:9px;letter-spacing:1.2px;text-transform:uppercase}
 
 
+/* Özel açılış ekranı */
+#yapaycinSplash{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;background:radial-gradient(ellipse at 50% 42%,#351018 0%,#171012 48%,#080808 100%);opacity:1;visibility:visible;transition:opacity .45s ease,visibility .45s ease}
+#yapaycinSplash.hide{opacity:0;visibility:hidden;pointer-events:none}
+#yapaycinSplash img{width:118px;height:118px;object-fit:contain;filter:drop-shadow(0 8px 18px #c8102e55);animation:splashFloat 1.5s ease-in-out infinite alternate}
+#yapaycinSplash .splash-name{font-family:"Trebuchet MS","Arial Black",sans-serif;font-size:clamp(27px,8vw,36px);font-weight:1000;letter-spacing:1px;line-height:1;color:#ffe36a;text-shadow:0 2px 0 #8b1c20,0 0 18px #f5c40055}
+#yapaycinSplash .splash-sub{font-family:"Arial Black",Arial,sans-serif;font-size:14px;font-weight:900;letter-spacing:6px;text-indent:6px;color:#ff5364;text-shadow:0 0 12px #c8102e66}
+#yapaycinSplash .splash-line{width:58px;height:3px;border-radius:9px;background:linear-gradient(90deg,#c8102e,#f5c400);margin-top:3px}
+@keyframes splashFloat{from{transform:translateY(0)}
 </style>
 </head>
 <body>
+<div id="yapaycinSplash" aria-label="YaPaYCiN Maç Analiz açılıyor">
+ <img src="./icon.svg" alt="">
+ <div class="splash-name">YaPaYCiN</div>
+ <div class="splash-sub">MAÇ ANALİZ</div>
+ <div class="splash-line"></div>
+</div>
+
+
+
 <header class="brand-banner" aria-label="YaPaYCiN Analiz">
  <div class="brand-wordmark"><span class="brand-y">Y<img src="./genie.svg" alt=""></span><span>aPaYCiN</span></div>
  <div class="brand-analysis">ANALİZ</div>
@@ -1344,8 +1361,24 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=92",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=93",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
+<script>
+(function(){
+ const splash=document.getElementById("yapaycinSplash");
+ if(!splash)return;
+ let hidden=false;
+ function closeSplash(){
+  if(hidden)return;
+  hidden=true;
+  splash.classList.add("hide");
+  setTimeout(()=>splash.remove(),500);
+ }
+ window.addEventListener("load",()=>setTimeout(closeSplash,900),{once:true});
+ setTimeout(closeSplash,2600);
+})();
+</script>
+
 </body>
 </html>

@@ -723,6 +723,7 @@ function iddaaNorm(v){
 }
 function iddaaMarkets(e){return Array.isArray(e.m)?e.m.filter(x=>x&&Array.isArray(x.o)&&x.o.length):[]}
 function iddaaMarket(e,t,st){return iddaaMarkets(e).find(x=>String(x.t)===String(t)&&String(x.st)===String(st))}
+function iddaaMarketLine(e,t,st,line){return iddaaMarkets(e).find(x=>String(x.t)===String(t)&&String(x.st)===String(st)&&String(x.sov??"").replace(",",".")===String(line))}
 function iddaaOdds(o){const n=Number(o&&o.odd);return Number.isFinite(n)&&n>1?n:null}
 function iddaaOddsSnapshotKey(e,m,o){
  const event=iddaaEventKey(iddaaDateKey(e),e.hn,e.an),market=[m.t??"",m.st??"",m.sov??""].join("/"),outcome=iddaaNorm(o.n||o.name||o.no||"");
@@ -875,7 +876,7 @@ function iddaaBlendProbability(model,market){
 function iddaaAdjustedPrediction(fixture,p){
  if(!p)return p;
  const e=iddaaFindEventForFixture(fixture);if(!e)return p;
- const m1=iddaaMarket(e,1,1),ou=iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89),goal=iddaaMarket(e,2,4);
+ const m1=iddaaMarket(e,1,1),ou=iddaaMarketLine(e,2,101,"3.5")||iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89),goal=iddaaMarket(e,2,4);
  const out={...p};
  const one=iddaaFairProbability(m1,["1","Ev sahibi","Home"]);
  const draw=iddaaFairProbability(m1,["X","0","Beraberlik","Beraber","Draw"]);
@@ -1017,6 +1018,8 @@ async function iddaaBaslat(force=false){
   status.innerHTML="<span class='good'>Sunucu oran bülteni hazır.</span> · "+events.length+" etkinlik · Oran hareketi karşılaştırılan market: "+movedMarkets+" · Kaynak okuma: "+iddaaUpdated;
   const couponStatus=$("iddaaCouponStatus");if(couponStatus)couponStatus.innerHTML="<span class='good'>İddaa bülteni güncellendi.</span> · "+events.length+" kayıt · Oran hareketi: "+movedMarkets+" · "+iddaaUpdated;
   if($("couponsBolumu")&&!$("couponsBolumu").classList.contains("hidden"))kuponlariGoster();
+  // Oranlar futbol listesi çizildikten sonra geldiyse tahmin kartlarını yeniden hesapla ve göster.
+  if(activeTabName==="futbol")listele();
   // Gizli İddaa sekmesinin maç kartlarını ve futbol listesini arka planda yeniden çizme.
   // İddaa ekranı kullanıcıya kapalı; veriler yalnızca tahmin eşleştirmesinde kullanılır.
  }catch(e){

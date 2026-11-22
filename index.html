@@ -268,21 +268,18 @@ function teamGoals(matches,team,scored){
 }
 function poissonResult(a,b){
  let one=0,x=0,two=0,total=0;
- for(let i=0;i<=10;i++)for(let j=0;j<=10;j++){
-  const p=poisson(i,a)*poisson(j,b);total+=p;
-  if(i>j)one+=p;else if(i===j)x+=p;else two+=p;
- }
+ for(let i=0;i<=12;i++)for(let j=0;j<=12;j++){const p=poisson(i,a)*poisson(j,b);total+=p;if(i>j)one+=p;else if(i===j)x+=p;else two+=p}
  return {one:one/total,draw:x/total,two:two/total};
 }
-function totalOver35(a,b){
- let under=0;for(let i=0;i<=3;i++)for(let j=0;j<=3-i;j++)under+=poisson(i,a)*poisson(j,b);
- return Math.max(0,1-under);
+function scorelineMostLikely(a,b){
+ let best={home:0,away:0,p:0};
+ for(let i=0;i<=7;i++)for(let j=0;j<=7;j++){const p=poisson(i,a)*poisson(j,b);if(p>best.p)best={home:i,away:j,p}}
+ return best;
 }
-function sixPlus(a,b){
- let p=0;for(let i=0;i<=8;i++)for(let j=0;j<=8;j++)if(i+j>=6)p+=poisson(i,a)*poisson(j,b);
- return Math.min(1,p);
+function blendProbabilities(a,b,c){
+ const out={one:a.one*.5+b.one*.25+c.one*.25,draw:a.draw*.5+b.draw*.25+c.draw*.25,two:a.two*.5+b.two*.25+c.two*.25};
+ const sum=out.one+out.draw+out.two;out.one/=sum;out.draw/=sum;out.two/=sum;return out;
 }
-function btts(a,b){return (1-Math.exp(-a))*(1-Math.exp(-b))}
 function halfPrediction(home,away,match,period){
  const e=previousMatches(home,match.league_id,match.date,10).filter(m=>num(m.ht_home)&&num(m.ht_away)&&Number(m.ft_home)>=Number(m.ht_home)&&Number(m.ft_away)>=Number(m.ht_away));
  const d=previousMatches(away,match.league_id,match.date,10).filter(m=>num(m.ht_home)&&num(m.ht_away)&&Number(m.ft_home)>=Number(m.ht_home)&&Number(m.ft_away)>=Number(m.ht_away));
@@ -313,10 +310,16 @@ function predictFootball(m){
  const rawH=teamGoals(home,m.home,true)*teamGoals(away,m.away,false)/league,rawA=teamGoals(away,m.away,true)*teamGoals(home,m.home,false)/league;
  const recentH=weightedTeamGoals(home,m.home,true)*weightedTeamGoals(away,m.away,false)/league,recentA=weightedTeamGoals(away,m.away,true)*weightedTeamGoals(home,m.home,false)/league;
  const reliability=Math.min(1,Math.min(home.length,away.length)/10),lh=Math.max(.12,(rawH*.65+recentH*.35)*reliability+league*(1-reliability)),la=Math.max(.12,(rawA*.65+recentA*.35)*reliability+league*(1-reliability));
- const r=poissonResult(lh,la),base=poissonResult(rawH,rawA),recent=poissonResult(recentH,recentA),agreement=Math.max(0,Math.min(1,1-avg([Math.abs(base.one-recent.one),Math.abs(base.draw-recent.draw),Math.abs(base.two-recent.two)])*1.5));
+ const blended=poissonResult(lh,la),base=poissonResult(rawH,rawA),recent=poissonResult(recentH,recentA),r=blendProbabilities(blended,base,recent);
+ const disagreement=avg([Math.abs(base.one-recent.one),Math.abs(base.draw-recent.draw),Math.abs(base.two-recent.two),Math.abs(blended.one-base.one),Math.abs(blended.draw-base.draw),Math.abs(blended.two-base.two)]);
+ const agreement=Math.max(0,Math.min(1,1-disagreement*1.65));
+ const over35=totalOver35(lh,la)*.5+totalOver35(rawH,rawA)*.25+totalOver35(recentH,recentA)*.25;
+ const six=sixPlus(lh,la)*.5+sixPlus(rawH,rawA)*.25+sixPlus(recentH,recentA)*.25;
+ const bttsP=btts(lh,la)*.5+btts(rawH,rawA)*.25+btts(recentH,recentA)*.25;
+ const marketAgreement=Math.max(0,Math.min(1,1-avg([Math.abs(totalOver35(rawH,rawA)-totalOver35(recentH,recentA)),Math.abs(sixPlus(rawH,rawA)-sixPlus(recentH,recentA)),Math.abs(btts(rawH,rawA)-btts(recentH,recentA))])*1.7));
  const first=halfPrediction(m.home,m.away,m,"first"),second=halfPrediction(m.home,m.away,m,"second"),prefix=leaguePrefix.get(String(m.league_id)),leagueSamples=prefix?prefix.count[lowerDate(prefix.arr,m.date)]:0;
- const qualityScore=Math.min(1,Math.min(home.length,away.length)/10)*.5+Math.min(1,leagueSamples/100)*.3+(first!==null&&second!==null?.2:0);
- return {one:r.one,draw:r.draw,two:r.two,over35:totalOver35(lh,la),six:sixPlus(lh,la),btts:btts(lh,la),first,second,expectedHome:lh,expectedAway:la,homeSamples:home.length,awaySamples:away.length,leagueSamples,methodAgreement:agreement,quality:qualityScore>=.78?"İyi":qualityScore>=.52?"Orta":"Sınırlı"};
+ const qualityScore=Math.min(1,Math.min(home.length,away.length)/10)*.45+Math.min(1,leagueSamples/100)*.30+(first!==null&&second!==null?.15:0)+Math.min(1,agreement)*.10;
+ return {one:r.one,draw:r.draw,two:r.two,over35,six,btts:bttsP,first,second,expectedHome:lh,expectedAway:la,scoreline:scorelineMostLikely(lh,la),homeSamples:home.length,awaySamples:away.length,leagueSamples,methodAgreement:agreement,marketAgreement,quality:qualityScore>=.78?"İyi":qualityScore>=.52?"Orta":"Sınırlı",modelMethods:["Temel Poisson","Son form modeli","Birleşik model"]};
 }
 function highest(t){return t?Math.max(t.one,t.draw,t.two,t.over35,t.six,t.btts,t.first??0,t.second??0):-1}
 function predictionBox(name,value){return `<div class="pred"><span class="pred-name">${name}</span><span class="pred-value">${pct(value)}</span></div>`}

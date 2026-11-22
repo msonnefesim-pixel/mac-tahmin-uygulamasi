@@ -473,13 +473,13 @@ async function baslat(force=false){
  try{
   const r=await fetch("./data.json"+(force?"?v="+Date.now():""),{cache:force?"no-store":"default"});
   if(!r.ok)throw new Error("data.json yüklenemedi ("+r.status+")");
-  const data=await r.json();FIXTURES=Array.isArray(data.fixtures)?data.fixtures:[];HISTORY=Array.isArray(data.history)?data.history:[];
+  const data=await r.json();FIXTURES=Array.isArray(data.fixtures)?data.fixtures:[];HISTORY=Array.isArray(data.history)?data.history:[];couponResultIndex=null;
   buildFixtureResultIndex();
   predictionCache.clear();
   fixtureDateIndex=makeDateIndex(FIXTURES);historyDateIndex=makeDateIndex(HISTORY);
   buildIndexes();
   try{hiddenLeagues=new Set(JSON.parse(localStorage.getItem("yapaycinHiddenLeagues")||"[]"))}catch(e){hiddenLeagues=new Set()}
-  fillLeagues();$("durum").innerHTML="<span class='good'>Futbol verileri yüklendi</span>";
+  fillLeagues();if(!$("couponsBolumu").classList.contains("hidden"))kuponlariGoster();$("durum").innerHTML="<span class='good'>Futbol verileri yüklendi</span>";
   $("sayilar").textContent="Gelecek maç: "+FIXTURES.length+" · Geçmiş maç: "+HISTORY.length+" · Güncelleme: "+(data.updated||"bilinmiyor");
   listele();
   // Önce futbol ekranını göster; İddaa bültenini kısa bir gecikmeyle boşta çalıştır.

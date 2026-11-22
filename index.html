@@ -607,7 +607,8 @@ function sekmeAc(name){
  const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",nba:"nbaBolumu",coupons:"couponsBolumu",halfBoth:"halfBothBolumu",iddaa:"iddaaBolumu"};
  activeTabName=name;
  Object.keys(ids).forEach(k=>$(ids[k]).classList.toggle("hidden",k!==name));
- $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");$("nbaButon").classList.toggle("active",name==="nba");$("couponButon").classList.toggle("active",name==="coupons");$("halfBothButon").classList.toggle("active",name==="halfBoth");
+ $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");const nbaButton=$("nbaButon");if(nbaButton)nbaButton.classList.toggle("active",name==="nba");$("couponButon").classList.toggle("active",name==="coupons");$("halfBothButon").classList.toggle("active",name==="halfBoth");
+ if(name==="halfBoth")halfBothRender(); // Kayıtlı kuponları sekme açılır açılmaz göster.
  // Sekme önce anında görünür; ağır hesaplar ilk çizimden sonra başlar.
  setTimeout(()=>{
   if(activeTabName!==name)return;

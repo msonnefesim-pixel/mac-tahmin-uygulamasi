@@ -319,7 +319,7 @@ function predictFootball(m){
  const marketAgreement=Math.max(0,Math.min(1,1-avg([Math.abs(totalOver35(rawH,rawA)-totalOver35(recentH,recentA)),Math.abs(sixPlus(rawH,rawA)-sixPlus(recentH,recentA)),Math.abs(btts(rawH,rawA)-btts(recentH,recentA))])*1.7));
  const first=halfPrediction(m.home,m.away,m,"first"),second=halfPrediction(m.home,m.away,m,"second"),prefix=leaguePrefix.get(String(m.league_id)),leagueSamples=prefix?prefix.count[lowerDate(prefix.arr,m.date)]:0;
  const qualityScore=Math.min(1,Math.min(home.length,away.length)/10)*.45+Math.min(1,leagueSamples/100)*.30+(first!==null&&second!==null?.15:0)+Math.min(1,agreement)*.10;
- return {one:r.one,draw:r.draw,two:r.two,over35,six,btts:bttsP,first,second,expectedHome:lh,expectedAway:la,scoreline:scorelineMostLikely(lh,la),homeSamples:home.length,awaySamples:away.length,leagueSamples,methodAgreement:agreement,marketAgreement,quality:qualityScore>=.78?"İyi":qualityScore>=.52?"Orta":"Sınırlı",modelMethods:["Temel Poisson","Son form modeli","Birleşik model"]};
+ return {one:r.one,draw:r.draw,two:r.two,over35,six,btts:bttsP,first,second,expectedHome:lh,expectedAway:la,scoreline:scorelineMostLikely(lh,la),homeSamples:home.length,awaySamples:away.length,leagueSamples,methodAgreement:agreement,marketAgreement,baseProbabilities:base,recentProbabilities:recent,ensembleProbabilities:r,quality:qualityScore>=.78?"İyi":qualityScore>=.52?"Orta":"Sınırlı",modelMethods:["Temel Poisson","Son form modeli","Birleşik model"]};
 }
 function highest(t){return t?Math.max(t.one,t.draw,t.two,t.over35,t.six,t.btts,t.first??0,t.second??0):-1}
 function predictionBox(name,value){return `<div class="pred"><span class="pred-name">${name}</span><span class="pred-value">${pct(value)}</span></div>`}
@@ -592,16 +592,23 @@ async function testleriHesapla(){
  const stats=new Map();
  const names=["1","X","2","3,5 Üst","6+ Gol","KG Var","İlk Yarı KG","İkinci Yarı KG"];
  names.forEach(n=>stats.set(n,[]));
+ const holdoutStart=Math.floor(rows.length*.75),modelScores={base:{brier:0,correct:0,n:0},recent:{brier:0,correct:0,n:0},ensemble:{brier:0,correct:0,n:0}};
  let i=0;
  function batch(){
   const end=Math.min(i+35,rows.length);
   for(;i<end;i++){
    const m=rows[i],t=predictFootball(m),results=testResult(m,t);if(!results)continue;
    results.forEach(x=>{if(x[1]!==null&&x[1]!==undefined&&Number.isFinite(x[1]))stats.get(x[0]).push({p:x[1],ok:x[2]})});
+   if(i>=holdoutStart&&t.baseProbabilities&&t.recentProbabilities&&t.ensembleProbabilities){
+    const actual=Number(m.ft_home)>Number(m.ft_away)?"one":Number(m.ft_home)<Number(m.ft_away)?"two":"draw";
+    ["base","recent","ensemble"].forEach(k=>{const p=t[k==="base"?"baseProbabilities":k==="recent"?"recentProbabilities":"ensembleProbabilities"],score=Math.pow(p.one-(actual==="one"?1:0),2)+Math.pow(p.draw-(actual==="draw"?1:0),2)+Math.pow(p.two-(actual==="two"?1:0),2);modelScores[k].brier+=score;modelScores[k].n++;if(["one","draw","two"].sort((a,b)=>p[b]-p[a])[0]===actual)modelScores[k].correct++});
+   }
   }
   $("analizDurum").textContent="İşleniyor: "+i+" / "+rows.length;
   if(i<rows.length){setTimeout(batch,10);return}
-  let html="<h3>Geçmiş başarı eşikleri</h3>";
+  let html="<h3>📊 Ayrı dönem doğrulaması (son %25 maç)</h3><div class='analysis-box'><small>Modellerin son dönem performansı, daha önceki maçların verileriyle tahmin edilerek karşılaştırılır. Brier skoru düşük olan model daha iyidir.</small><table><tr><th>Model</th><th>Test</th><th>1X2 isabet</th><th>Brier</th></tr>";
+  [["base","Temel Poisson"],["recent","Son form"],["ensemble","Birleşik model"]].forEach(([k,n])=>{const x=modelScores[k];html+="<tr><td>"+n+"</td><td>"+x.n+"</td><td>"+success(x.n,x.correct)+"</td><td>"+(x.n?(x.brier/x.n).toFixed(3):"-")+"</td></tr>"});
+  html+="</table><small>Bu karşılaştırma otomatik model değişikliği yapmaz; yeni modelin iyileşmesi önce test edilmelidir.</small></div><h3>Geçmiş başarı eşikleri</h3>";
   stats.forEach((arr,name)=>{
    const thresholds=name==="6+ Gol"?[10,15,20,25,30,40,50]:name==="İlk Yarı KG"?[30,40,50,60,70]:[30,40,50,60,70];
    html+=`<div class="analysis-box"><b>${name}</b><table><tr><th>Eşik</th><th>Aday</th><th>Tutan</th><th>Başarı</th></tr>`;

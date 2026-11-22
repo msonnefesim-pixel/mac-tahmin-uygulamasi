@@ -111,7 +111,7 @@ th{color:var(--yellow)}
   <select id="filtre" onchange="listele()">
    <option value="all">Bütün maçlar</option><option value="strong">Öne çıkanlar</option>
    <option value="one">1 - Ev sahibi</option><option value="draw">X - Beraberlik</option>
-   <option value="two">2 - Deplasman</option><option value="over35">3,5 Üst</option>
+   <option value="two">2 - Deplasman</option><option value="over25">2,5 Üst</option><option value="over35">3,5 Üst</option><option value="firstOver15">İlk Yarı 1,5 Üst</option>
    <option value="six">6+ Gol</option><option value="btts">KG Var</option>
    <option value="first">İlk Yarı KG</option><option value="second">İkinci Yarı KG</option>
   </select>
@@ -277,6 +277,14 @@ function totalOver35(homeLambda,awayLambda){
  for(let h=0;h<=3;h++)for(let a=0;a<=3-h;a++)under+=poisson(h,homeLambda)*poisson(a,awayLambda);
  return Math.max(0,Math.min(1,1-under));
 }
+function totalOver25(homeLambda,awayLambda){
+ let under=0;for(let h=0;h<=2;h++)for(let a=0;a<=2-h;a++)under+=poisson(h,homeLambda)*poisson(a,awayLambda);
+ return Math.max(0,Math.min(1,1-under));
+}
+function totalOver15(homeLambda,awayLambda){
+ const under=poisson(0,homeLambda)*poisson(0,awayLambda)+poisson(1,homeLambda)*poisson(0,awayLambda)+poisson(0,homeLambda)*poisson(1,awayLambda);
+ return Math.max(0,Math.min(1,1-under));
+}
 function sixPlus(homeLambda,awayLambda){
  let below=0;
  for(let h=0;h<=5;h++)for(let a=0;a<=5-h;a++)below+=poisson(h,homeLambda)*poisson(a,awayLambda);
@@ -299,27 +307,16 @@ function blendProbabilities(a,b,c){
  const out={one:a.one*.5+b.one*.25+c.one*.25,draw:a.draw*.5+b.draw*.25+c.draw*.25,two:a.two*.5+b.two*.25+c.two*.25};
  const sum=out.one+out.draw+out.two;out.one/=sum;out.draw/=sum;out.two/=sum;return out;
 }
-function halfPrediction(home,away,match,period){
- const e=previousMatches(home,match.league_id,match.date,10).filter(m=>num(m.ht_home)&&num(m.ht_away)&&Number(m.ft_home)>=Number(m.ht_home)&&Number(m.ft_away)>=Number(m.ht_away));
- const d=previousMatches(away,match.league_id,match.date,10).filter(m=>num(m.ht_home)&&num(m.ht_away)&&Number(m.ft_home)>=Number(m.ht_home)&&Number(m.ft_away)>=Number(m.ht_away));
+function halfGoalLambdas(home,away,match,period){
+ const valid=m=>m.ht_home!==null&&m.ht_home!==undefined&&m.ht_home!==""&&m.ht_away!==null&&m.ht_away!==undefined&&m.ht_away!==""&&Number.isFinite(Number(m.ht_home))&&Number.isFinite(Number(m.ht_away))&&Number.isFinite(Number(m.ft_home))&&Number.isFinite(Number(m.ft_away))&&Number(m.ft_home)>=Number(m.ht_home)&&Number(m.ft_away)>=Number(m.ht_away);
+ const e=previousMatches(home,match.league_id,match.date,10).filter(valid),d=previousMatches(away,match.league_id,match.date,10).filter(valid);
  if(e.length<5||d.length<5)return null;
- const get=(m,t,scored)=>{
-  const isHome=m.home===t;
-  let own=Number(isHome?m.ft_home:m.ft_away),opp=Number(isHome?m.ft_away:m.ft_home);
-  if(period==="first"){own=Number(isHome?m.ht_home:m.ht_away);opp=Number(isHome?m.ht_away:m.ht_home)}
-  if(period==="second"){own-=Number(isHome?m.ht_home:m.ht_away);opp-=Number(isHome?m.ht_away:m.ht_home)}
-  return scored?own:opp;
- };
- const league=leaguePrefix.get(String(match.league_id));
- const leagueEnd=league?lowerDate(league.arr,match.date):0;
- const leagueCount=league?league.halfCount[leagueEnd]:0;
- const goalPrefix=period==="first"?league?.firstGoals:league?.secondGoals;
- const avgLeague=leagueCount&&goalPrefix?(goalPrefix[leagueEnd]/leagueCount)/2:0;
- if(!avgLeague)return null;
- const lh=avg(e.map(m=>get(m,home,true)))*avg(d.map(m=>get(m,away,false)))/avgLeague;
- const la=avg(d.map(m=>get(m,away,true)))*avg(e.map(m=>get(m,home,false)))/avgLeague;
- return btts(lh,la);
+ const get=(m,t,scored)=>{const isHome=m.home===t;let own=Number(isHome?m.ft_home:m.ft_away),opp=Number(isHome?m.ft_away:m.ft_home);if(period==="first"){own=Number(isHome?m.ht_home:m.ht_away);opp=Number(isHome?m.ht_away:m.ht_home)}if(period==="second"){own-=Number(isHome?m.ht_home:m.ht_away);opp-=Number(isHome?m.ht_away:m.ht_home)}return scored?own:opp};
+ const league=leaguePrefix.get(String(match.league_id)),leagueEnd=league?lowerDate(league.arr,match.date):0,leagueCount=league?league.halfCount[leagueEnd]:0,goalPrefix=period==="first"?league?.firstGoals:league?.secondGoals;
+ const avgLeague=leagueCount&&goalPrefix?(goalPrefix[leagueEnd]/leagueCount)/2:0;if(!avgLeague)return null;
+ return {home:Math.max(.03,avg(e.map(m=>get(m,home,true)))*avg(d.map(m=>get(m,away,false)))/avgLeague),away:Math.max(.03,avg(d.map(m=>get(m,away,true)))*avg(e.map(m=>get(m,home,false)))/avgLeague),samples:Math.min(e.length,d.length)};
 }
+function halfPrediction(home,away,match,period){const lambdas=halfGoalLambdas(home,away,match,period);return lambdas?btts(lambdas.home,lambdas.away):null}
 function weightedTeamGoals(matches,team,scored){
  let total=0,weight=0;for(let i=0;i<matches.length;i++){const m=matches[i],home=m.home===team,own=Number(home?m.ft_home:m.ft_away),opp=Number(home?m.ft_away:m.ft_home),w=Math.pow(.88,matches.length-1-i);total+=(scored?own:opp)*w;weight+=w}return weight?total/weight:0;
 }
@@ -332,23 +329,24 @@ function predictFootball(m){
  const blended=poissonResult(lh,la),base=poissonResult(rawH,rawA),recent=poissonResult(recentH,recentA),r=blendProbabilities(blended,base,recent);
  const disagreement=avg([Math.abs(base.one-recent.one),Math.abs(base.draw-recent.draw),Math.abs(base.two-recent.two),Math.abs(blended.one-base.one),Math.abs(blended.draw-base.draw),Math.abs(blended.two-base.two)]);
  const agreement=Math.max(0,Math.min(1,1-disagreement*1.65));
+ const over25=totalOver25(lh,la)*.5+totalOver25(rawH,rawA)*.25+totalOver25(recentH,recentA)*.25;
  const over35=totalOver35(lh,la)*.5+totalOver35(rawH,rawA)*.25+totalOver35(recentH,recentA)*.25;
  const six=sixPlus(lh,la)*.5+sixPlus(rawH,rawA)*.25+sixPlus(recentH,recentA)*.25;
  const bttsP=btts(lh,la)*.5+btts(rawH,rawA)*.25+btts(recentH,recentA)*.25;
  const marketAgreement=Math.max(0,Math.min(1,1-avg([Math.abs(totalOver35(rawH,rawA)-totalOver35(recentH,recentA)),Math.abs(sixPlus(rawH,rawA)-sixPlus(recentH,recentA)),Math.abs(btts(rawH,rawA)-btts(recentH,recentA))])*1.7));
- const first=halfPrediction(m.home,m.away,m,"first"),second=halfPrediction(m.home,m.away,m,"second"),prefix=leaguePrefix.get(String(m.league_id)),leagueSamples=prefix?prefix.count[lowerDate(prefix.arr,m.date)]:0;
+ const first=halfPrediction(m.home,m.away,m,"first"),second=halfPrediction(m.home,m.away,m,"second"),firstHalfGoals=halfGoalLambdas(m.home,m.away,m,"first"),firstOver15=firstHalfGoals?totalOver15(firstHalfGoals.home,firstHalfGoals.away):null,prefix=leaguePrefix.get(String(m.league_id)),leagueSamples=prefix?prefix.count[lowerDate(prefix.arr,m.date)]:0;
  const qualityScore=Math.min(1,Math.min(home.length,away.length)/10)*.45+Math.min(1,leagueSamples/100)*.30+(first!==null&&second!==null?.15:0)+Math.min(1,agreement)*.10;
- return {one:r.one,draw:r.draw,two:r.two,over35,six,btts:bttsP,first,second,expectedHome:lh,expectedAway:la,scoreline:scorelineMostLikely(lh,la),homeSamples:home.length,awaySamples:away.length,leagueSamples,methodAgreement:agreement,marketAgreement,baseProbabilities:base,recentProbabilities:recent,ensembleProbabilities:r,quality:qualityScore>=.78?"İyi":qualityScore>=.52?"Orta":"Sınırlı",modelMethods:["Temel Poisson","Son form modeli","Birleşik model"]};
+ return {one:r.one,draw:r.draw,two:r.two,over25,over35,six,btts:bttsP,first,second,firstOver15,expectedHome:lh,expectedAway:la,scoreline:scorelineMostLikely(lh,la),homeSamples:home.length,awaySamples:away.length,leagueSamples,methodAgreement:agreement,marketAgreement,baseProbabilities:base,recentProbabilities:recent,ensembleProbabilities:r,quality:qualityScore>=.78?"İyi":qualityScore>=.52?"Orta":"Sınırlı",modelMethods:["Temel Poisson","Son form modeli","Birleşik model"]};
 }
-function highest(t){return t?Math.max(t.one,t.draw,t.two,t.over35,t.six,t.btts,t.first??0,t.second??0):-1}
+function highest(t){return t?Math.max(t.one,t.draw,t.two,t.over25??0,t.over35,t.six,t.btts,t.first??0,t.second??0,t.firstOver15??0):-1}
 function predictionBox(name,value){return `<div class="pred"><span class="pred-name">${name}</span><span class="pred-value">${pct(value)}</span></div>`}
 function matchInsight(m,t){
  if(!t)return "";
  if(t.marketOnly)return "<div class='analysis-box'><b>📊 İddaa piyasa verisi</b><br><small>Bu maçta model için yeterli geçmiş karşılaşma bulunmadığından tahminler, İddaa oranlarının marjı çıkarılarak hesaplanan piyasa olasılıklarıdır. Model tahmini değildir.</small></div>";
- const labels=[["1",t.one],["X",t.draw],["2",t.two],["3,5 Üst",t.over35],["6+ Gol",t.six],["KG Var",t.btts],["İlk Yarı KG",t.first],["İkinci Yarı KG",t.second]].filter(x=>Number.isFinite(x[1])).sort((a,b)=>b[1]-a[1]);
+ const labels=[["1",t.one],["X",t.draw],["2",t.two],["2,5 Üst",t.over25],["3,5 Üst",t.over35],["6+ Gol",t.six],["KG Var",t.btts],["İlk Yarı 1,5 Üst",t.firstOver15],["İlk Yarı KG",t.first],["İkinci Yarı KG",t.second]].filter(x=>Number.isFinite(x[1])).sort((a,b)=>b[1]-a[1]);
  const best=labels[0],agreement=t.methodAgreement*.65+(t.marketAgreement??t.methodAgreement)*.35,quality=t.quality;
  const level=best[1]>=.64&&agreement>=.72&&quality==="İyi"?"Güvenli":best[1]>=.50&&agreement>=.52&&quality!=="Sınırlı"?"Orta":"Riskli";
- const strong=labels.filter(([name,p])=>p>=(name==="6+ Gol"?.20:name==="KG Var"?.50:name==="3,5 Üst"?.52:name.includes("Yarı")?.40:.34)&&agreement>=.48).slice(0,4);
+ const strong=labels.filter(([name,p])=>p>=(name==="6+ Gol"?.20:name==="KG Var"?.50:name==="3,5 Üst"?.52:name==="2,5 Üst"?.55:name==="İlk Yarı 1,5 Üst"?.40:name.includes("Yarı")?.40:.34)&&agreement>=.48).slice(0,4);
  const underdog=t.one>=t.two?t.two:t.one,favorite=t.one>=t.two?"Ev sahibi":"Deplasman";
  const upset=underdog>=.22&&underdog<=.46&&Math.max(t.one,t.two)-underdog>=.10;
  const drawRisk=t.draw>=.27&&Math.max(t.one,t.two)<=.62;
@@ -361,11 +359,11 @@ function matchCard(m,t,past=false,rank=0){
  const finalPrediction=!past?iddaaAdjustedPrediction(m,t):t;
  return `<div class="match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}`}><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?("#"+rank+" · "+pct(highest(finalPrediction))):"Tahmin yok"}</span>`:""}</div>
  <div class="meta-row"><div class="meta">${leagueView(m)}</div><div class="kickoff">${m.time||"Saat yok"}</div></div>
- ${past?`<div class="result">Maç sonucu: ${m.ft_home}-${m.ft_away}</div>`:`<div class="predictions">${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}${predictionBox("3,5 Üst",finalPrediction?.over35)}${predictionBox("6+ Gol",finalPrediction?.six)}${predictionBox("KG Var",finalPrediction?.btts)}${predictionBox("KG Yok",finalPrediction?.btts==null?null:1-finalPrediction.btts)}</div>${matchInsight(m,finalPrediction)}`}</div>`;
+ ${past?`<div class="result">Maç sonucu: ${m.ft_home}-${m.ft_away}</div>`:`<div class="predictions">${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}${predictionBox("2,5 Üst",finalPrediction?.over25)}${predictionBox("3,5 Üst",finalPrediction?.over35)}${predictionBox("İY 1,5 Üst",finalPrediction?.firstOver15)}${predictionBox("6+ Gol",finalPrediction?.six)}${predictionBox("KG Var",finalPrediction?.btts)}${predictionBox("KG Yok",finalPrediction?.btts==null?null:1-finalPrediction.btts)}</div>${matchInsight(m,finalPrediction)}`}</div>`;
 }
 function filterMatch(t,f){
  if(f==="all")return true;if(!t)return false;
- if(f==="strong")return t.one>=.5||t.draw>=.3||t.two>=.5||t.over35>=.55||t.six>=.20||t.btts>=.5||(t.first??0)>=.4||(t.second??0)>=.5;
+ if(f==="strong")return t.one>=.5||t.draw>=.3||t.two>=.5||(t.over25??0)>=.55||t.over35>=.55||t.six>=.20||t.btts>=.5||(t.first??0)>=.4||(t.second??0)>=.5;
  if(f==="one")return t.one>=.4;if(f==="draw")return t.draw>=.25;if(f==="two")return t.two>=.4;
  if(f==="over35")return t.over35>=.5;if(f==="six")return t.six>=.2;if(f==="btts")return t.btts>=.5;
  if(f==="first")return (t.first??0)>=.4;if(f==="second")return (t.second??0)>=.5;return true;

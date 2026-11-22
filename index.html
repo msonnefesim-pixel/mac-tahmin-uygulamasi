@@ -1207,7 +1207,7 @@ function halfBothRender(){
  let html="";
  for(const [id,name,desc] of defs){
   const items=archive.pools[id]||[],open=halfBothOpenCards.has(id);
-  html+="<div class='coupon-card'><button type='button' class='coupon-heading' aria-expanded='"+open+"' aria-controls='halfBothBody_"+id+"' onclick=\\\"halfBothToggleCard('"+id+"')\\\"><span>"+name+" · "+items.length+"/5 maç</span><span class='coupon-arrow'>"+(open?"▲ Açık":"▼ Aç")+"</span></button><div class='coupon-card-body' id='halfBothBody_"+id+"'"+(open?"":" hidden")+">";
+  html+="<div class='coupon-card'><button type='button' class='coupon-heading' aria-expanded='"+open+"' aria-controls='halfBothBody_"+id+"' onclick=\"halfBothToggleCard('"+id+"')\"><span>"+name+" · "+items.length+"/5 maç</span><span class='coupon-arrow'>"+(open?"▲ Açık":"▼ Aç")+"</span></button><div class='coupon-card-body' id='halfBothBody_"+id+"'"+(open?"":" hidden")+">";
   html+="<div class='coupon-meta'>"+desc+"</div>";
   if(!items.length)html+="<p>Türkiye İddaa bülteninde bu seçeneğin iki marketi de açık olan yeterli maç bulunamadı. Zayıf veya oynanamayan seçim eklenmedi.</p>";
   items.forEach((x,i)=>{

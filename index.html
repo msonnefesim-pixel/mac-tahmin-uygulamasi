@@ -487,7 +487,7 @@ async function baslat(force=false){
  try{
   const r=await fetch("./data.json"+(force?"?v="+Date.now():""),{cache:force?"no-store":"default"});
   if(!r.ok)throw new Error("data.json yüklenemedi ("+r.status+")");
-  const data=await r.json();FIXTURES=Array.isArray(data.fixtures)?data.fixtures:[];HISTORY=Array.isArray(data.history)?data.history:[];couponResultIndex=null;
+  const data=await r.json();FIXTURES=Array.isArray(data.fixtures)?data.fixtures:[];HISTORY=Array.isArray(data.history)?data.history:[];couponResultIndex=null;couponHistoryByHome=null;
   buildFixtureResultIndex();
   predictionCache.clear();
   fixtureDateIndex=makeDateIndex(FIXTURES);historyDateIndex=makeDateIndex(HISTORY);
@@ -503,7 +503,7 @@ async function baslat(force=false){
    if("requestIdleCallback" in window)requestIdleCallback(yukle,{timeout:12000});else yukle();
   },6000);
   // Canlı skorları ilk ekran çizildikten sonra al; tahmin listesini yeniden hesaplatmaz.
-  setTimeout(startLiveScores,12000);
+  setTimeout(startLiveScores,2500);
  }catch(e){$("durum").textContent="Futbol veri hatası: "+e.message}
  finally{footballRefreshBusy=false}
 }
@@ -517,6 +517,8 @@ function sekmeAc(name){
   if(activeTabName!==name)return;
   if(name==="coupons"){
    kuponlariGoster();
+   const savedDay=cArchive()[today()]||{};
+   if(savedDay.iyms&&savedDay.iyms.length&&!couponIYMSRows&&!couponIYMSLoading){couponIYMSLoading=true;cGetIYMS().then(()=>{if(activeTabName==="coupons")kuponlariGoster()}).finally(()=>{couponIYMSLoading=false})}
    if(!cArchive()[today()]&&!couponBuildBusy){couponBuildBusy=true;kuponlariYenile().finally(()=>{couponBuildBusy=false})}
   }
   if(name==="iyms"&&!iymsYuklendi&&!iymsLoading)iymsBaslat();
@@ -936,7 +938,7 @@ async function iddaaBaslat(force=false){
 }
 
 const COUPON_TYPES=[["over35","3,5 ÜST KUPONU",.50],["six","6+ GOL KUPONU",.20],["iyms","İY/MS KUPONU",.16],["btts","KG VAR KUPONU",.50],["result","1 - X - 2 KUPONU",.40]];
-let couponIYMSRows=null,couponIYMSIndex=null,couponResultIndex=null,couponHistoryByHome=null,couponIYMSByHome=null,couponIYMSByAway=null;
+let couponIYMSRows=null,couponIYMSIndex=null,couponResultIndex=null,couponHistoryByHome=null,couponIYMSByHome=null,couponIYMSByAway=null,couponIYMSLoading=false;
 function cNorm(v){return String(v||"").toLocaleLowerCase("tr").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ")}
 function cKey(m){return [String(m.date||"").slice(0,10),cNorm(m.home),cNorm(m.away)].join("|")}
 function cArchive(){try{return JSON.parse(localStorage.getItem("yapaycinCouponArchive")||"{}")}catch(e){return {}}}

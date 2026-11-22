@@ -1127,14 +1127,17 @@ function espnLiveList(payload){
   const c=(e.competitions||[])[0]||{},teams=c.competitors||[];
   const home=teams.find(t=>t.homeAway==="home")||{},away=teams.find(t=>t.homeAway==="away")||{};
   const status=c.status||e.status||{},type=status.type||{},state=String(type.state||"").toLowerCase();
-  if(state!=="in"||type.completed===true)return null;
-  const clock=Number(status.clock||0),display=type.shortDetail||type.detail||type.description||"CANLI",period=Number(status.period||0);
+  const statusText=String([type.name,type.description,type.detail,type.shortDetail].filter(Boolean).join(" "));
+  const completed=type.completed===true||state==="post"||/finished|full.?time|final/i.test(statusText);
+  const isLive=state==="in"&&!completed;
+  if(!completed&&!isLive)return null;
+  const clock=Number(status.clock||0),display=type.shortDetail||type.detail||type.description||(completed?"BİTTİ":"CANLI"),period=Number(status.period||0);
   let minute=clock?Math.floor(clock/60):null;
   if(!minute){const match=String(status.displayClock||"").match(/^(\d+)/);if(match)minute=Number(match[1]);}
   if(period>=2&&minute!==null&&minute<45)minute+=45;
   const notes=(c.notes||[]).map(n=>n.headline||n.text||"").filter(Boolean);
   const league=c.altGameNote||notes[0]||e.league&&e.league.name||e.season&&e.season.slug||"Futbol";
-  return {id:e.id,slug:String(e.id||""),home:home.team&&(home.team.displayName||home.team.name)||home.displayName||home.name||"Ev sahibi",away:away.team&&(away.team.displayName||away.team.name)||away.displayName||away.name||"Deplasman",home_score:home.score??null,away_score:away.score??null,competition:league,status:"inprogress",status_text:display,minute,start_time:e.date||c.date||"",__feedStatus:"live"};
+  return {id:e.id,slug:String(e.id||""),home:home.team&&(home.team.displayName||home.team.name)||home.displayName||home.name||"Ev sahibi",away:away.team&&(away.team.displayName||away.team.name)||away.displayName||away.name||"Deplasman",home_score:home.score??null,away_score:away.score??null,competition:league,status:completed?"finished":"inprogress",status_text:display,minute,start_time:e.date||c.date||"",__feedStatus:completed?"finished":"live"};
  }).filter(Boolean);
 }
 function liveNorm(v){return String(v||"").toLocaleLowerCase("tr").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ")}
@@ -1298,10 +1301,11 @@ async function liveScoresLoad(){
   const finishedTodayList=liveList(feedSources.finished_today).map(m=>({...m,__feedStatus:"finished"}));
   const finishedYesterdayList=liveList(feedSources.finished_yesterday).map(m=>({...m,__feedStatus:"finished"}));
   const espnList=espnLiveList(feedSources.espn);
+  const espnFinishedList=espnList.filter(m=>liveState(m)==="finished");
   const widgetFinished=widgetList.filter(m=>liveState(m)==="finished");
   const lists=[
    [...widgetList.filter(m=>liveState(m)==="live"),...fixtureLiveList.map(m=>({...m,__feedStatus:"live"})),...espnList],
-   [...finishedTodayList,...widgetFinished],
+   [...finishedTodayList,...widgetFinished,...espnFinishedList],
    [],
    finishedYesterdayList
   ];

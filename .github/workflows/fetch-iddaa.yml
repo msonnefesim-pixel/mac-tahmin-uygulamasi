@@ -24,12 +24,16 @@ jobs:
         run: python scripts/fetch_iddaa.py
       - name: Commit updated bulletin
         run: |
-          if git diff --quiet -- iddaa.json; then
+          if [ ! -s iddaa.json ]; then
+            echo "Iddaa bulletin file is missing or empty."
+            exit 1
+          fi
+          git add iddaa.json
+          if git diff --cached --quiet -- iddaa.json; then
             echo "Iddaa bulletin unchanged."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add iddaa.json
           git commit -m "Update Iddaa odds bulletin"
           git push

@@ -1,4 +1,5 @@
 name: Update Iddaa Odds
+# Server-side fetch avoids browser CORS restrictions.
 on:
   schedule:
     - cron: "*/15 * * * *"

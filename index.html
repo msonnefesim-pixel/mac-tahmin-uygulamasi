@@ -378,8 +378,9 @@ function matchCard(m,t,past=false,rank=0){
 }
 function filterMatch(t,f){
  if(f==="all")return true;if(!t)return false;
- if(f==="strong")return t.one>=.5||t.draw>=.3||t.two>=.5||(t.over25??0)>=.55||t.over35>=.55||t.six>=.20||t.btts>=.5||(t.first??0)>=.4||(t.second??0)>=.5;
+ if(f==="strong")return t.one>=.5||t.draw>=.3||t.two>=.5||(t.over25??0)>=.55||(t.firstOver15??0)>=.4||t.over35>=.55||t.six>=.20||t.btts>=.5||(t.first??0)>=.4||(t.second??0)>=.5;
  if(f==="one")return t.one>=.4;if(f==="draw")return t.draw>=.25;if(f==="two")return t.two>=.4;
+ if(f==="over25")return (t.over25??0)>=.5;if(f==="firstOver15")return (t.firstOver15??0)>=.4;
  if(f==="over35")return t.over35>=.5;if(f==="six")return t.six>=.2;if(f==="btts")return t.btts>=.5;
  if(f==="first")return (t.first??0)>=.4;if(f==="second")return (t.second??0)>=.5;return true;
 }

@@ -972,12 +972,12 @@ async function iddaaBaslat(force=false){
  }finally{iddaaLoading=false}
 }
 
-const COUPON_TYPES=[["over35","3,5 ÜST KUPONU",.50],["six","6+ GOL KUPONU",.20],["iyms","İY/MS KUPONU",.16],["btts","KG VAR KUPONU",.50],["result","1 - X - 2 KUPONU",.40]];
+const COUPON_TYPES=[["safe1","SAĞLAM KUPON 1","safe"],["safe2","SAĞLAM KUPON 2","safe"],["surprise1","SÜRPRİZ KUPON 1","surprise"],["surprise2","SÜRPRİZ KUPON 2","surprise"],["mixed1","KARIŞIK KUPON 1","mixed"],["mixed2","KARIŞIK KUPON 2","mixed"]];
 let couponIYMSRows=null,couponIYMSIndex=null,couponResultIndex=null,couponHistoryByHome=null,couponIYMSByHome=null,couponIYMSByAway=null,couponIYMSLoading=false;
 function cNorm(v){return String(v||"").toLocaleLowerCase("tr").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ")}
 function cKey(m){return [String(m.date||"").slice(0,10),cNorm(m.home),cNorm(m.away)].join("|")}
-function cArchive(){try{return JSON.parse(localStorage.getItem("yapaycinCouponArchive")||"{}")}catch(e){return {}}}
-function cSave(x){try{localStorage.setItem("yapaycinCouponArchive",JSON.stringify(x))}catch(e){}}
+function cArchive(){try{return JSON.parse(localStorage.getItem("yapaycinCouponArchiveV2")||"{}")}catch(e){return {}}}
+function cSave(x){try{localStorage.setItem("yapaycinCouponArchiveV2",JSON.stringify(x))}catch(e){}}
 function cBuildResultIndex(){if(couponResultIndex)return couponResultIndex;const map=new Map();for(const m of HISTORY){const h=Number(m.ft_home),a=Number(m.ft_away);if(m.ft_home===null||m.ft_home===undefined||m.ft_home===""||m.ft_away===null||m.ft_away===undefined||m.ft_away===""||!Number.isFinite(h)||!Number.isFinite(a))continue;map.set(cKey(m),{h,a})}couponResultIndex=map;return map}
 function cTeamNorm(v){if(v&&typeof v==="object")v=v.name||v.team_name||v.displayName||v.short_name||v.shortName||v.abbreviation||v.code||"";return cNorm(v).replace(/\b(sc|ec|fc|af|cf|club)\b/g," ").replace(/\s+/g," ").trim()}
 function cTeamSimilarity(a,b){a=cTeamNorm(a);b=cTeamNorm(b);if(!a||!b)return 0;if(a===b)return 1;if(a.length>=5&&b.length>=5&&(a.includes(b)||b.includes(a)))return .92;const aa=new Set(a.split(" ").filter(t=>t.length>1)),bb=new Set(b.split(" ").filter(t=>t.length>1));if(!aa.size||!bb.size)return 0;const overlap=[...aa].filter(t=>bb.has(t)).length;return overlap/Math.max(aa.size,bb.size)}
@@ -1001,8 +1001,11 @@ function cFindNear(rows,x,homeKey,awayKey){
  return ties===1?best:null
 }
 function cFindLiveResult(x){let best=null,bestScore=0,bestDist=2,ties=0;for(const m of liveFootballMatches||[]){if(liveState(m)!=="finished")continue;const hs=cTeamSimilarity(cLiveTeam(m,true),x.home),as=cTeamSimilarity(cLiveTeam(m,false),x.away);if(hs<.82||as<.82)continue;const d=cDateDistance(cLiveDate(m),x.date);if(d>1)continue;const s=(hs+as)/2;if(s>bestScore||s===bestScore&&d<bestDist){best=m;bestScore=s;bestDist=d;ties=1}else if(s===bestScore&&d===bestDist)ties++}if(!best||ties!==1)return null;const h=cLiveScore(best,true),a=cLiveScore(best,false);return h===null||a===null?null:{h,a}}
-function cResult(x){if(x.type==="iyms"){if(!couponIYMSRows)return null;const exact=couponIYMSRows.find(y=>y.date===String(x.date||"").slice(0,10)&&y.home===cNorm(x.home)&&y.away===cNorm(x.away));const row=exact||cFindNear(couponIYMSRows,x,"home","away");return row?row.pick===x.pick:null}let rec=cBuildResultIndex().get(cKey(x));if(!rec){const row=cFindNear(HISTORY,x,"home","away");if(row&&row.ft_home!==null&&row.ft_home!==undefined&&row.ft_home!==""&&row.ft_away!==null&&row.ft_away!==undefined&&row.ft_away!=="")rec={h:Number(row.ft_home),a:Number(row.ft_away)}}if(!rec)rec=cFindLiveResult(x);if(!rec)return null;const {h,a}=rec;if(x.type==="over35")return h+a>=4;if(x.type==="six")return h+a>=6;if(x.type==="btts")return h>0&&a>0;if(x.type==="result")return (h>a?"1":h<a?"2":"X")===x.pick;return null}
-async function cGetIYMS(){if(couponIYMSRows)return couponIYMSRows;try{const r=await fetch("./iyms-veri.json");const d=await r.json();couponIYMSRows=(d.matches||[]).map(m=>{const g=ks=>{for(const k of ks)if(m[k]!==undefined&&m[k]!==null&&m[k]!=="")return Number(m[k]);return null};const hh=g(["ht_home","home_ht","halftime_home"]),ha=g(["ht_away","away_ht","halftime_away"]),fh=g(["ft_home","home_ft","home_score"]),fa=g(["ft_away","away_ft","away_score"]);if([hh,ha,fh,fa].some(v=>!Number.isFinite(v)))return null;const o=(v,w)=>v>w?"1":v<w?"2":"X";return {home:cNorm(m.home||m.home_team||m.home_name),away:cNorm(m.away||m.away_team||m.away_name),date:String(m.date||m.match_date||m.fixture_date||"").slice(0,10),pick:o(hh,ha)+"/"+o(fh,fa)}}).filter(x=>x&&x.home&&x.away);couponIYMSIndex=new Map(couponIYMSRows.map(x=>[[x.date,x.home,x.away].join("|"),x.pick]));return couponIYMSRows}catch(e){couponIYMSRows=[];couponIYMSIndex=new Map();return []}}
+function cResult(x){
+ if(x.type==="iyms"||x.type==="first"||x.type==="second"){if(!couponIYMSRows)return null;const row=couponIYMSRows.find(y=>y.date===String(x.date||"").slice(0,10)&&y.home===cNorm(x.home)&&y.away===cNorm(x.away))||cFindNear(couponIYMSRows,x,"home","away");if(!row)return null;if(x.type==="iyms")return row.pick===x.pick;if(x.type==="first")return row.htHome>0&&row.htAway>0;return row.ftHome-row.htHome>0&&row.ftAway-row.htAway>0}
+ let rec=cBuildResultIndex().get(cKey(x));if(!rec){const row=cFindNear(HISTORY,x,"home","away");if(row&&row.ft_home!==null&&row.ft_home!==undefined&&row.ft_home!==""&&row.ft_away!==null&&row.ft_away!=="")rec={h:Number(row.ft_home),a:Number(row.ft_away)}}if(!rec)rec=cFindLiveResult(x);if(!rec)return null;const {h,a}=rec;if(x.type==="over35")return h+a>=4;if(x.type==="six")return h+a>=6;if(x.type==="btts")return h>0&&a>0;if(x.type==="result")return (h>a?"1":h<a?"2":"X")===x.pick;return null
+}
+async function cGetIYMS(){if(couponIYMSRows)return couponIYMSRows;try{const r=await fetch("./iyms-veri.json");const d=await r.json();couponIYMSRows=(d.matches||[]).map(m=>{const g=ks=>{for(const k of ks)if(m[k]!==undefined&&m[k]!==null&&m[k]!=="")return Number(m[k]);return null};const hh=g(["ht_home","home_ht","halftime_home"]),ha=g(["ht_away","away_ht","halftime_away"]),fh=g(["ft_home","home_ft","home_score"]),fa=g(["ft_away","away_ft","away_score"]);if([hh,ha,fh,fa].some(v=>!Number.isFinite(v)))return null;const o=(v,w)=>v>w?"1":v<w?"2":"X";return {home:cNorm(m.home||m.home_team||m.home_name),away:cNorm(m.away||m.away_team||m.away_name),date:String(m.date||m.match_date||m.fixture_date||"").slice(0,10),htHome:hh,htAway:ha,ftHome:fh,ftAway:fa,pick:o(hh,ha)+"/"+o(fh,fa)}}).filter(x=>x&&x.home&&x.away);couponIYMSIndex=new Map(couponIYMSRows.map(x=>[[x.date,x.home,x.away].join("|"),x.pick]));return couponIYMSRows}catch(e){couponIYMSRows=[];couponIYMSIndex=new Map();return []}}
 function cIYMS(m,rows){if(!couponIYMSByHome||!couponIYMSByAway){couponIYMSByHome=new Map();couponIYMSByAway=new Map();for(const x of rows){if(!couponIYMSByHome.has(x.home))couponIYMSByHome.set(x.home,[]);couponIYMSByHome.get(x.home).push(x);if(!couponIYMSByAway.has(x.away))couponIYMSByAway.set(x.away,[]);couponIYMSByAway.get(x.away).push(x)}}const h=(couponIYMSByHome.get(cNorm(m.home))||[]).filter(x=>x.date<m.date).slice(-12),a=(couponIYMSByAway.get(cNorm(m.away))||[]).filter(x=>x.date<m.date).slice(-12);if(h.length<3||a.length<3)return null;const opts=["1/1","1/X","1/2","X/1","X/X","X/2","2/1","2/X","2/2"];const p=opts.map(k=>({k,v:Math.sqrt(((h.filter(x=>x.pick===k).length+.5)/(h.length+4.5))*((a.filter(x=>x.pick===k[2]+"/"+k[0]).length+.5)/(a.length+4.5)))})).sort((x,y)=>y.v-x.v);const sum=p.reduce((n,x)=>n+x.v,0);return {pick:p[0].k,p:sum?p[0].v/sum:0}}
 function couponOddsOutcome(m,aliases){
  if(!m||!Array.isArray(m.o))return null;
@@ -1053,64 +1056,28 @@ function couponIddaaOdds(x){
  return odd?{odd,event:e,missing:false}:{odd:1,event:e,missing:true};
 }
 async function kuponlariYenile(){
- const date=today(),archive=cArchive(),day=archive[date]||{};
- $("couponDate").textContent="Kuponlar hazırlanıyor...";
- const rows=FIXTURES.filter(m=>String(m.date).slice(0,10)===date&&/^\d{1,2}:\d{2}$/.test(String(m.time||""))&&!macBasladiMi(m)).map(m=>{
-  const key=[m.league_id,m.date,m.time,m.home,m.away].join("|");
-  let t=predictionCache.get(key);if(!t){t=predictFootball(m);predictionCache.set(key,t)}
-  if(!t)return null;
-  const rp=[["1",t.one],["X",t.draw],["2",t.two]].sort((a,b)=>b[1]-a[1])[0];
-  return {m,t,rp};
- }).filter(Boolean);
- const saveType=(id,threshold,iyRows)=>{
-  if(day[id])return;
-  const pool=rows.map(x=>{
-   let p=0,pick="";
-   if(id==="over35"){p=x.t.over35;pick="3,5 Üst"}
-   if(id==="six"){p=x.t.six;pick="6+ Gol"}
-   if(id==="btts"){p=x.t.btts;pick="KG Var"}
-   if(id==="result"){p=x.rp[1];pick=x.rp[0]}
-   if(id==="iyms"&&iyRows){const ip=cIYMS(x.m,iyRows);if(ip){p=ip.p;pick=ip.pick}}
-   return {x,p,pick};
-  }).filter(x=>x.pick&&x.p>=threshold).sort((a,b)=>b.p-a.p).slice(0,5);
-  day[id]=pool.map(x=>({type:id,pick:x.pick,prob:x.p,date:x.x.m.date,time:x.x.m.time||"",home:x.x.m.home,away:x.x.m.away,league:x.x.m.league||""}));
- };
- COUPON_TYPES.filter(([id])=>id!=="iyms").forEach(([id,,threshold])=>saveType(id,threshold,null));
- archive[date]=day;cSave(archive);kuponlariGoster();
- if(!day.iyms){
-  $("couponDate").textContent=date+" · Diğer kuponlar hazır, İY/MS hazırlanıyor...";
-  const iy=await cGetIYMS();saveType("iyms",.16,iy);archive[date]=day;cSave(archive);
-  if(activeTabName==="coupons")kuponlariGoster();
- }
+ if(couponBuildBusy)return;couponBuildBusy=true;const date=today(),archive=cArchive();$("couponDate").textContent="Altı kupon hazırlanıyor...";
+ try{
+  const iyRows=await cGetIYMS(),fixtures=FIXTURES.filter(m=>String(m.date).slice(0,10)===date&&/^\d{1,2}:\d{2}$/.test(String(m.time||""))&&!macBasladiMi(m));
+  const rows=fixtures.map(m=>{const key=[m.league_id,m.date,m.time,m.home,m.away].join("|");let t=predictionCache.get(key);if(!t){t=predictFootball(m);predictionCache.set(key,t)}if(!t)return null;
+   const opts=[{type:"result",pick:"1",prob:t.one,safe:t.one>=.56,surprise:t.one<Math.max(t.draw,t.two)&&t.one>=.20&&t.one<=.46},{type:"result",pick:"X",prob:t.draw,safe:t.draw>=.34,surprise:t.draw>=.25&&t.draw<=.42},{type:"result",pick:"2",prob:t.two,safe:t.two>=.56,surprise:t.two<Math.max(t.one,t.draw)&&t.two>=.20&&t.two<=.46},{type:"over35",pick:"3,5 Üst",prob:t.over35,safe:t.over35>=.58,surprise:t.over35>=.34&&t.over35<.58},{type:"six",pick:"6+ Gol",prob:t.six,safe:t.six>=.34,surprise:t.six>=.12&&t.six<.34},{type:"btts",pick:"KG Var",prob:t.btts,safe:t.btts>=.58,surprise:t.btts>=.40&&t.btts<.58}];
+   if(t.first!==null)opts.push({type:"first",pick:"İlk Yarı KG",prob:t.first,safe:t.first>=.50,surprise:t.first>=.34&&t.first<.50});if(t.second!==null)opts.push({type:"second",pick:"İkinci Yarı KG",prob:t.second,safe:t.second>=.55,surprise:t.second>=.38&&t.second<.55});const iy=cIYMS(m,iyRows);if(iy)opts.push({type:"iyms",pick:iy.pick,prob:iy.p,safe:iy.p>=.20,surprise:iy.p>=.12&&iy.p<.20});return {m,t,opts};
+  }).filter(Boolean);
+  const buildPool=kind=>{const out=[];rows.forEach(x=>x.opts.forEach(o=>{if((kind==="safe"&&!o.safe)||(kind==="surprise"&&!o.surprise)||(kind==="mixed"&&!o.safe&&!o.surprise))return;const quality=x.t.quality==="İyi"?1:x.t.quality==="Orta"?.7:.4,score=kind==="safe"?o.prob*.82+quality*.18:kind==="surprise"?(1-Math.abs(o.prob-.39))*.62+(x.t.methodAgreement||0)*.18+quality*.20:(o.safe?o.prob:.39)*.65+quality*.2+(o.surprise?.15:0),reason=o.type==="result"?"1-X-2 olasılık dağılımı":o.type==="over35"||o.type==="six"?"Beklenen gol üretimi":o.type==="btts"?"İki takımın gol bulma olasılığı":o.type==="iyms"?"Geçmiş İY/MS dağılımı":"İlgili yarıdaki gol verileri";out.push({type:o.type,pick:o.pick,prob:o.prob,date:x.m.date,time:x.m.time||"",home:x.m.home,away:x.m.away,league:x.m.league||"",matchKey:[x.m.date,x.m.time,x.m.home,x.m.away].join("|"),score,reason,quality:x.t.quality||"Sınırlı",risk:kind==="safe"?"Düşük":kind==="surprise"?"Yüksek":o.safe?"Orta":"Yüksek"})}));return out};
+  const uniqueBest=pool=>{const map=new Map();pool.forEach(x=>{const old=map.get(x.matchKey);if(!old||x.score>old.score)map.set(x.matchKey,x)});return [...map.values()].sort((a,b)=>b.score-a.score)};
+  const choose=(pool,count,excluded=new Set(),allowRepeat=false)=>{const all=uniqueBest(pool),chosen=all.filter(x=>!excluded.has(x.matchKey)).slice(0,count);if(chosen.length<count&&allowRepeat)chosen.push(...all.filter(x=>!chosen.some(y=>y.matchKey===x.matchKey)).slice(0,count-chosen.length));return chosen.slice(0,count)};
+  const safePool=buildPool("safe"),surprisePool=buildPool("surprise"),mixedPool=buildPool("mixed"),safe1=choose(safePool,5,new Set(),true),safe2=choose(safePool,5,new Set(safe1.map(x=>x.matchKey)),true),surprise1=choose(surprisePool,5,new Set(),true),surprise2=choose(surprisePool,5,new Set(surprise1.map(x=>x.matchKey)),true);
+  const mixedMake=excluded=>{const a=choose(mixedPool.filter(x=>x.risk!=="Yüksek"),3,excluded,true),used=new Set([...excluded,...a.map(x=>x.matchKey)]),b=choose(mixedPool.filter(x=>x.risk==="Yüksek"),2,used,true),joined=[...a,...b],seen=new Set();return joined.filter(x=>!seen.has(x.matchKey)&&seen.add(x.matchKey)).slice(0,5)};
+  const mixed1=mixedMake(new Set()),mixed2=mixedMake(new Set(mixed1.map(x=>x.matchKey))),pack=arr=>arr.map(({score,matchKey,...x})=>x);
+  archive[date]={safe1:pack(safe1),safe2:pack(safe2),surprise1:pack(surprise1),surprise2:pack(surprise2),mixed1:pack(mixed1),mixed2:pack(mixed2)};cSave(archive);if(activeTabName==="coupons")kuponlariGoster();$("couponDate").textContent=date+" · 6 kupon hazırlandı · Her kupon en fazla 5 farklı maç";
+ }catch(e){$("couponDate").textContent="Kupon hazırlanamadı: "+e.message}finally{couponBuildBusy=false}
 }
 function kuponlariGoster(){
- if(!$("couponCards"))return;
- const date=today(),day=cArchive()[date]||{};let total=0,done=0,hits=0,html="";
- $("couponDate").textContent=date+" · Günlük kuponlar";
- COUPON_TYPES.forEach(function(type){
-  const id=type[0],name=type[1],items=day[id]||[];total+=items.length;const oddsList=[];
-  html+="<div class=\"coupon-card\"><b class=\"coupon-heading\">"+name+" · "+items.length+"/5 maç</b>";
-  if(!items.length)html+="<p>Yeterli güven düzeyinde maç bulunamadı.</p>";
-  items.forEach(function(x,i){
-   const result=cResult(x);if(result!==null){done++;if(result)hits++;}
-   const oddsInfo=couponIddaaOdds(x);oddsList.push(oddsInfo);
-   let status="<span class=\"coupon-status pending\">◷ BEKLİYOR</span>";
-   if(result===true)status="<span class=\"coupon-status hit\">✓ TUTTU</span>";
-   if(result===false)status="<span class=\"coupon-status miss\">✕ YATTI</span>";
-   html+="<div class=\"coupon-match\"><div class=\"match-top\"><b>"+(i+1)+". "+x.home+" - "+x.away+"</b>"+status+"</div>";
-   html+="<div class=\"coupon-pick\">🎯 TAHMİN: "+x.pick+"</div>";
-   html+="<div class=\"coupon-meta\">"+x.league+" · "+x.time+" · Güven: <b>%"+(x.prob*100).toFixed(1)+"</b></div>";
-   html+="<div class=\"coupon-odds\">🇹🇷 İDDAA ORANI: "+oddsInfo.odd.toFixed(2)+(oddsInfo.missing?" · oran yok":"")+"</div>";
-   html+="</div>";
-  });
-  if(items.length){
-   if(!iddaaYuklendi)html+="<div class=\"coupon-total\">Toplam İddaa oranı: bülten yükleniyor... (geçici 1.00)</div>";
-   else {const totalOdd=oddsList.reduce((n,v)=>n*(v?v.odd:1),1);html+="<div class=\"coupon-total\">TOPLAM İDDAA ORANI: "+totalOdd.toFixed(2)+"</div>";}
-  }
-  html+="</div>";
- });
- $("couponCards").innerHTML=html;
- $("couponStats").innerHTML="Toplam tahmin: <b>"+total+"</b> · Sonuçlanan: <b>"+done+"</b> · Tutan: <b>"+hits+"</b> · Başarı: <b>"+(done?(hits/done*100).toFixed(1):"0.0")+"%</b>";
+ if(!$("couponCards"))return;const date=today(),day=cArchive()[date]||{};let total=0,done=0,hits=0,html="";$("couponDate").textContent=date+" · Günlük 5 maçlık kuponlar";
+ COUPON_TYPES.forEach(type=>{const id=type[0],name=type[1],items=day[id]||[];total+=items.length;const oddsList=[];html+="<div class=\"coupon-card\"><b class=\"coupon-heading\">"+name+" · "+items.length+"/5 maç</b>";if(!items.length)html+="<p>Bu kategori için yeterli veriye sahip maç bulunamadı. Zayıf tahmin eklenmedi.</p>";
+  items.forEach((x,i)=>{const result=cResult(x);if(result!==null){done++;if(result)hits++}const oddsInfo=couponIddaaOdds(x);oddsList.push(oddsInfo);let status="<span class=\"coupon-status pending\">◷ BEKLİYOR</span>";if(result===true)status="<span class=\"coupon-status hit\">✓ TUTTU</span>";if(result===false)status="<span class=\"coupon-status miss\">✕ YATTI</span>";const confidence=x.risk==="Düşük"?"Güvenli":x.risk==="Orta"?"Orta":"Riskli";html+="<div class=\"coupon-match\"><div class=\"match-top\"><b>"+(i+1)+". "+x.home+" - "+x.away+"</b>"+status+"</div><div class=\"coupon-pick\">🎯 TAHMİN: "+x.pick+"</div><div class=\"coupon-meta\">"+x.league+" · "+x.time+" · Olasılık: <b>%"+(x.prob*100).toFixed(1)+"</b> · Güven: <b>"+confidence+"</b><br>Analiz: "+x.reason+" · Veri: "+x.quality+"</div><div class=\"coupon-odds\">🇹🇷 İDDAA ORANI: "+(oddsInfo.missing?"Oran bulunamadı":oddsInfo.odd.toFixed(2))+"</div></div>"});
+  if(items.length){if(!iddaaYuklendi)html+="<div class=\"coupon-total\">Toplam oran: İddaa bülteni bekleniyor...</div>";else if(oddsList.length&&oddsList.every(x=>!x.missing))html+="<div class=\"coupon-total\">TOPLAM İDDAA ORANI: "+oddsList.reduce((n,v)=>n*v.odd,1).toFixed(2)+"</div>";else html+="<div class=\"coupon-total\">Toplam oran hesaplanamadı: tüm seçimlerde eşleşen oran bulunamadı.</div>"}html+="</div>"});
+ $("couponCards").innerHTML=html;$("couponStats").innerHTML="Toplam seçim: <b>"+total+"</b> · Sonuçlanan: <b>"+done+"</b> · Tutan: <b>"+hits+"</b> · Başarı: <b>"+(done?(hits/done*100).toFixed(1):"0.0")+"%</b>";
 }
 /* CANLI SKORLAR - SportScore ücretsiz API */
 function liveEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}

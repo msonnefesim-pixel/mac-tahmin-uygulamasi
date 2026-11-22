@@ -373,7 +373,10 @@ function buildFixtureResultIndex(){
 }
 function fixtureFinished(m){
  if(m.completed===true||m.finished===true||m.is_finished===true||m.isFinished===true)return true;
- const status=[m.status,m.state,m.match_status,m.status_short,m.status_long,m.fixture_status,m.phase]
+ const st=m.status&&typeof m.status==="object"?m.status:{};
+ const fs=m.fixture&&m.fixture.status&&typeof m.fixture.status==="object"?m.fixture.status:{};
+ const status=[m.status,m.state,m.match_status,m.status_short,m.status_long,m.fixture_status,m.phase,
+  st.short,st.long,st.type,st.name,fs.short,fs.long,fs.type,fs.name]
   .filter(v=>typeof v==="string"||typeof v==="number").join(" ").toLocaleLowerCase("tr");
  const normalized=" "+status.replace(/[^a-z0-9çğıöşü]+/g," ")+" ";
  const terms=[" ft "," aet "," pen "," finished "," complete "," completed "," ended "," final "," full time "," maç bitti "," sonuçlandı "," live "," in progress "," inplay "," halftime "," half time "," devre arası "," canlı "," uzatmalar "];
@@ -382,22 +385,39 @@ function fixtureFinished(m){
 function macBasladiMi(m){
  if(fixtureFinished(m))return true;
  if(fixtureConfirmedByLiveFeed(m))return true;
- const matchDate=String(m.date||"").slice(0,10);
- if(matchDate){
-  // Fikstür kaynağı saati yanlış/eksik verse bile sonuç arşivine düşen maç yaklaşan listesinde kalmasın.
-  const dates=[matchDate];
-  try{dates.push(dateAdd(matchDate,-1),dateAdd(matchDate,1))}catch(e){}
+ const dateRaw=String(m.date||"").trim();
+ const date=dateRaw.slice(0,10);
+ if(date){
+  const dates=[date];
+  try{dates.push(dateAdd(date,-1),dateAdd(date,1))}catch(e){}
   if(dates.some(d=>fixtureResultIndex.has(fixtureHistoryKey(m,d))))return true;
+  if(date<today())return true;
  }
- const date=String(m.date||"").slice(0,10);
- const parts=String(m.time||"").split(":");
- if(!date)return false;
- if(date<today())return true;
- if(parts.length<2)return false;
- const hour=Number(parts[0]),minute=Number(parts[1]);
- if(!Number.isFinite(hour)||!Number.isFinite(minute)||hour<0||hour>23||minute<0||minute>59)return false;
- const kickoff=new Date(date+"T"+String(hour).padStart(2,"0")+":"+String(minute).padStart(2,"0")+":00+03:00");
- return !Number.isNaN(kickoff.getTime())&&kickoff.getTime()<=Date.now();
+ // Kaynak saat bilgisini bazen ISO tarih, bazen HH:MM olarak gönderiyor.
+ // Her iki biçimi de Türkiye saati / açık saat dilimiyle güvenli şekilde karşılaştır.
+ const candidates=[m.kickoff,m.start_time,m.datetime,m.date,m.time];
+ let kickoffMs=NaN;
+ for(const raw of candidates){
+  if(raw===null||raw===undefined||raw==="")continue;
+  if(typeof raw==="number"||(typeof raw==="string"&&/^\d{10,13}$/.test(raw))){
+   const n=Number(raw);kickoffMs=n<1e12?n*1000:n;
+  }else{
+   const value=String(raw).trim();
+   if(/[T ]\d{1,2}:\d{2}/.test(value)||/[zZ]$|[+-]\d{2}:?\d{2}$/.test(value)){
+    const parsed=Date.parse(value);if(Number.isFinite(parsed))kickoffMs=parsed;
+   }
+  }
+  if(Number.isFinite(kickoffMs))break;
+ }
+ if(!Number.isFinite(kickoffMs)&&date){
+  const match=String(m.time||"").match(/^(\d{1,2}):(\d{2})/);
+  if(match){
+   const hour=Number(match[1]),minute=Number(match[2]);
+   if(hour>=0&&hour<=23&&minute>=0&&minute<=59)
+    kickoffMs=Date.parse(date+"T"+String(hour).padStart(2,"0")+":"+String(minute).padStart(2,"0")+":00+03:00");
+  }
+ }
+ return Number.isFinite(kickoffMs)&&kickoffMs<=Date.now();
 }
 function saatiGecenMaclariKaldir(){
  if(($("tarih").value||today())!==today())return;

@@ -737,6 +737,13 @@ function iddaaOddsMovement(e,m,o){
  const arrow=x.delta<0?"↘":"↗",color=x.delta<0?"#ffcf5a":"#8fd6a8";
  return "<small style='color:"+color+"'> "+arrow+" "+x.old.toFixed(2)+" → "+x.now.toFixed(2)+"</small>";
 }
+function iddaaMovementDelta(e,m,aliases){
+ if(!e||!m||!Array.isArray(m.o))return null;
+ const keys=aliases.map(iddaaNorm),valid=m.o.map(o=>{const odd=iddaaOdds(o);if(!odd)return null;const move=IDDAA_MOVEMENTS.get(iddaaOddsSnapshotKey(e,m,o));return {o,odd,old:move?move.old:odd,label:iddaaNorm(o.n||o.name||o.no||"")}}).filter(Boolean);
+ const selected=valid.find(x=>keys.includes(x.label)||keys.includes(iddaaNorm(x.o.no??"")));if(!selected)return null;
+ const oldSum=valid.reduce((n,x)=>n+1/x.old,0),newSum=valid.reduce((n,x)=>n+1/x.odd,0);if(!oldSum||!newSum)return null;
+ return (1/selected.odd)/newSum-(1/selected.old)/oldSum;
+}
 function iddaaMarketHtml(title,m,event){
  if(!m)return "";
  const outcomes=m.o.map(o=>({name:iddaaEsc(o.n||o.name||o.no||"Seçim"),odd:iddaaOdds(o)})).filter(x=>x.odd);
@@ -889,6 +896,11 @@ function iddaaAdjustedPrediction(fixture,p){
   const sixMarket=iddaaFairProbability(goal,["6+","6 +","6+ Gol","6 ve üzeri","6 veya daha fazla"]);
   if(sixMarket!==null)out.six=iddaaBlendProbability(p.six,sixMarket);
  }
+ // Oran hareketi yalnızca küçük ek sinyaldir; mevcut model/piyasa tahmininin yerine geçmez.
+ if(m1){const d=[["1",["1","Ev sahibi","Home"]],["draw",["X","0","Beraberlik","Beraber","Draw"]],["2",["2","Deplasman","Away"]]].map(([k,a])=>[k,iddaaMovementDelta(e,m1,a)]);if(d.every(x=>x[1]!==null)){d.forEach(([k,v])=>out[k]=Math.max(0,Math.min(1,out[k]+v*.15)));const sum=out.one+out.draw+out.two;if(sum){out.one/=sum;out.draw/=sum;out.two/=sum}}}
+ const dKg=iddaaMovementDelta(e,bttsM,["Var","Evet","Yes","Karşılıklı Gol Var"]);if(dKg!==null)out.btts=Math.max(0,Math.min(1,out.btts+dKg*.15));
+ if(ou){const dOver=iddaaMovementDelta(e,ou,["Üst","Over","Üst 3.5","Over 3.5"]);if(dOver!==null)out.over35=Math.max(0,Math.min(1,out.over35+dOver*.15))}
+ if(goal){const dSix=iddaaMovementDelta(e,goal,["6+","6 +","6+ Gol","6 ve üzeri","6 veya daha fazla"]);if(dSix!==null)out.six=Math.max(0,Math.min(1,out.six+dSix*.15))}
  return out;
 }
 

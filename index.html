@@ -20,7 +20,7 @@ input,select,button{width:100%;padding:11px;margin:5px 0;border-radius:8px;font-
 input,select{background:#101010;color:#fff;border:1px solid #666}
 button{background:var(--yellow);color:#171000;border:0;font-weight:bold}
 button.secondary,.tab-button{background:#292929;color:#fff;border:1px solid #555}
-.tabbar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:8px 0}
+.tabbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:8px 0}
 .tab-button{padding:9px 3px;font-weight:bold;font-size:13px;line-height:1.2}
 .tab-button.active{background:var(--yellow);color:#171000;border-color:var(--yellow)}
 .hidden{display:none!important}
@@ -78,7 +78,6 @@ th{color:var(--yellow)}
 <div class="tabbar">
  <button id="futbolButon" class="tab-button active" onclick="sekmeAc('futbol')">⚽ FUTBOL</button>
  <button id="iymsButon" class="tab-button" onclick="sekmeAc('iyms')">🎯 İY/MS</button>
- <button id="nbaButon" class="tab-button" onclick="sekmeAc('nba')">🏀 NBA</button>
  <button id="couponButon" class="tab-button" onclick="sekmeAc('coupons')">🎟️ HAZIR KUPONLAR</button>
  <button id="halfBothButon" class="tab-button" onclick="sekmeAc('halfBoth')">⚽ EVET/EVET</button>
  <!-- İDDAA arka planda çalışır; kullanıcı sekmesi gösterilmez. -->
@@ -604,6 +603,7 @@ async function baslat(force=false){
  finally{footballRefreshBusy=false}
 }
 function sekmeAc(name){
+ if(name==="nba")return; // NBA sekmesi geçici olarak gizli.
  const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",nba:"nbaBolumu",coupons:"couponsBolumu",halfBoth:"halfBothBolumu",iddaa:"iddaaBolumu"};
  activeTabName=name;
  Object.keys(ids).forEach(k=>$(ids[k]).classList.toggle("hidden",k!==name));
@@ -1536,11 +1536,7 @@ async function liveScoresLoad(){
   renderLiveResults();
   if(activeTabName==="nba")renderLiveScores();
   if(activeTabName==="coupons"&&typeof kuponlariGoster==="function")kuponlariGoster();
-  // Basketbol kaynağı futbol/kupon ekranını bekletmesin.
-  fetch("https://sportscore.com/api/widget/matches/?sport=basketball&limit=50&src=yapaycin",{cache:"no-store",mode:"cors"})
-   .then(r=>r.ok?r.json():null).then(data=>{
-    if(data){liveBasketballMatches=liveList(data);if(activeTabName==="nba")renderLiveScores()}
-   }).catch(e=>console.warn("NBA canlı skor kaynağı:",e.message));
+  // NBA bölümü şimdilik gizli; gereksiz basketbol API isteği yapılmıyor.
   const liveCount=current.filter(m=>liveState(m)==="live").length;
   const feedErrors=feed&&feed.errors?Object.entries(feed.errors).filter(([,v])=>v).map(([k,v])=>k+": "+v).join("; "):"";
   const status=$("liveResultsStatus");

@@ -685,7 +685,8 @@ async function iymsBaslat(){
    if(!list.length)return "<div class='panel'>Seçilen tarihlerde gösterilecek maç yok.</div>";
    return list.map(x=>{
     const ranked=options.map(k=>({k,p:x.probs[k]})).sort((a,b)=>b.p-a.p);
-    return `<div class="panel"><b>${x.match.date} · ${x.match.time||""}</b><br><small>${x.match.league||""}</small><br><b>${x.match.home} - ${x.match.away}</b><br>⭐ En güçlü: <b>${ranked[0].k} (%${ranked[0].p.toFixed(1)})</b><br><small>Ev verisi: ${x.h} · Deplasman verisi: ${x.a}</small><div class="predictions">${ranked.map(y=>`<div class="pred"><b>${y.k}</b><br><span class="pred-value">%${y.p.toFixed(1)}</span></div>`).join("")}</div></div>`;
+    const top=ranked[0],confidence=top.p>=35&&x.h+x.a>=18?"Orta":top.p>=25&&x.h+x.a>=12?"Orta":"Riskli",alarm=ranked[1]&&ranked[1].p>=top.p*.82;
+    return "<div class='panel'><b>"+x.match.date+" · "+(x.match.time||"")+"</b><br><small>"+(x.match.league||"")+"</small><br><b>"+x.match.home+" - "+x.match.away+"</b><br>⭐ En güçlü İY/MS: <b>"+top.k+" (%"+top.p.toFixed(1)+")</b> · Güven: <b>"+confidence+"</b><br><small>Ev verisi: "+x.h+" · Deplasman verisi: "+x.a+" · Veri kalitesi: "+(x.h+x.a>=18?"İyi":x.h+x.a>=10?"Orta":"Sınırlı")+"</small>"+(alarm?"<br><span style='color:#ff9b6b;font-weight:bold'>⚠️ Sürpriz alarmı: "+ranked[1].k+" seçeneği de güçlü (%"+ranked[1].p.toFixed(1)+").</span>":"")+"<div class='predictions'>"+ranked.slice(0,4).map(y=>"<div class='pred'><b>"+y.k+"</b><br><span class='pred-value'>%"+y.p.toFixed(1)+"</span></div>").join("")+"</div><small>İY/MS geçmiş dağılımı ve ev/deplasman örneklemi birlikte değerlendirildi.</small></div>";
    }).join("");
   }
   const listEl=$("iymsFutureList"),leagueEl=$("iymsLeague");

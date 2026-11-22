@@ -996,17 +996,16 @@ async function iddaaBaslat(force=false){
  if(iddaaLoading)return;
  iddaaLoading=true;
  const couponStatus=$("iddaaCouponStatus");if(couponStatus)couponStatus.textContent="İddaa oranları yenileniyor...";
- const status=$("iddaaDurum");status.textContent="İddaa bülteni kaynaktan okunuyor...";$("iddaaMaclar").innerHTML="";
+ const status=$("iddaaDurum");status.textContent="Sunucudaki güncel İddaa oranları okunuyor...";$("iddaaMaclar").innerHTML="";
  try{
-  const urls=["https://sportsbookv2.iddaa.com/sportsbook/events?st=1&type=0&version=0","https://sportsbookv2.iddaa.com/sportsbook/competitions?st=1"];
-  const opts={method:"GET",mode:"cors",cache:force?"no-store":"no-cache",headers:{"Accept":"application/json, text/plain, */*"}};
-  const responses=await Promise.all(urls.map(u=>fetch(u,opts)));
-  if(responses.some(r=>!r.ok))throw new Error("Kaynak HTTP yanıtı: "+responses.map(r=>r.status).join(" / "));
-  const payloads=await Promise.all(responses.map(r=>r.json()));
-  const eventData=payloads[0]&&payloads[0].data;
-  const events=Array.isArray(eventData)?eventData:(eventData&&Array.isArray(eventData.events)?eventData.events:[]);
-  const compData=payloads[1]&&payloads[1].data;
-  const comps=Array.isArray(compData)?compData:(compData&&Array.isArray(compData.competitions)?compData.competitions:[]);
+  // Oran bülteni tarayıcıdan değil, GitHub Actions sunucusundan alınır.
+  // Böylece iddaa.com CORS kısıtlaması telefon tarayıcısını etkilemez.
+  const response=await fetch("./iddaa.json?v="+(force?Date.now():"latest"),{cache:"no-store"});
+  if(!response.ok)throw new Error("Sunucu oran dosyası henüz hazır değil ("+response.status+"). Birkaç dakika sonra tekrar dene.");
+  const payload=await response.json();
+  const events=Array.isArray(payload.events)?payload.events:[];
+  const comps=Array.isArray(payload.competitions)?payload.competitions:[];
+  if(payload.updated_at)iddaaUpdated=new Date(payload.updated_at).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
   if(!events.length)throw new Error("Bültende okunabilir etkinlik bulunamadı.");
   const movedMarkets=recordIddaaOddsMovement(events);
   IDDAA_EVENTS=events;IDDAA_INDEX=new Map();IDDAA_BY_DATE=new Map();IDDAA_MATCH_CACHE=new Map();IDDAA_COMPETITIONS=new Map();
@@ -1015,14 +1014,14 @@ async function iddaaBaslat(force=false){
   iddaaUpdated=new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
   iddaaYuklendi=true;
   iddaaTarihleriHazirla();
-  status.innerHTML="<span class='good'>Güncel bülten arka planda hazır.</span> · "+events.length+" etkinlik kaydı · Oran hareketi karşılaştırılan market: "+movedMarkets+" · Kaynak okuma: "+iddaaUpdated;
+  status.innerHTML="<span class='good'>Sunucu oran bülteni hazır.</span> · "+events.length+" etkinlik · Oran hareketi karşılaştırılan market: "+movedMarkets+" · Kaynak okuma: "+iddaaUpdated;
   const couponStatus=$("iddaaCouponStatus");if(couponStatus)couponStatus.innerHTML="<span class='good'>İddaa bülteni güncellendi.</span> · "+events.length+" kayıt · Oran hareketi: "+movedMarkets+" · "+iddaaUpdated;
   if($("couponsBolumu")&&!$("couponsBolumu").classList.contains("hidden"))kuponlariGoster();
   // Gizli İddaa sekmesinin maç kartlarını ve futbol listesini arka planda yeniden çizme.
   // İddaa ekranı kullanıcıya kapalı; veriler yalnızca tahmin eşleştirmesinde kullanılır.
  }catch(e){
-  status.innerHTML="Oran kaynağına doğrudan erişilemedi: "+String(e.message||e)+
-   "<br><span class='small'>Tarayıcı kaynak erişimini (CORS) engelliyor olabilir. Bu durumda izinli bir sunucu bağlantısı gerekir; otomatik arşivleme yapılmadı.</span>";
+  status.innerHTML="Sunucu oran dosyası okunamadı: "+String(e.message||e)+
+   "<br><span class='small'>Sunucu bülteni 15 dakikada bir yenilenir. Önceki oran verileri varsa korunur.</span>";
   const couponStatus=$("iddaaCouponStatus");if(couponStatus)couponStatus.textContent="İddaa oranları şu an alınamadı. Daha sonra yeniden deneyebilirsin."; 
  }finally{iddaaLoading=false}
 }

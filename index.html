@@ -173,7 +173,7 @@ th{color:var(--yellow)}
 let FIXTURES=[], HISTORY=[];
 let fixtureResultIndex=new Set();
 let footballRefreshBusy=false, predictionCache=new Map();
-let fixtureDateIndex=new Map(), historyDateIndex=new Map(), listRenderToken=0;
+let fixtureDateIndex=new Map(), historyDateIndex=new Map(), listRenderToken=0, matchRenderState=null;
 function makeDateIndex(rows){const map=new Map();for(const m of rows){const d=String(m.date||"");if(!map.has(d))map.set(d,[]);map.get(d).push(m)}return map;}
 let teamIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map();
 let hiddenLeagues=new Set();
@@ -461,23 +461,30 @@ function listele(){
   ozetAlan.innerHTML=past?"":`<div class="summary-item"><span class="summary-number">${list.length}</span><span class="summary-label">Toplam maç</span></div><div class="summary-item"><span class="summary-number">${count}</span><span class="summary-label">Tahmin üretilen</span></div><div class="summary-item"><span class="summary-number">${list.length-count}</span><span class="summary-label">Tahmin bulunmayan</span></div>`;
   if(!list.length){macAlan.textContent=past?"Bu tarihte kayıtlı geçmiş maç bulunamadı.":"Bu tarihte gösterilecek maç bulunamadı.";return}
   macAlan.innerHTML="";
-  let renderIndex=0,last="";
-  function renderBatch(){
-   if(token!==listRenderToken)return;
-   const stop=Math.min(renderIndex+(past?60:20),list.length);
-   let html="";
-   for(;renderIndex<stop;renderIndex++){
-    const x=list[renderIndex];
-    if(x.m.date!==last){html+=`<div class="day-title">${dateText(x.m.date)}</div>`;last=x.m.date}
-    html+=matchCard(x.m,x.t,past,renderIndex+1);
-   }
-   macAlan.insertAdjacentHTML("beforeend",html);
-   if(past&&renderIndex<list.length)macAlan.insertAdjacentHTML("beforeend","<div class='small'>Geçmiş maçlar ekrana aktarılıyor... "+renderIndex+" / "+list.length+"</div>");
-   if(renderIndex<list.length)setTimeout(renderBatch,0);
-  }
-  renderBatch();
+  matchRenderState={token,list,renderIndex:0,last:"",past};
+  maclariDevamEttir();
  }
  prepareBatch();
+}
+function maclariDevamEttir(){
+ const state=matchRenderState;
+ if(!state||state.token!==listRenderToken)return;
+ const alan=$("maclar"),oldButton=$("macDahaFazla");
+ if(oldButton)oldButton.remove();
+ const stop=Math.min(state.renderIndex+30,state.list.length);
+ let html="";
+ for(;state.renderIndex<stop;state.renderIndex++){
+  const x=state.list[state.renderIndex];
+  if(x.m.date!==state.last){html+=`<div class="day-title">${dateText(x.m.date)}</div>`;state.last=x.m.date}
+  html+=matchCard(x.m,x.t,state.past,state.renderIndex+1);
+ }
+ alan.insertAdjacentHTML("beforeend",html);
+ if(state.renderIndex<state.list.length){
+  const button=document.createElement("button");
+  button.id="macDahaFazla";button.className="secondary";
+  button.textContent="Daha fazla maç göster ("+(state.list.length-state.renderIndex)+")";
+  button.onclick=maclariDevamEttir;alan.appendChild(button);
+ }
 }
 function tarihKaydir(n){$("tarih").value=dateAdd($("tarih").value||today(),n);listele()}
 async function baslat(force=false){
@@ -1279,27 +1286,24 @@ async function liveScoresLoad(){
  if(liveScoresBusy)return;liveScoresBusy=true;
  try{
   const day=liveLocalDate(),yesterday=dateAdd(day,-1),dateChanged=!!liveScoresDate&&liveScoresDate!==day;
-  const urls=[
-   "./live.json?v="+Date.now(),
-   "https://sportscore.com/api/v1/fixtures/?sport=football&date="+day+"&status=finished&limit=200&src=yapaycin",
-   "https://sportscore.com/api/v1/fixtures/?sport=football&date="+day+"&limit=200&src=yapaycin",
-   "https://sportscore.com/api/v1/fixtures/?sport=football&date="+yesterday+"&limit=200&src=yapaycin"
-  ];
-  const results=await Promise.allSettled(urls.map(url=>fetch(url,{cache:"no-store",mode:"cors",headers:{"Accept":"application/json"}}).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.json()})));
-  const ok=results.filter(x=>x.status==="fulfilled").length;
-  if(!ok)throw new Error("Canlı skor ve sonuç kaynaklarına ulaşılamadı");
-  const feed=results[0].status==="fulfilled"?results[0].value:null;
+  // Sunucu canlı, bugün biten ve dün biten maçları tek JSON dosyasında topluyor.
+  // Aynı sağlayıcıya ayrıca üç istek atmak gereksiz bekleme ve bağlantı yükü oluşturuyordu.
+  const response=await fetch("./live.json",{cache:"no-store"});
+  if(!response.ok)throw new Error("Canlı skor dosyası yüklenemedi ("+response.status+")");
+  const feed=await response.json();
+  const ok=1;
   const feedSources=feed&&feed.sources&&typeof feed.sources==="object"?feed.sources:{};
   const widgetList=liveList(feedSources.widget);
   const fixtureLiveList=liveList(feedSources.fixtures);
   const finishedTodayList=liveList(feedSources.finished_today).map(m=>({...m,__feedStatus:"finished"}));
   const finishedYesterdayList=liveList(feedSources.finished_yesterday).map(m=>({...m,__feedStatus:"finished"}));
   const espnList=espnLiveList(feedSources.espn);
+  const widgetFinished=widgetList.filter(m=>liveState(m)==="finished");
   const lists=[
-   [...widgetList,...fixtureLiveList.map(m=>({...m,__feedStatus:"live"})),...espnList],
-   [...finishedTodayList,...(results[1].status==="fulfilled"?liveList(results[1].value):[])],
-   results[2].status==="fulfilled"?liveList(results[2].value):[],
-   [...finishedYesterdayList,...(results[3].status==="fulfilled"?liveList(results[3].value):[])]
+   [...widgetList.filter(m=>liveState(m)==="live"),...fixtureLiveList.map(m=>({...m,__feedStatus:"live"})),...espnList],
+   [...finishedTodayList,...widgetFinished],
+   [],
+   finishedYesterdayList
   ];
   const merged=new Map();
   const add=(m,source)=>{
@@ -1339,7 +1343,7 @@ async function liveScoresLoad(){
   const liveCount=current.filter(m=>liveState(m)==="live").length;
   const feedErrors=feed&&feed.errors?Object.entries(feed.errors).filter(([,v])=>v).map(([k,v])=>k+": "+v).join("; "):"";
   const status=$("liveResultsStatus");
-  if(status)status.textContent="Canlı: "+liveCount+" · Sunucu canlı kaynakları: widget "+widgetList.length+", tarihli "+fixtureLiveList.length+", ESPN "+espnList.length+(feed&&feed.updated_at?" · Sunucu kontrolü: "+new Date(feed.updated_at).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}):" · live.json bekleniyor")+(feedErrors?" · Kaynak notu: "+feedErrors:"")+" · Sonuç kaynakları: bugün "+lists[1].length+"/"+lists[2].length+", dün "+lists[3].length+" · Başarılı kaynak: "+ok+"/4 · Son kontrol: "+new Date(liveScoresLastFetch).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
+  if(status)status.textContent="Canlı: "+liveCount+" · Sunucu canlı kaynakları: widget "+widgetList.length+", tarihli "+fixtureLiveList.length+", ESPN "+espnList.length+(feed&&feed.updated_at?" · Sunucu kontrolü: "+new Date(feed.updated_at).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}):" · live.json bekleniyor")+(feedErrors?" · Kaynak notu: "+feedErrors:"")+" · Sonuç kaynakları: bugün "+lists[1].length+"/"+lists[2].length+", dün "+lists[3].length+" · Başarılı kaynak: "+ok+"/1 · Son kontrol: "+new Date(liveScoresLastFetch).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
  }catch(e){
   console.warn("Canlı skor güncellemesi:",e.message);
   const status=$("liveResultsStatus");if(status)status.textContent="Canlı skor bağlantı hatası: "+e.message+" · Önceki skorlar korunuyor.";

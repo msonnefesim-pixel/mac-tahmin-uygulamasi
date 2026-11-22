@@ -1,6 +1,6 @@
-const CACHE_NAME = "yapaycin-mac-analiz-v131";
+const CACHE_NAME = "yapaycin-mac-analiz-v132";
 
-const FILES_TO_CACHE = ["./","./index.html","./manifest.json","./icon.png","./genie-logo.jpg"];
+const FILES_TO_CACHE = ["./","./index.html","./manifest.json","./icon.svg"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE)).then(() => self.skipWaiting()));
@@ -88,7 +88,7 @@ self.addEventListener("fetch", event => {
     if (cached) return cached;
     try {
       const response = await fetch(event.request);
-      if (response.ok && /\.(html|json|png|css|js)$/.test(url.pathname)) cache.put(event.request, response.clone());
+      if (response.ok && /\.(html|json|png|css|js|svg)$/.test(url.pathname)) cache.put(event.request, response.clone());
       return response;
     } catch (e) { return Response.error(); }
   })());

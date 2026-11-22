@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="110" fill="#101010"/>
-  <path d="M80 100 H432 V412 H80 Z" fill="#c8102e" rx="55"/>
-  <path d="M145 350 L220 170 L285 290 L335 220 L390 350" fill="none" stroke="#f5c400" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="220" cy="170" r="18" fill="#fff"/>
-</svg>
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#270b10"/><stop offset="1" stop-color="#080808"/></linearGradient><linearGradient id="y" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff1a1"/><stop offset="1" stop-color="#e5a900"/></linearGradient></defs>
+<rect width="512" height="512" rx="112" fill="url(#bg)"/><rect x="13" y="13" width="486" height="486" rx="102" fill="none" stroke="#c8102e" stroke-width="12"/>
+<path d="M111 235l75 93 70-93h62L210 391h-49l-112-156z" fill="url(#y)" stroke="#21110b" stroke-width="9" stroke-linejoin="round"/>
+<g transform="translate(174 42) scale(1.05)"><path d="M36 127c-19-9-19-23-2-30 11-5 17 1 13 8-4 7-15 5-15 14 1 8 13 12 29 8" fill="none" stroke="#f5c400" stroke-width="8" stroke-linecap="round"/><path d="M53 70c-11 10-17 21-17 34 0 20 19 32 44 32s44-12 44-32c0-13-7-25-18-35-10-9-14-17-13-27H66c2 12-2 20-13 28z" fill="#f5c400" stroke="#21110b" stroke-width="5"/><path d="M59 47c1-18 14-30 31-30 16 0 28 12 28 28-13 6-43 7-59 2z" fill="#c8102e" stroke="#21110b" stroke-width="5"/><path d="M58 47c16 7 44 7 62-1l-6 12c-17 7-39 7-53-1z" fill="#f5c400" stroke="#21110b" stroke-width="4"/><path d="M72 62q7-7 14 0M99 62q7-7 14 0M83 75q11 10 22 0" fill="none" stroke="#21110b" stroke-width="4" stroke-linecap="round"/><circle cx="96" cy="32" r="5" fill="#fff4be"/></g>
+<text x="256" y="456" text-anchor="middle" font-family="Arial,sans-serif" font-size="43" font-weight="900" fill="#f5c400">YaPaYCiN</text></svg>

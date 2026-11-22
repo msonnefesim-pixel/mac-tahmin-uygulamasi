@@ -581,8 +581,8 @@ function testResult(m,t){
   ["3,5 Üst",t.over35,Number(m.ft_home)+Number(m.ft_away)>=4],
   ["6+ Gol",t.six,Number(m.ft_home)+Number(m.ft_away)>=6],
   ["KG Var",t.btts,Number(m.ft_home)>0&&Number(m.ft_away)>0],
-  ["İlk Yarı KG",t.first,Number(m.ht_home)>0&&Number(m.ht_away)>0],
-  ["İkinci Yarı KG",t.second,Number(m.ft_home)>Number(m.ht_home)&&Number(m.ft_away)>Number(m.ht_away)]
+  ["İlk Yarı KG",num(m.ht_home)&&num(m.ht_away)?t.first:null,num(m.ht_home)&&num(m.ht_away)?Number(m.ht_home)>0&&Number(m.ht_away)>0:null],
+  ["İkinci Yarı KG",num(m.ht_home)&&num(m.ht_away)?t.second:null,num(m.ht_home)&&num(m.ht_away)?Number(m.ft_home)>Number(m.ht_home)&&Number(m.ft_away)>Number(m.ht_away):null]
  ];
 }
 async function testleriHesapla(){
@@ -1102,7 +1102,7 @@ async function kuponlariYenile(){
   }).filter(Boolean);
   const buildPool=kind=>{const out=[];rows.forEach(x=>x.opts.forEach(o=>{if((kind==="safe"&&!o.safe)||(kind==="surprise"&&!o.surprise)||(kind==="mixed"&&!o.safe&&!o.surprise))return;const quality=x.t.quality==="İyi"?1:x.t.quality==="Orta"?.7:.4,score=kind==="safe"?o.prob*.82+quality*.18:kind==="surprise"?(1-Math.abs(o.prob-.39))*.62+(x.t.methodAgreement||0)*.18+quality*.20:(o.safe?o.prob:.39)*.65+quality*.2+(o.surprise?.15:0),reason=o.type==="result"?"1-X-2 olasılık dağılımı":o.type==="over35"||o.type==="six"?"Beklenen gol üretimi":o.type==="btts"?"İki takımın gol bulma olasılığı":o.type==="iyms"?"Geçmiş İY/MS dağılımı":"İlgili yarıdaki gol verileri";out.push({type:o.type,pick:o.pick,prob:o.prob,date:x.m.date,time:x.m.time||"",home:x.m.home,away:x.m.away,league:x.m.league||"",matchKey:[x.m.date,x.m.time,x.m.home,x.m.away].join("|"),score,reason,quality:x.t.quality||"Sınırlı",risk:kind==="safe"?"Düşük":kind==="surprise"?"Yüksek":o.safe?"Orta":"Yüksek"})}));return out};
   const groupBest=pool=>{const map=new Map();pool.forEach(x=>{if(!map.has(x.matchKey))map.set(x.matchKey,[]);map.get(x.matchKey).push(x)});return [...map.entries()].map(([key,items])=>({key,items:items.sort((a,b)=>b.score-a.score)})).sort((a,b)=>b.items[0].score-a.items[0].score)};
-  const choose=(pool,count,excluded=new Set())=>{const groups=groupBest(pool).filter(g=>!excluded.has(g.key)).slice(0,count);return groups.flatMap(g=>{const first=g.items[0],second=g.items.slice(1).find(x=>x.type!==first.type&&x.prob>=(first.risk==="Düşük"?.48:.32));return second?[first,second]:[first]})};
+  const choose=(pool,count,excluded=new Set())=>{const all=groupBest(pool),groups=all.filter(g=>!excluded.has(g.key)).slice(0,count);if(groups.length<count)groups.push(...all.filter(g=>excluded.has(g.key)).slice(0,count-groups.length));return groups.flatMap(g=>{const first=g.items[0],second=g.items.slice(1).find(x=>x.type!==first.type&&x.prob>=(first.risk==="Düşük"?.48:.32));return second?[first,second]:[first]})};
   const safePool=buildPool("safe"),surprisePool=buildPool("surprise"),mixedPool=buildPool("mixed"),safe1=choose(safePool,5,new Set(),true),safe2=choose(safePool,5,new Set(safe1.map(x=>x.matchKey)),true),surprise1=choose(surprisePool,5,new Set(),true),surprise2=choose(surprisePool,5,new Set(surprise1.map(x=>x.matchKey)),true);
   const mixedMake=excluded=>{const a=choose(mixedPool.filter(x=>x.risk!=="Yüksek"),3,excluded),used=new Set([...excluded,...a.map(x=>x.matchKey)]),b=choose(mixedPool.filter(x=>x.risk==="Yüksek"),2,used);return [...a,...b]};
   const mixed1=mixedMake(new Set()),mixed2=mixedMake(new Set(mixed1.map(x=>x.matchKey))),pack=arr=>arr.map(({score,matchKey,...x})=>x);

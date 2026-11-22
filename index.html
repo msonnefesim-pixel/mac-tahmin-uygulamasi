@@ -961,9 +961,23 @@ function couponOddsOutcome(m,aliases){
  }
  return null;
 }
+function couponIddaaEventForFixture(f){
+ const date=iddaaFixtureDateKey(f),home=iddaaTeamKey(f.home),away=iddaaTeamKey(f.away),ts=iddaaFixtureTimestamp(f);
+ if(!date||!home||!away)return null;
+ const near=[-1,0,1].flatMap(n=>IDDAA_BY_DATE.get(iddaaShiftDate(date,n))||[]);
+ const candidates=near.filter(e=>{
+  if(iddaaTeamKey(e.hn)!==home||iddaaTeamKey(e.an)!==away)return false;
+  if(iddaaDateDistance(date,iddaaDateKey(e))>1)return false;
+  const ets=iddaaEventTimestamp(e);
+  if(ts&&ets&&Math.abs(ts-ets)>3*3600000)return false;
+  return true;
+ });
+ return candidates.length===1?candidates[0]:null;
+}
 function couponIddaaOdds(x){
- if(!iddaaYuklendi||!Array.isArray(IDDAA_EVENTS)||!IDDAA_EVENTS.length)return null;
- const e=iddaaFindEventForFixture(x);if(!e)return null;
+ if(!iddaaYuklendi)return {odd:1,event:null,missing:true};
+ const e=couponIddaaEventForFixture(x);
+ if(!e)return {odd:1,event:null,missing:true};
  const markets=iddaaMarkets(e);let odd=null;
  if(x.type==="over35"){
   const list=markets.filter(m=>String(m.t)==="2"&&String(m.st)==="101");
@@ -982,7 +996,7 @@ function couponIddaaOdds(x){
   const market=markets.find(m=>valid.filter(k=>m.o.some(o=>iddaaNorm(o.n||o.name||o.no||"")===iddaaNorm(k))).length>=7);
   if(market)odd=couponOddsOutcome(market,[code]);
  }
- return odd?{odd,event:e}:null;
+ return odd?{odd,event:e,missing:false}:{odd:1,event:e,missing:true};
 }
 async function kuponlariYenile(){$("couponDate").textContent="Kuponlar analiz ediliyor...";const date=today(),archive=cArchive(),day=archive[date]||{},iy=await cGetIYMS();const rows=FIXTURES.filter(m=>String(m.date).slice(0,10)===date&&/^\d{1,2}:\d{2}$/.test(String(m.time||""))&&!macBasladiMi(m)).map(m=>{const key=[m.league_id,m.date,m.time,m.home,m.away].join("|");let t=predictionCache.get(key);if(!t){t=predictFootball(m);predictionCache.set(key,t)}if(!t)return null;const ip=cIYMS(m,iy),rp=[["1",t.one],["X",t.draw],["2",t.two]].sort((a,b)=>b[1]-a[1])[0];return {m,t,ip,rp}}).filter(Boolean);COUPON_TYPES.forEach(([id,name,threshold])=>{if(day[id])return;const pool=rows.map(x=>{let p=0,pick="";if(id==="over35"){p=x.t.over35;pick="3,5 Üst"}if(id==="six"){p=x.t.six;pick="6+ Gol"}if(id==="btts"){p=x.t.btts;pick="KG Var"}if(id==="result"){p=x.rp[1];pick=x.rp[0]}if(id==="iyms"&&x.ip){p=x.ip.p;pick=x.ip.pick}return {x,p,pick}}).filter(x=>x.pick&&x.p>=threshold).sort((a,b)=>b.p-a.p).slice(0,5);day[id]=pool.map(x=>({type:id,pick:x.pick,prob:x.p,date:x.x.m.date,time:x.x.m.time||"",home:x.x.m.home,away:x.x.m.away,league:x.x.m.league||""}))});archive[date]=day;cSave(archive);kuponlariGoster()}
 function kuponlariGoster(){
@@ -1002,14 +1016,13 @@ function kuponlariGoster(){
    html+="<div class=\"coupon-match\"><div class=\"match-top\"><b>"+(i+1)+". "+x.home+" - "+x.away+"</b>"+status+"</div>";
    html+="<div class=\"coupon-pick\">🎯 TAHMİN: "+x.pick+"</div>";
    html+="<div class=\"coupon-meta\">"+x.league+" · "+x.time+" · Güven: <b>%"+(x.prob*100).toFixed(1)+"</b></div>";
-   html+=oddsInfo?"<div class=\"coupon-odds\">🇹🇷 İDDAA ORANI: "+oddsInfo.odd.toFixed(2)+"</div>":(iddaaYuklendi?"<div class=\"coupon-no-odds\">İddaa oranı bu maç / tahmin için bültende bulunamadı.</div>":"<div class=\"coupon-no-odds\">İddaa oranı yükleniyor...</div>");
+   html+="<div class=\"coupon-odds\">🇹🇷 İDDAA ORANI: "+oddsInfo.odd.toFixed(2)+(oddsInfo.missing?" · oran yok":"")+"</div>";
    html+="</div>";
   });
   if(items.length){
    const oddsList=items.map(couponIddaaOdds);
-   if(!iddaaYuklendi)html+="<div class=\"coupon-total\">Toplam İddaa oranı: bülten yükleniyor...</div>";
-   else if(oddsList.every(Boolean)){const totalOdd=oddsList.reduce((n,v)=>n*v.odd,1);html+="<div class=\"coupon-total\">TOPLAM İDDAA ORANI: "+totalOdd.toFixed(2)+"</div>";}
-   else html+="<div class=\"coupon-no-odds\">Toplam oran hesaplanamadı: en az bir maçın İddaa oranı bulunamadı.</div>";
+   if(!iddaaYuklendi)html+="<div class=\"coupon-total\">Toplam İddaa oranı: bülten yükleniyor... (geçici 1.00)</div>";
+   else {const totalOdd=oddsList.reduce((n,v)=>n*(v?v.odd:1),1);html+="<div class=\"coupon-total\">TOPLAM İDDAA ORANI: "+totalOdd.toFixed(2)+"</div>";}
   }
   html+="</div>";
  });

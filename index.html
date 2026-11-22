@@ -20,7 +20,7 @@ input,select,button{width:100%;padding:11px;margin:5px 0;border-radius:8px;font-
 input,select{background:#101010;color:#fff;border:1px solid #666}
 button{background:var(--yellow);color:#171000;border:0;font-weight:bold}
 button.secondary,.tab-button{background:#292929;color:#fff;border:1px solid #555}
-.tabbar{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:8px 0}
+.tabbar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:8px 0}
 .tab-button{padding:9px 3px;font-weight:bold;font-size:13px;line-height:1.2}
 .tab-button.active{background:var(--yellow);color:#171000;border-color:var(--yellow)}
 .hidden{display:none!important}
@@ -80,6 +80,7 @@ th{color:var(--yellow)}
  <button id="iymsButon" class="tab-button" onclick="sekmeAc('iyms')">🎯 İY/MS</button>
  <button id="nbaButon" class="tab-button" onclick="sekmeAc('nba')">🏀 NBA</button>
  <button id="couponButon" class="tab-button" onclick="sekmeAc('coupons')">🎟️ HAZIR KUPONLAR</button>
+ <button id="halfBothButon" class="tab-button" onclick="sekmeAc('halfBoth')">⚽ EVET/EVET</button>
  <!-- İDDAA arka planda çalışır; kullanıcı sekmesi gösterilmez. -->
 </div>
 
@@ -131,6 +132,16 @@ th{color:var(--yellow)}
 
 <section id="couponsBolumu" class="hidden"><h2>🎟️ GÜNLÜK HAZIR KUPONLAR</h2><div class="panel"><div class="coupon-datebar"><label class="coupon-date-label" for="couponTarih">📅 Kupon tarihi</label><button type="button" class="secondary" onclick="couponTarihKaydir(-1)">◀</button><input type="date" id="couponTarih" aria-label="Kupon tarihi" onchange="couponTarihiDegisti()"><button type="button" class="secondary" onclick="couponTarihKaydir(1)">▶</button></div><div id="couponDate">Günün kuponları hazırlanıyor...</div><div id="couponStats"></div><div id="iddaaCouponStatus" class="coupon-meta">İddaa bülteni arka planda yükleniyor...</div><button class="secondary" onclick="iddaaBaslat(true)">İddaa Oranlarını Yenile</button><button onclick="kuponlariYenile()">Kuponları Yeniden Oluştur</button><p>Her kupon en fazla 5 maç içerir. Yeterli analiz verisi olmayan maçlar eklenmez. Tahminler garanti değildir.</p></div><div id="couponCards"></div><p class="small">Kupon geçmişi bu cihazın tarayıcısında saklanır.</p></section>
 
+<section id="halfBothBolumu" class="hidden">
+ <h2>⚽ EVET / EVET · HER İKİ YARI KG</h2>
+ <div class="panel">
+  <div id="halfBothStatus">Önümüzdeki 7 günün maçları taranacak.</div>
+  <button type="button" onclick="halfBothBuild(true)">↻ Kuponları Yeniden Oluştur</button>
+  <p>Her kupon kendi seçeneğinde en yüksek ortak olasılığa sahip 5 maçtan oluşur. Maçlar farklı günlerden seçilebilir. Yalnızca ilk yarı ve ikinci yarı KG tahmini için yeterli geçmiş verisi olan maçlar kullanılır.</p>
+ </div>
+ <div id="halfBothCards"></div>
+</section>
+
 <section id="iymsBolumu" class="hidden">
  <h2>🎯 İLK YARI / MAÇ SONU ANALİZİ</h2>
  <div class="panel">
@@ -181,7 +192,7 @@ function makeDateIndex(rows){const map=new Map();for(const m of rows){const d=St
 let teamIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map();
 let hiddenLeagues=new Set();
 let iymsYuklendi=false, iymsLoading=false, nbaYuklendi=false, nbaLoading=false, couponBuildBusy=false, activeTabName="futbol", iddaaYuklendi=false, iddaaLoading=false, analysisRunning=false;
-let couponOpenCards=new Set();
+let couponOpenCards=new Set(), halfBothOpenCards=new Set(), halfBothBuilding=false;
 let NBA_GAMES_CACHE=[], liveFootballMatches=[], liveBasketballMatches=[], liveScoresBusy=false, liveScoresTimer=null, liveScoresLastFetch=0, liveScoresDate="";
 let liveViewMode="live";
 let IDDAA_EVENTS=[], IDDAA_COMPETITIONS=new Map(), IDDAA_INDEX=new Map(), IDDAA_BY_DATE=new Map(), IDDAA_MATCH_CACHE=new Map(), IDDAA_MOVEMENTS=new Map(), iddaaUpdated="", iddaaShown=20;
@@ -581,6 +592,7 @@ async function baslat(force=false){
   $("sayilar").textContent="Gelecek maç: "+FIXTURES.length+" · Geçmiş maç: "+HISTORY.length+" · Güncelleme: "+(data.updated||"bilinmiyor");
   fetch("./sw.js",{cache:"no-store"}).then(r=>r.text()).then(t=>{const m=t.match(/yapaycin-mac-analiz-v([0-9]+)/);$("sayilar").textContent+=" · S.v"+(m?m[1]:"?")}).catch(()=>{$("sayilar").textContent+=" · S.v?"});
   listele();
+  if(activeTabName==="halfBoth")halfBothBuild(false);
   // Önce futbol ekranını göster; İddaa bültenini kısa bir gecikmeyle boşta çalıştır.
   setTimeout(()=>{
    const yukle=()=>{if(!iddaaYuklendi&&!iddaaLoading)iddaaBaslat()};
@@ -592,10 +604,10 @@ async function baslat(force=false){
  finally{footballRefreshBusy=false}
 }
 function sekmeAc(name){
- const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",nba:"nbaBolumu",coupons:"couponsBolumu",iddaa:"iddaaBolumu"};
+ const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",nba:"nbaBolumu",coupons:"couponsBolumu",halfBoth:"halfBothBolumu",iddaa:"iddaaBolumu"};
  activeTabName=name;
  Object.keys(ids).forEach(k=>$(ids[k]).classList.toggle("hidden",k!==name));
- $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");$("nbaButon").classList.toggle("active",name==="nba");$("couponButon").classList.toggle("active",name==="coupons");
+ $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");$("nbaButon").classList.toggle("active",name==="nba");$("couponButon").classList.toggle("active",name==="coupons");$("halfBothButon").classList.toggle("active",name==="halfBoth");
  // Sekme önce anında görünür; ağır hesaplar ilk çizimden sonra başlar.
  setTimeout(()=>{
   if(activeTabName!==name)return;
@@ -607,6 +619,7 @@ function sekmeAc(name){
    if((savedDay.version!==3||savedPickCount===0)&&!couponBuildBusy)kuponlariYenile();
    if(couponIYMSRows===null&&!couponIYMSLoading){couponIYMSLoading=true;cGetIYMS().then(()=>{if(activeTabName==="coupons")kuponlariGoster()}).finally(()=>{couponIYMSLoading=false})}
   }
+  if(name==="halfBoth")halfBothBuild(false);
   if(name==="iyms"&&!iymsYuklendi&&!iymsLoading)iymsBaslat();
   if(name==="nba"&&!nbaYuklendi&&!nbaLoading)nbaBaslat();
   if(name==="iddaa"){if(!iddaaYuklendi&&!iddaaLoading)iddaaBaslat();else iddaaListele();}
@@ -1108,7 +1121,7 @@ function cFindNear(rows,x,homeKey,awayKey){
 }
 function cFindLiveResult(x){let best=null,bestScore=0,bestDist=2,ties=0;for(const m of liveFootballMatches||[]){if(liveState(m)!=="finished")continue;const hs=cTeamSimilarity(cLiveTeam(m,true),x.home),as=cTeamSimilarity(cLiveTeam(m,false),x.away);if(hs<.82||as<.82)continue;const d=cDateDistance(cLiveDate(m),x.date);if(d>1)continue;const s=(hs+as)/2;if(s>bestScore||s===bestScore&&d<bestDist){best=m;bestScore=s;bestDist=d;ties=1}else if(s===bestScore&&d===bestDist)ties++}if(!best||ties!==1)return null;const h=cLiveScore(best,true),a=cLiveScore(best,false);return h===null||a===null?null:{h,a}}
 function cResult(x){
- if(x.type==="iyms"||x.type==="first"||x.type==="second"||x.type==="firstOver15"){if(!couponIYMSRows)return null;const row=couponIYMSRows.find(y=>y.date===String(x.date||"").slice(0,10)&&y.home===cNorm(x.home)&&y.away===cNorm(x.away))||cFindNear(couponIYMSRows,x,"home","away");if(!row)return null;if(x.type==="iyms")return row.pick===x.pick;if(x.type==="first")return row.htHome>0&&row.htAway>0;if(x.type==="firstOver15")return row.htHome+row.htAway>=2;return row.ftHome-row.htHome>0&&row.ftAway-row.htAway>0}
+ if(x.type==="iyms"||x.type==="first"||x.type==="second"||x.type==="firstOver15"||x.type==="halfCombo"){if(!couponIYMSRows)return null;const row=couponIYMSRows.find(y=>y.date===String(x.date||"").slice(0,10)&&y.home===cNorm(x.home)&&y.away===cNorm(x.away))||cFindNear(couponIYMSRows,x,"home","away");if(!row)return null;if(x.type==="iyms")return row.pick===x.pick;if(x.type==="first")return row.htHome>0&&row.htAway>0;if(x.type==="firstOver15")return row.htHome+row.htAway>=2;if(x.type==="halfCombo"){const first=row.htHome>0&&row.htAway>0,second=row.ftHome-row.htHome>0&&row.ftAway-row.htAway>0;return x.combo==="yes_yes"?first&&second:x.combo==="no_yes"?!first&&second:first&&!second}return row.ftHome-row.htHome>0&&row.ftAway-row.htAway>0}
  let rec=cBuildResultIndex().get(cKey(x));if(!rec){const row=cFindNear(HISTORY,x,"home","away");if(row&&row.ft_home!==null&&row.ft_home!==undefined&&row.ft_home!==""&&row.ft_away!==null&&row.ft_away!=="")rec={h:Number(row.ft_home),a:Number(row.ft_away)}}if(!rec)rec=cFindLiveResult(x);if(!rec)return null;const {h,a}=rec;if(x.type==="over25")return h+a>=3;if(x.type==="over35")return h+a>=4;if(x.type==="six")return h+a>=6;if(x.type==="btts")return h>0&&a>0;if(x.type==="result")return (h>a?"1":h<a?"2":"X")===x.pick;return null
 }
 async function cGetIYMS(){if(couponIYMSRows)return couponIYMSRows;try{const r=await fetch("./iyms-veri.json");const d=await r.json();couponIYMSRows=(d.matches||[]).map(m=>{const g=ks=>{for(const k of ks)if(m[k]!==undefined&&m[k]!==null&&m[k]!=="")return Number(m[k]);return null};const hh=g(["ht_home","home_ht","halftime_home"]),ha=g(["ht_away","away_ht","halftime_away"]),fh=g(["ft_home","home_ft","home_score"]),fa=g(["ft_away","away_ft","away_score"]);if([hh,ha,fh,fa].some(v=>!Number.isFinite(v)))return null;const o=(v,w)=>v>w?"1":v<w?"2":"X";return {home:cNorm(m.home||m.home_team||m.home_name),away:cNorm(m.away||m.away_team||m.away_name),date:String(m.date||m.match_date||m.fixture_date||"").slice(0,10),htHome:hh,htAway:ha,ftHome:fh,ftAway:fa,pick:o(hh,ha)+"/"+o(fh,fa)}}).filter(x=>x&&x.home&&x.away);couponIYMSIndex=new Map(couponIYMSRows.map(x=>[[x.date,x.home,x.away].join("|"),x.pick]));return couponIYMSRows}catch(e){couponIYMSRows=[];couponIYMSIndex=new Map();return []}}
@@ -1181,6 +1194,62 @@ async function kuponlariYenile(){
 function couponTarihKaydir(n){const el=$("couponTarih");if(!el)return;el.value=dateAdd(el.value||today(),n);couponTarihiDegisti()}
 function couponToggleCard(id){const date=$("couponTarih")?.value||today(),key=date+"|"+id;if(couponOpenCards.has(key))couponOpenCards.delete(key);else couponOpenCards.add(key);kuponlariGoster()}
 function couponTarihiDegisti(){kuponlariGoster();const date=$("couponTarih")?.value||today(),day=cArchive()[date]||{},count=COUPON_TYPES.reduce((n,type)=>n+((day[type[0]]||[]).length),0);if((day.version!==4||count===0)&&!couponBuildBusy)kuponlariYenile()}
+
+/* HER İKİ YARI KG ÖZEL KUPONLARI */
+function halfBothArchive(){try{return JSON.parse(localStorage.getItem("yapaycinHalfBothCouponsV1")||"null")}catch(e){return null}}
+function halfBothSave(value){try{localStorage.setItem("yapaycinHalfBothCouponsV1",JSON.stringify(value))}catch(e){}}
+function halfBothToggleCard(id){if(halfBothOpenCards.has(id))halfBothOpenCards.delete(id);else halfBothOpenCards.add(id);halfBothRender()}
+function halfBothRender(){
+ const archive=halfBothArchive(),el=$("halfBothCards");if(!el)return;
+ if(!archive||!archive.pools){el.innerHTML="<div class='coupon-card'>Kuponlar henüz hazırlanmadı.</div>";return}
+ const defs=[["yes_yes","EVET / EVET","İlk yarı KG Var · İkinci yarı KG Var"],["no_yes","HAYIR / EVET","İlk yarı KG Yok · İkinci yarı KG Var"],["yes_no","EVET / HAYIR","İlk yarı KG Var · İkinci yarı KG Yok"]];
+ let html="";
+ for(const [id,name,desc] of defs){
+  const items=archive.pools[id]||[],open=halfBothOpenCards.has(id);
+  html+="<div class='coupon-card'><button type='button' class='coupon-heading' aria-expanded='"+open+"' aria-controls='halfBothBody_"+id+"' onclick=\"halfBothToggleCard('"+id+"')\"><span>"+name+" · "+items.length+"/5 maç</span><span class='coupon-arrow'>"+(open?"▲ Açık":"▼ Aç")+"</span></button><div class='coupon-card-body' id='halfBothBody_"+id+"'"+(open?"":" hidden")+">";
+  html+="<div class='coupon-meta'>"+desc+"</div>";
+  if(!items.length)html+="<p>Bu seçenek için yeterli geçmiş verisi olan maç bulunamadı. Zayıf tahmin eklenmedi.</p>";
+  items.forEach((x,i)=>{
+   const result=cResult(x);let status="<span class='coupon-status pending'>◷ BEKLİYOR</span>";
+   if(result===true)status="<span class='coupon-status hit'>✓ TUTTU</span>";else if(result===false)status="<span class='coupon-status miss'>✕ YATTI</span>";
+   html+="<div class='coupon-match'><div class='match-top'><b>"+(i+1)+". "+liveEsc(x.home)+" - "+liveEsc(x.away)+"</b>"+status+"</div><div class='coupon-pick'><span class='coupon-pick-label'>🎯 TAHMİN</span><b class='coupon-pick-value'>"+name+"</b></div><div class='coupon-meta'>"+liveEsc(x.date)+" · "+liveEsc(x.time)+" · "+liveEsc(x.league)+"<br>Ortak olasılık: <b>%"+(x.prob*100).toFixed(1)+"</b> · İlk yarı KG: %"+(x.firstProb*100).toFixed(1)+" · İkinci yarı KG: %"+(x.secondProb*100).toFixed(1)+"<br>Veri: "+liveEsc(x.quality)+"</div></div>";
+  });
+  if(items.length===5)html+="<div class='coupon-total'>5 maçın tahmini ortak tutma olasılığı: %"+(items.reduce((v,x)=>v*x.prob,1)*100).toFixed(2)+" <div class='coupon-no-odds'>Bağımsızlık varsayımıyla yaklaşık hesaplanır; garanti değildir.</div></div>";
+  html+="</div></div>";
+ }
+ el.innerHTML=html;
+}
+async function halfBothBuild(force){
+ if(halfBothBuilding)return;
+ const start=today(),end=dateAdd(start,7),saved=halfBothArchive();
+ if(!force&&saved&&saved.start===start&&saved.end===end&&saved.pools){halfBothRender();$("halfBothStatus").textContent="Hazır · "+start+" – "+end+" tarihleri · "+(saved.scanned||0)+" maç tarandı.";return}
+ if(!FIXTURES.length){$("halfBothStatus").textContent="Futbol verileri yükleniyor; maçlar hazır olduğunda kuponlar oluşturulacak.";return}
+ halfBothBuilding=true;$("halfBothStatus").textContent="Önümüzdeki 7 günün maçları analiz ediliyor...";
+ try{
+  const fixtures=FIXTURES.filter(m=>{const d=String(m.date||"").slice(0,10);return d>=start&&d<=end&&/^\d{1,2}:\d{2}$/.test(String(m.time||""))&&!macBasladiMi(m)});
+  const pools={yes_yes:[],no_yes:[],yes_no:[]};
+  let scanned=0;
+  for(let i=0;i<fixtures.length;i++){
+   const m=fixtures[i],key=[m.league_id,m.date,m.time,m.home,m.away].join("|");
+   let t=predictionCache.get(key);if(t===undefined){t=predictFootball(m);predictionCache.set(key,t)}
+   scanned++;
+   if(t&&Number.isFinite(t.first)&&Number.isFinite(t.second)){
+    const first=Math.max(0,Math.min(1,t.first)),second=Math.max(0,Math.min(1,t.second));
+    const base={date:String(m.date).slice(0,10),time:m.time||"",home:m.home,away:m.away,league:m.league||"",firstProb:first,secondProb:second,quality:t.quality||"Sınırlı",type:"halfCombo"};
+    pools.yes_yes.push({...base,combo:"yes_yes",pick:"Evet/Evet",prob:first*second});
+    pools.no_yes.push({...base,combo:"no_yes",pick:"Hayır/Evet",prob:(1-first)*second});
+    pools.yes_no.push({...base,combo:"yes_no",pick:"Evet/Hayır",prob:first*(1-second)});
+   }
+   if(i%30===29)await new Promise(resolve=>setTimeout(resolve,0));
+  }
+  Object.keys(pools).forEach(k=>pools[k].sort((a,b)=>b.prob-a.prob));
+  const chosen={};for(const k of Object.keys(pools))chosen[k]=pools[k].slice(0,5);
+  const archive={start,end,scanned,generatedAt:new Date().toISOString(),pools:chosen};
+  halfBothSave(archive);halfBothRender();
+  $("halfBothStatus").textContent="Hazır · "+start+" – "+end+" tarihleri · "+scanned+" maç tarandı · "+Math.max(...Object.values(pools).map(x=>x.length))+" uygun maç bulundu.";
+ }catch(e){$("halfBothStatus").textContent="Kupon oluşturma hatası: "+e.message}
+ finally{halfBothBuilding=false}
+}
 function kuponlariGoster(){
  if(!$("couponCards"))return;const date=$("couponTarih")?.value||today(),day=cArchive()[date]||{};let total=0,done=0,hits=0,html="";$("couponDate").textContent=date+" · Her kupon 5 farklı maçtan oluşur; güçlü maçlarda iki ayrı tahmin olabilir.";
  COUPON_TYPES.forEach(type=>{const id=type[0],name=type[1],items=day[id]||[];total+=items.length;const oddsList=[];const cardKey=date+"|"+id,isOpen=couponOpenCards.has(cardKey);html+="<div class=\"coupon-card\"><button type=\"button\" class=\"coupon-heading\" aria-expanded=\""+isOpen+"\" aria-controls=\"couponBody_"+id+"\" onclick=\"couponToggleCard('"+id+"')\"><span>"+name+" · "+items.length+"/5 maç</span><span class=\"coupon-arrow\">"+(isOpen?"▲ Açık":"▼ Aç")+"</span></button><div class=\"coupon-card-body\" id=\"couponBody_"+id+"\""+(isOpen?"":" hidden")+">";if(!items.length)html+="<p>Bu kategori için yeterli veriye sahip maç bulunamadı. Zayıf tahmin eklenmedi.</p>";

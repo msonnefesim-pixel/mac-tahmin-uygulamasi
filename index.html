@@ -562,7 +562,7 @@ function sekmeAc(name){
   if(name==="coupons"){
    kuponlariGoster();
    const savedDay=cArchive()[today()]||{};
-   if(!["safe1","safe2","surprise1","surprise2","mixed1","mixed2"].some(k=>Array.isArray(savedDay[k]))&&!couponBuildBusy)kuponlariYenile();
+   if(savedDay.version!==3&&!couponBuildBusy)kuponlariYenile();
    if(couponIYMSRows===null&&!couponIYMSLoading){couponIYMSLoading=true;cGetIYMS().then(()=>{if(activeTabName==="coupons")kuponlariGoster()}).finally(()=>{couponIYMSLoading=false})}
   }
   if(name==="iyms"&&!iymsYuklendi&&!iymsLoading)iymsBaslat();
@@ -1106,7 +1106,7 @@ async function kuponlariYenile(){
   const safePool=buildPool("safe"),surprisePool=buildPool("surprise"),mixedPool=buildPool("mixed"),safe1=choose(safePool,5,new Set(),true),safe2=choose(safePool,5,new Set(safe1.map(x=>x.matchKey)),true),surprise1=choose(surprisePool,5,new Set(),true),surprise2=choose(surprisePool,5,new Set(surprise1.map(x=>x.matchKey)),true);
   const mixedMake=excluded=>{const a=choose(mixedPool.filter(x=>x.risk!=="Yüksek"),3,excluded),used=new Set([...excluded,...a.map(x=>x.matchKey)]),b=choose(mixedPool.filter(x=>x.risk==="Yüksek"),2,used);return [...a,...b]};
   const mixed1=mixedMake(new Set()),mixed2=mixedMake(new Set(mixed1.map(x=>x.matchKey))),pack=arr=>arr.map(({score,matchKey,...x})=>x);
-  archive[date]={safe1:pack(safe1),safe2:pack(safe2),surprise1:pack(surprise1),surprise2:pack(surprise2),mixed1:pack(mixed1),mixed2:pack(mixed2)};cSave(archive);if(activeTabName==="coupons")kuponlariGoster();$("couponDate").textContent=date+" · 6 kupon hazırlandı · Her kupon en fazla 5 farklı maç";
+  archive[date]={version:3,safe1:pack(safe1),safe2:pack(safe2),surprise1:pack(surprise1),surprise2:pack(surprise2),mixed1:pack(mixed1),mixed2:pack(mixed2)};cSave(archive);if(activeTabName==="coupons")kuponlariGoster();$("couponDate").textContent=date+" · 6 kupon hazırlandı · Her kupon en fazla 5 farklı maç";
  }catch(e){$("couponDate").textContent="Kupon hazırlanamadı: "+e.message}finally{couponBuildBusy=false}
 }
 function kuponlariGoster(){

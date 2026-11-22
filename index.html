@@ -180,7 +180,7 @@ let hiddenLeagues=new Set();
 let iymsYuklendi=false, iymsLoading=false, nbaYuklendi=false, nbaLoading=false, couponBuildBusy=false, activeTabName="futbol", iddaaYuklendi=false, iddaaLoading=false, analysisRunning=false;
 let NBA_GAMES_CACHE=[], liveFootballMatches=[], liveBasketballMatches=[], liveScoresBusy=false, liveScoresTimer=null, liveScoresLastFetch=0, liveScoresDate="";
 let liveViewMode="live";
-let IDDAA_EVENTS=[], IDDAA_COMPETITIONS=new Map(), IDDAA_INDEX=new Map(), IDDAA_BY_DATE=new Map(), IDDAA_MATCH_CACHE=new Map(), iddaaUpdated="", iddaaShown=20;
+let IDDAA_EVENTS=[], IDDAA_COMPETITIONS=new Map(), IDDAA_INDEX=new Map(), IDDAA_BY_DATE=new Map(), IDDAA_MATCH_CACHE=new Map(), IDDAA_MOVEMENTS=new Map(), iddaaUpdated="", iddaaShown=20;
 const $=id=>document.getElementById(id);
 const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
 const num=v=>v!==null&&v!==undefined&&v!==""&&Number.isFinite(Number(v));
@@ -718,14 +718,33 @@ function iddaaNorm(v){
 function iddaaMarkets(e){return Array.isArray(e.m)?e.m.filter(x=>x&&Array.isArray(x.o)&&x.o.length):[]}
 function iddaaMarket(e,t,st){return iddaaMarkets(e).find(x=>String(x.t)===String(t)&&String(x.st)===String(st))}
 function iddaaOdds(o){const n=Number(o&&o.odd);return Number.isFinite(n)&&n>1?n:null}
-function iddaaMarketHtml(title,m){
+function iddaaOddsSnapshotKey(e,m,o){
+ const event=iddaaEventKey(iddaaDateKey(e),e.hn,e.an),market=[m.t??"",m.st??"",m.sov??""].join("/"),outcome=iddaaNorm(o.n||o.name||o.no||"");
+ return [event,market,outcome].join("|");
+}
+function recordIddaaOddsMovement(events){
+ IDDAA_MOVEMENTS=new Map();let previous=null;
+ try{previous=JSON.parse(localStorage.getItem("yapaycinOddsSnapshotV1")||"null")}catch(e){}
+ const now=Date.now(),fresh=previous&&now-Number(previous.at)<48*3600000&&previous.values?previous.values:{};
+ const current={};let compared=0;
+ for(const e of events){for(const m of iddaaMarkets(e)){for(const o of m.o||[]){const odd=iddaaOdds(o);if(!odd)continue;const key=iddaaOddsSnapshotKey(e,m,o);current[key]=odd;const old=Number(fresh[key]);if(old>1&&Math.abs(old-odd)>=.01){IDDAA_MOVEMENTS.set(key,{old,now:odd,delta:odd-old,percent:(odd-old)/old*100});compared++}}}}
+ try{localStorage.setItem("yapaycinOddsSnapshotV1",JSON.stringify({at:now,values:current}))}catch(e){}
+ return compared;
+}
+function iddaaOddsMovement(e,m,o){
+ if(!e||!o)return "";
+ const x=IDDAA_MOVEMENTS.get(iddaaOddsSnapshotKey(e,m,o));if(!x)return "";
+ const arrow=x.delta<0?"↘":"↗",color=x.delta<0?"#ffcf5a":"#8fd6a8";
+ return "<small style='color:"+color+"'> "+arrow+" "+x.old.toFixed(2)+" → "+x.now.toFixed(2)+"</small>";
+}
+function iddaaMarketHtml(title,m,event){
  if(!m)return "";
  const outcomes=m.o.map(o=>({name:iddaaEsc(o.n||o.name||o.no||"Seçim"),odd:iddaaOdds(o)})).filter(x=>x.odd);
  if(!outcomes.length)return "";
  const inv=outcomes.map(x=>1/x.odd),sum=inv.reduce((a,b)=>a+b,0);
  const line=m.sov!==undefined&&m.sov!==null&&m.sov!==""?" · "+iddaaEsc(m.sov):"";
  return "<div class='analysis-box'><b>"+title+line+"</b><div class='predictions'>"+
-  outcomes.map((x,i)=>"<div class='pred'><span class='pred-name'>"+x.name+"</span><span class='pred-value'>"+x.odd.toFixed(2)+"</span><span class='small'>Marjsız "+(sum?(inv[i]/sum*100).toFixed(1):"-")+"%</span></div>").join("")+
+  outcomes.map((x,i)=>{const raw=m.o.find(o=>iddaaEsc(o.n||o.name||o.no||"")===x.name);return "<div class='pred'><span class='pred-name'>"+x.name+"</span><span class='pred-value'>"+x.odd.toFixed(2)+"</span>"+iddaaOddsMovement(event,m,raw)+"<span class='small'>Marjsız "+(sum?(inv[i]/sum*100).toFixed(1):"-")+"%</span></div>"}).join("")+
   "</div></div>";
 }
 function iddaaCompetition(e){
@@ -898,10 +917,10 @@ function iddaaCard(e){
  const fixture=iddaaFixture(e),p=fixture?predictFootball(fixture):null;
  let html="<div class='match'><div class='match-top'><div class='teams'>"+iddaaEsc(e.hn||"Ev sahibi")+" - "+iddaaEsc(e.an||"Deplasman")+"</div><span class='rank'>"+iddaaDate(e)+"</span></div>";
  html+="<div class='meta'>"+iddaaCompetition(e)+"</div>";
- html+=iddaaMarketHtml("Maç Sonucu (1X2)",m1);
- html+=iddaaMarketHtml("Maç Toplam Gol",ou);
- html+=iddaaMarketHtml("Karşılıklı Gol",bttsM);
- html+=iddaaMarketHtml("İlk Yarı KG",first);
+ html+=iddaaMarketHtml("Maç Sonucu (1X2)",m1,e);
+ html+=iddaaMarketHtml("Maç Toplam Gol",ou,e);
+ html+=iddaaMarketHtml("Karşılıklı Gol",bttsM,e);
+ html+=iddaaMarketHtml("İlk Yarı KG",first,e);
  if(six&&iddaaOdds(six))html+="<div class='analysis-box'><b>6+ Gol</b><div class='pred'><span class='pred-value'>"+iddaaOdds(six).toFixed(2)+"</span></div></div>";
  if(p){
   html+="<div class='analysis-box'><b>YaPaYCiN – İDDAA karşılaştırması</b><div class='small'>Marjı çıkarılmış piyasa olasılığı ile YaPaYCiN model olasılığı arasındaki fark yüzde puan olarak gösterilir. Bu fark kesin kazanç veya bahis önerisi değildir.</div>";
@@ -971,14 +990,15 @@ async function iddaaBaslat(force=false){
   const compData=payloads[1]&&payloads[1].data;
   const comps=Array.isArray(compData)?compData:(compData&&Array.isArray(compData.competitions)?compData.competitions:[]);
   if(!events.length)throw new Error("Bültende okunabilir etkinlik bulunamadı.");
+  const movedMarkets=recordIddaaOddsMovement(events);
   IDDAA_EVENTS=events;IDDAA_INDEX=new Map();IDDAA_BY_DATE=new Map();IDDAA_MATCH_CACHE=new Map();IDDAA_COMPETITIONS=new Map();
   comps.forEach(c=>{if(c)IDDAA_COMPETITIONS.set(String(c.i??c.cid??c.id),c);if(c&&c.cid)IDDAA_COMPETITIONS.set(String(c.cid),c)});
   IDDAA_EVENTS.forEach(e=>{const date=iddaaDateKey(e),key=iddaaEventKey(date,e.hn,e.an);if(!IDDAA_INDEX.has(key))IDDAA_INDEX.set(key,e);if(!IDDAA_BY_DATE.has(date))IDDAA_BY_DATE.set(date,[]);IDDAA_BY_DATE.get(date).push(e)});
   iddaaUpdated=new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
   iddaaYuklendi=true;
   iddaaTarihleriHazirla();
-  status.innerHTML="<span class='good'>Güncel bülten arka planda hazır.</span> · "+events.length+" etkinlik kaydı · Kaynak okuma: "+iddaaUpdated;
-  const couponStatus=$("iddaaCouponStatus");if(couponStatus)couponStatus.innerHTML="<span class='good'>İddaa bülteni güncellendi.</span> · "+events.length+" kayıt · "+iddaaUpdated;
+  status.innerHTML="<span class='good'>Güncel bülten arka planda hazır.</span> · "+events.length+" etkinlik kaydı · Oran hareketi karşılaştırılan market: "+movedMarkets+" · Kaynak okuma: "+iddaaUpdated;
+  const couponStatus=$("iddaaCouponStatus");if(couponStatus)couponStatus.innerHTML="<span class='good'>İddaa bülteni güncellendi.</span> · "+events.length+" kayıt · Oran hareketi: "+movedMarkets+" · "+iddaaUpdated;
   if($("couponsBolumu")&&!$("couponsBolumu").classList.contains("hidden"))kuponlariGoster();
   // Gizli İddaa sekmesinin maç kartlarını ve futbol listesini arka planda yeniden çizme.
   // İddaa ekranı kullanıcıya kapalı; veriler yalnızca tahmin eşleştirmesinde kullanılır.

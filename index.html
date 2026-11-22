@@ -137,7 +137,7 @@ th{color:var(--yellow)}
  <div class="panel">
   <div id="halfBothStatus">Önümüzdeki 7 günün maçları taranacak.</div>
   <button type="button" onclick="halfBothBuild(true)">↻ Kuponları Yeniden Oluştur</button>
-  <p>Her kupon kendi seçeneğinde en yüksek ortak olasılığa sahip 5 maçtan oluşur. Maçlar farklı günlerden seçilebilir. Yalnızca ilk yarı ve ikinci yarı KG tahmini için yeterli geçmiş verisi olan maçlar kullanılır.</p>
+  <p>Her kupon kendi seçeneğinde en yüksek ortak olasılığa sahip 5 maçtan oluşur. Maçlar farklı günlerden seçilebilir. Yalnızca Türkiye İddaa bülteninde bulunan, ilk yarı ve ikinci yarı KG marketlerinde seçilen iki sonucun oranı 1.00 üzerinde olan maçlar kullanılır. Bülten pazartesi/perşembe geceleri güncellendiğinde kuponlar yeni bülten verisine göre yenilenir.</p>
  </div>
  <div id="halfBothCards"></div>
 </section>
@@ -195,7 +195,7 @@ let iymsYuklendi=false, iymsLoading=false, nbaYuklendi=false, nbaLoading=false, 
 let couponOpenCards=new Set(), halfBothOpenCards=new Set(), halfBothBuilding=false;
 let NBA_GAMES_CACHE=[], liveFootballMatches=[], liveBasketballMatches=[], liveScoresBusy=false, liveScoresTimer=null, liveScoresLastFetch=0, liveScoresDate="";
 let liveViewMode="live";
-let IDDAA_EVENTS=[], IDDAA_COMPETITIONS=new Map(), IDDAA_INDEX=new Map(), IDDAA_BY_DATE=new Map(), IDDAA_MATCH_CACHE=new Map(), IDDAA_MOVEMENTS=new Map(), iddaaUpdated="", iddaaShown=20;
+let IDDAA_EVENTS=[], IDDAA_COMPETITIONS=new Map(), IDDAA_INDEX=new Map(), IDDAA_BY_DATE=new Map(), IDDAA_MATCH_CACHE=new Map(), IDDAA_MOVEMENTS=new Map(), iddaaUpdated="", iddaaSourceUpdatedAt="", iddaaShown=20;
 const $=id=>document.getElementById(id);
 const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
 const num=v=>v!==null&&v!==undefined&&v!==""&&Number.isFinite(Number(v));
@@ -1061,6 +1061,7 @@ async function iddaaBaslat(force=false){
   const response=await fetch("./iddaa.json?v="+(force?Date.now():"latest"),{cache:"no-store"});
   if(!response.ok)throw new Error("Sunucu oran dosyası henüz hazır değil ("+response.status+"). Birkaç dakika sonra tekrar dene.");
   const payload=await response.json();
+  iddaaSourceUpdatedAt=String(payload.updated_at||"");
   const events=Array.isArray(payload.events)?payload.events:[];
   const comps=Array.isArray(payload.competitions)?payload.competitions:[];
   if(payload.updated_at)iddaaUpdated=new Date(payload.updated_at).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
@@ -1206,13 +1207,13 @@ function halfBothRender(){
  let html="";
  for(const [id,name,desc] of defs){
   const items=archive.pools[id]||[],open=halfBothOpenCards.has(id);
-  html+="<div class='coupon-card'><button type='button' class='coupon-heading' aria-expanded='"+open+"' aria-controls='halfBothBody_"+id+"' onclick=\"halfBothToggleCard('"+id+"')\"><span>"+name+" · "+items.length+"/5 maç</span><span class='coupon-arrow'>"+(open?"▲ Açık":"▼ Aç")+"</span></button><div class='coupon-card-body' id='halfBothBody_"+id+"'"+(open?"":" hidden")+">";
+  html+="<div class='coupon-card'><button type='button' class='coupon-heading' aria-expanded='"+open+"' aria-controls='halfBothBody_"+id+"' onclick=\\\"halfBothToggleCard('"+id+"')\\\"><span>"+name+" · "+items.length+"/5 maç</span><span class='coupon-arrow'>"+(open?"▲ Açık":"▼ Aç")+"</span></button><div class='coupon-card-body' id='halfBothBody_"+id+"'"+(open?"":" hidden")+">";
   html+="<div class='coupon-meta'>"+desc+"</div>";
-  if(!items.length)html+="<p>Bu seçenek için yeterli geçmiş verisi olan maç bulunamadı. Zayıf tahmin eklenmedi.</p>";
+  if(!items.length)html+="<p>Türkiye İddaa bülteninde bu seçeneğin iki marketi de açık olan yeterli maç bulunamadı. Zayıf veya oynanamayan seçim eklenmedi.</p>";
   items.forEach((x,i)=>{
    const result=cResult(x);let status="<span class='coupon-status pending'>◷ BEKLİYOR</span>";
    if(result===true)status="<span class='coupon-status hit'>✓ TUTTU</span>";else if(result===false)status="<span class='coupon-status miss'>✕ YATTI</span>";
-   html+="<div class='coupon-match'><div class='match-top'><b>"+(i+1)+". "+liveEsc(x.home)+" - "+liveEsc(x.away)+"</b>"+status+"</div><div class='coupon-pick'><span class='coupon-pick-label'>🎯 TAHMİN</span><b class='coupon-pick-value'>"+name+"</b></div><div class='coupon-meta'>"+liveEsc(x.date)+" · "+liveEsc(x.time)+" · "+liveEsc(x.league)+"<br>Ortak olasılık: <b>%"+(x.prob*100).toFixed(1)+"</b> · İlk yarı KG: %"+(x.firstProb*100).toFixed(1)+" · İkinci yarı KG: %"+(x.secondProb*100).toFixed(1)+"<br>Veri: "+liveEsc(x.quality)+"</div></div>";
+   html+="<div class='coupon-match'><div class='match-top'><b>"+(i+1)+". "+liveEsc(x.home)+" - "+liveEsc(x.away)+"</b>"+status+"</div><div class='coupon-pick'><span class='coupon-pick-label'>🎯 TAHMİN</span><b class='coupon-pick-value'>"+name+"</b></div><div class='coupon-meta'>"+liveEsc(x.date)+" · "+liveEsc(x.time)+" · "+liveEsc(x.league)+"<br>Ortak olasılık: <b>%"+(x.prob*100).toFixed(1)+"</b> · İlk yarı KG: %"+(x.firstProb*100).toFixed(1)+" · İkinci yarı KG: %"+(x.secondProb*100).toFixed(1)+"<br>İddaa oranları: İlk yarı "+liveEsc(x.firstPick)+" <b>"+Number(x.firstOdd).toFixed(2)+"</b> · İkinci yarı "+liveEsc(x.secondPick)+" <b>"+Number(x.secondOdd).toFixed(2)+"</b><br>Veri: "+liveEsc(x.quality)+"</div></div>";
   });
   if(items.length===5)html+="<div class='coupon-total'>5 maçın tahmini ortak tutma olasılığı: %"+(items.reduce((v,x)=>v*x.prob,1)*100).toFixed(2)+" <div class='coupon-no-odds'>Bağımsızlık varsayımıyla yaklaşık hesaplanır; garanti değildir.</div></div>";
   html+="</div></div>";
@@ -1222,31 +1223,54 @@ function halfBothRender(){
 async function halfBothBuild(force){
  if(halfBothBuilding)return;
  const start=today(),end=dateAdd(start,7),saved=halfBothArchive();
- if(!force&&saved&&saved.start===start&&saved.end===end&&saved.pools){halfBothRender();if(!couponIYMSRows)cGetIYMS().then(()=>halfBothRender());$("halfBothStatus").textContent="Hazır · "+start+" – "+end+" tarihleri · "+(saved.scanned||0)+" maç tarandı.";return}
  if(!FIXTURES.length){$("halfBothStatus").textContent="Futbol verileri yükleniyor; maçlar hazır olduğunda kuponlar oluşturulacak.";return}
- halfBothBuilding=true;$("halfBothStatus").textContent="Önümüzdeki 7 günün maçları analiz ediliyor...";
+ halfBothBuilding=true;$("halfBothStatus").textContent="Türkiye İddaa bülteni ve ilk/ikinci yarı marketleri kontrol ediliyor...";
  try{
+  if(iddaaLoading){
+   let wait=0;while(iddaaLoading&&wait<300){await new Promise(resolve=>setTimeout(resolve,100));wait++}
+  }
+  if(!iddaaLoading)await iddaaBaslat(true);
+  if(!iddaaYuklendi||!IDDAA_EVENTS.length){
+   $("halfBothStatus").textContent="Türkiye İddaa bülteni okunamadı. Bülten verisi gelmeden kupon oluşturulmadı; biraz sonra yeniden deneyebilirsin.";
+   halfBothRender();return;
+  }
+  if(!force&&saved&&saved.start===start&&saved.end===end&&saved.pools&&saved.iddaaFiltered===true&&saved.iddaaUpdatedAt===iddaaSourceUpdatedAt){
+   halfBothRender();$("halfBothStatus").textContent="Hazır · "+start+" – "+end+" · "+(saved.scanned||0)+" maç tarandı · İddaa bülteni güncel.";
+   return;
+  }
   const fixtures=FIXTURES.filter(m=>{const d=String(m.date||"").slice(0,10);return d>=start&&d<=end&&/^\d{1,2}:\d{2}$/.test(String(m.time||""))&&!macBasladiMi(m)});
   const pools={yes_yes:[],no_yes:[],yes_no:[]};
-  let scanned=0;
+  let scanned=0,bulletinMatches=0,qualifiedSelections=0;
   for(let i=0;i<fixtures.length;i++){
    const m=fixtures[i],key=[m.league_id,m.date,m.time,m.home,m.away].join("|");
    let t=predictionCache.get(key);if(t===undefined){t=predictFootball(m);predictionCache.set(key,t)}
    scanned++;
    if(t&&Number.isFinite(t.first)&&Number.isFinite(t.second)){
-    const first=Math.max(0,Math.min(1,t.first)),second=Math.max(0,Math.min(1,t.second));
-    const base={date:String(m.date).slice(0,10),time:m.time||"",home:m.home,away:m.away,league:m.league||"",firstProb:first,secondProb:second,quality:t.quality||"Sınırlı",type:"halfCombo"};
-    pools.yes_yes.push({...base,combo:"yes_yes",pick:"Evet/Evet",prob:first*second});
-    pools.no_yes.push({...base,combo:"no_yes",pick:"Hayır/Evet",prob:(1-first)*second});
-    pools.yes_no.push({...base,combo:"yes_no",pick:"Evet/Hayır",prob:first*(1-second)});
+    const event=couponIddaaEventForFixture(m);
+    if(event){
+     bulletinMatches++;
+     const first=Math.max(0,Math.min(1,t.first)),second=Math.max(0,Math.min(1,t.second));
+     const base={date:String(m.date).slice(0,10),time:m.time||"",home:m.home,away:m.away,league:m.league||"",firstProb:first,secondProb:second,quality:t.quality||"Sınırlı",type:"halfCombo"};
+     const add=(id,firstPick,secondPick,prob)=>{
+      const firstMarket=iddaaMarket(event,2,69),secondMarket=iddaaMarket(event,2,72);
+      const firstOdd=couponOddsOutcome(firstMarket,firstPick==="Evet"?["Evet","Yes"]:["Hayır","Hayir","No"]);
+      const secondOdd=couponOddsOutcome(secondMarket,secondPick==="Evet"?["Evet","Yes"]:["Hayır","Hayir","No"]);
+      if(!firstOdd||!secondOdd)return;
+      pools[id].push({...base,combo:id,pick:firstPick+"/"+secondPick,firstPick,secondPick,firstOdd,secondOdd,prob});
+      qualifiedSelections++;
+     };
+     add("yes_yes","Evet","Evet",first*second);
+     add("no_yes","Hayır","Evet",(1-first)*second);
+     add("yes_no","Evet","Hayır",first*(1-second));
+    }
    }
    if(i%30===29)await new Promise(resolve=>setTimeout(resolve,0));
   }
   Object.keys(pools).forEach(k=>pools[k].sort((a,b)=>b.prob-a.prob));
   const chosen={};for(const k of Object.keys(pools))chosen[k]=pools[k].slice(0,5);
-  const archive={start,end,scanned,generatedAt:new Date().toISOString(),pools:chosen};
-  halfBothSave(archive);halfBothRender();if(!couponIYMSRows)cGetIYMS().then(()=>halfBothRender());
-  $("halfBothStatus").textContent="Hazır · "+start+" – "+end+" tarihleri · "+scanned+" maç tarandı · "+Math.max(0,...Object.values(pools).map(x=>x.length))+" uygun maç bulundu.";
+  const archive={start,end,scanned,bulletinMatches,qualifiedSelections,iddaaFiltered:true,iddaaUpdatedAt:iddaaSourceUpdatedAt,generatedAt:new Date().toISOString(),pools:chosen};
+  halfBothSave(archive);halfBothRender();
+  $("halfBothStatus").textContent="Hazır · "+start+" – "+end+" · "+scanned+" maç tarandı · "+bulletinMatches+" maç bültende bulundu · "+qualifiedSelections+" oynanabilir seçim bulundu.";
  }catch(e){$("halfBothStatus").textContent="Kupon oluşturma hatası: "+e.message}
  finally{halfBothBuilding=false}
 }

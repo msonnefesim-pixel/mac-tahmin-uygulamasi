@@ -594,7 +594,8 @@ async function iymsBaslat(){
   }
   const allHome={},allAway={};
   records.forEach(m=>{(allHome[m.home]||(allHome[m.home]=[])).push(m.code);(allAway[m.away]||(allAway[m.away]=[])).push(reverse(m.code))});
-  const upcoming=FIXTURES.slice().sort((a,b)=>(a.date+" "+a.time).localeCompare(b.date+" "+b.time)).map(m=>{
+  const todayDate=today();
+  const upcoming=FIXTURES.filter(m=>{const d=String(m.date||"").slice(0,10);return /^\d{4}-\d{2}-\d{2}$/.test(d)&&d>=todayDate}).slice().sort((a,b)=>(a.date+" "+a.time).localeCompare(b.date+" "+b.time)).map(m=>{
    const h=allHome[clean(m.home)]||[],a=allAway[clean(m.away)]||[];if(h.length<3||a.length<3)return null;
    const probs={};options.forEach(k=>{probs[k]=Math.sqrt(((h.filter(x=>x===k).length+.5)/(h.length+4.5))*((a.filter(x=>x===k).length+.5)/(a.length+4.5)))});
    const sum=Object.values(probs).reduce((x,y)=>x+y,0);options.forEach(k=>probs[k]=sum?probs[k]/sum*100:0);

@@ -10,9 +10,9 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "./genie-logo.jpg?v=97",
-      "sizes": "128x128",
-      "type": "image/jpeg",
+      "src": "./genie.svg?v=99",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any"
     }
   ]

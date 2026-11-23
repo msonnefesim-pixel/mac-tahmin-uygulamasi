@@ -32,6 +32,8 @@ button.secondary,.tab-button{background:#292929;color:#fff;border:1px solid #555
 .summary-label{display:block;color:#bbb;font-size:10px}
 .day-title{background:#292000;color:var(--yellow);padding:9px;border-radius:8px;margin:12px 0 6px;font-weight:bold}
 .match{border-left-color:var(--yellow);padding:10px}
+.match{content-visibility:auto;contain-intrinsic-size:auto 250px}
+.match-load-sentinel{padding:10px;text-align:center;color:#aaa;font-size:12px;min-height:34px}
 .match-top,.meta-row{display:flex;justify-content:space-between;align-items:center;gap:7px}
 .teams{font-weight:bold;font-size:15px;line-height:1.35;color:#7ee081!important}
 .kickoff{background:var(--red);padding:5px 7px;border-radius:5px;font-size:12px;white-space:nowrap}
@@ -231,6 +233,7 @@ let FIXTURES=[], HISTORY=[];
 let fixtureResultIndex=new Set();
 let footballRefreshBusy=false, predictionCache=new Map();
 let fixtureDateIndex=new Map(), historyDateIndex=new Map(), listRenderToken=0, matchRenderState=null;
+let matchRenderObserver=null;
 function makeDateIndex(rows){const map=new Map();for(const m of rows){const d=String(m.date||"");if(!map.has(d))map.set(d,[]);map.get(d).push(m)}return map;}
 let teamIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map();
 let hiddenLeagues=new Set();
@@ -556,7 +559,7 @@ function listele(){
  const list=[];
  let i=0;
  // Geçmiş günlerde tahmin hesaplanmadığı için kayıtları daha büyük gruplarla hazırla.
- const prepareSize=past?100:20;
+ const prepareSize=past?100:8;
  macAlan.textContent=(past?"Geçmiş maçlar hazırlanıyor... ":"Maçlar hazırlanıyor... ")+ "0 / "+source.length;
  function prepareBatch(){
   if(token!==listRenderToken)return;
@@ -584,7 +587,7 @@ function listele(){
   }
   if(i<source.length){
    macAlan.textContent=(past?"Geçmiş maçlar hazırlanıyor... ":"Maçlar hazırlanıyor... ")+i+" / "+source.length;
-   setTimeout(prepareBatch,0);return
+   setTimeout(prepareBatch,16);return
   }
   if(token!==listRenderToken)return;
   list.sort((a,b)=>String(a.m.time||"").localeCompare(String(b.m.time||""))||String(a.m.home||"").localeCompare(String(b.m.home||""),"tr"));
@@ -600,9 +603,10 @@ function listele(){
 function maclariDevamEttir(){
  const state=matchRenderState;
  if(!state||state.token!==listRenderToken)return;
+ if(matchRenderObserver){matchRenderObserver.disconnect();matchRenderObserver=null}
  const alan=$("maclar"),oldButton=$("macDahaFazla");
  if(oldButton)oldButton.remove();
- const stop=Math.min(state.renderIndex+30,state.list.length);
+ const stop=Math.min(state.renderIndex+8,state.list.length);
  let html="";
  for(;state.renderIndex<stop;state.renderIndex++){
   const x=state.list[state.renderIndex];
@@ -611,10 +615,24 @@ function maclariDevamEttir(){
  }
  alan.insertAdjacentHTML("beforeend",html);
  if(state.renderIndex<state.list.length){
-  const button=document.createElement("button");
-  button.id="macDahaFazla";button.className="secondary";
-  button.textContent="Daha fazla maç göster ("+(state.list.length-state.renderIndex)+")";
-  button.onclick=maclariDevamEttir;alan.appendChild(button);
+  if("IntersectionObserver" in window){
+   const sentinel=document.createElement("div");
+   sentinel.id="macDahaFazla";sentinel.className="match-load-sentinel";
+   sentinel.textContent="Aşağı kaydırdıkça maçlar yükleniyor…";
+   alan.appendChild(sentinel);
+   matchRenderObserver=new IntersectionObserver(entries=>{
+    if(entries.some(entry=>entry.isIntersecting)){
+     matchRenderObserver.disconnect();matchRenderObserver=null;
+     setTimeout(maclariDevamEttir,40);
+    }
+   },{rootMargin:"550px 0px"});
+   matchRenderObserver.observe(sentinel);
+  }else{
+   const button=document.createElement("button");
+   button.id="macDahaFazla";button.className="secondary";
+   button.textContent="Daha fazla maç göster ("+(state.list.length-state.renderIndex)+")";
+   button.onclick=maclariDevamEttir;alan.appendChild(button);
+  }
  }
 }
 function tarihKaydir(n){$("tarih").value=dateAdd($("tarih").value||today(),n);listele()}

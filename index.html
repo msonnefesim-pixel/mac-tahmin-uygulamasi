@@ -72,7 +72,7 @@ th{color:var(--yellow)}
 .toto-row{display:grid;grid-template-columns:minmax(0,1fr) repeat(3,40px);gap:6px;align-items:center;padding:9px 0;border-bottom:1px solid #333}
 .toto-head{color:#aaa;font-size:11px;text-align:center;font-weight:bold}
 .toto-match{min-width:0;font-size:13px;font-weight:700;line-height:1.3}
-.toto-match small{display:block;color:#aaa;font-size:11px;font-weight:400;margin-top:3px}
+.toto-match small{display:block;color:#aaa;font-size:11px;font-weight:400;margin-top:3px}.toto-probs{display:block;margin-top:4px;color:#e7d58a;font-size:10px;line-height:1.35;font-weight:600}.toto-probs b{color:#f5c400}.toto-pick.recommended{border-color:#f5c400!important;box-shadow:0 0 0 1px #f5c40055}.toto-analysis-note{display:block;color:#aaa;font-size:10px;font-weight:400;margin-top:2px}
 .toto-pick{padding:8px 0!important;min-width:0;border-radius:8px!important;background:#292929!important;border:1px solid #555!important;color:#fff!important}
 .toto-pick.selected{background:var(--yellow)!important;color:#171000!important;border-color:var(--yellow)!important}
 .toto-summary{margin:10px 0;padding:10px;background:#1b1b1b;border-radius:8px;font-size:13px}
@@ -613,6 +613,7 @@ async function baslat(force=false){
   predictionCache.clear();
   fixtureDateIndex=makeDateIndex(FIXTURES);historyDateIndex=makeDateIndex(HISTORY);
   buildIndexes();
+  if(activeTabName==="sporToto"&&sporTotoData)sporTotoRender();
   try{hiddenLeagues=new Set(JSON.parse(localStorage.getItem("yapaycinHiddenLeagues")||"[]"))}catch(e){hiddenLeagues=new Set()}
   fillLeagues();if(!$("couponsBolumu").classList.contains("hidden"))kuponlariGoster();$("durum").innerHTML="<span class='good'>Futbol verileri yüklendi</span>";
   $("sayilar").textContent="Gelecek maç: "+FIXTURES.length+" · Geçmiş maç: "+HISTORY.length+" · Güncelleme: "+(data.updated||"bilinmiyor");
@@ -670,19 +671,66 @@ function sporTotoSecim(no,pick){
  sporTotoRender();
 }
 function sporTotoTemizle(){sporTotoPicks={};try{localStorage.removeItem("yapaycin_spor_toto_picks_v1")}catch(e){}sporTotoRender()}
+function sporTotoTeamAliases(name){
+ const n=fixtureTeamNorm(name),aliases={
+  "bodo glimt":["bodo glimt","bodo glimt fk"],"psv eindhoven":["psv eindhoven","psv"],
+  "paris st germain":["paris st germain","paris saint germain","paris sg","psg"],
+  "sporting lizbon":["sporting lizbon","sporting cp","sporting clube de portugal"],
+  "vfb stuttgart":["vfb stuttgart","stuttgart"],"atletico madrid":["atletico madrid","atletico de madrid"],
+  "manchester city":["manchester city","man city"],"manchester united":["manchester united","man utd","man united"],
+  "club brugge":["club brugge","brugge kv"],"shakhtar donetsk":["shakhtar donetsk","shakhtar"],
+  "fenerbahce":["fenerbahce","fenerbahce sk"],"real madrid":["real madrid","real madrid cf"]
+ };
+ return (aliases[n]||[n]).map(fixtureTeamNorm);
+}
+function sporTotoTeamHistory(team,date){
+ const aliases=sporTotoTeamAliases(team),cutoff=String(date||"9999-12-31").slice(0,10);
+ return HISTORY.filter(m=>{
+  const d=String(m.date||"").slice(0,10);
+  if(!d||d>=cutoff||!num(m.ft_home)||!num(m.ft_away))return false;
+  return aliases.includes(fixtureTeamNorm(m.home))||aliases.includes(fixtureTeamNorm(m.away));
+ }).sort((a,b)=>String(a.date).localeCompare(String(b.date))).slice(-10);
+}
+function sporTotoTeamRates(matches,team){
+ let scored=0,conceded=0,weight=0,plainScored=0,plainConceded=0;const aliases=sporTotoTeamAliases(team);
+ for(let i=0;i<matches.length;i++){
+  const m=matches[i],home=aliases.includes(fixtureTeamNorm(m.home)),own=Number(home?m.ft_home:m.ft_away),opp=Number(home?m.ft_away:m.ft_home),w=Math.pow(.88,matches.length-1-i);
+  scored+=own*w;conceded+=opp*w;weight+=w;plainScored+=own;plainConceded+=opp;
+ }
+ return {scored:weight?scored/weight:0,conceded:weight?conceded/weight:0,plainScored:matches.length?plainScored/matches.length:0,plainConceded:matches.length?plainConceded/matches.length:0};
+}
+function sporTotoTahmin(m){
+ if(!Array.isArray(HISTORY)||HISTORY.length<20)return null;
+ const sameFixture=FIXTURES.find(f=>fixtureTeamNorm(f.home)===fixtureTeamNorm(m.home)&&fixtureTeamNorm(f.away)===fixtureTeamNorm(m.away)&&String(f.date||"").slice(0,10)===String(m.date||"").slice(0,10));
+ if(sameFixture){const p=predictFootball(sameFixture);if(p)return p}
+ const home=sporTotoTeamHistory(m.home,m.date),away=sporTotoTeamHistory(m.away,m.date);
+ if(home.length<5||away.length<5)return null;
+ const valid=HISTORY.filter(x=>num(x.ft_home)&&num(x.ft_away)),globalAvg=valid.length?valid.reduce((s,x)=>s+Number(x.ft_home)+Number(x.ft_away),0)/(valid.length*2):1.35;
+ if(!globalAvg)return null;
+ const h=sporTotoTeamRates(home,m.home),a=sporTotoTeamRates(away,m.away);
+ const rawH=h.plainScored*a.plainConceded/globalAvg,rawA=a.plainScored*h.plainConceded/globalAvg;
+ const recentH=h.scored*a.conceded/globalAvg,recentA=a.scored*h.conceded/globalAvg,reliability=Math.min(1,Math.min(home.length,away.length)/10);
+ const lh=Math.max(.12,Math.min(3.8,(rawH*.65+recentH*.35)*reliability+globalAvg*(1-reliability)));
+ const la=Math.max(.12,Math.min(3.8,(rawA*.65+recentA*.35)*reliability+globalAvg*(1-reliability)));
+ const p=blendProbabilities(poissonResult(lh,la),poissonResult(rawH,rawA),poissonResult(recentH,recentA));
+ return {one:p.one,draw:p.draw,two:p.two,expectedHome:lh,expectedAway:la,scoreline:scorelineMostLikely(lh,la),homeSamples:home.length,awaySamples:away.length,quality:Math.min(home.length,away.length)>=8?"İyi":"Sınırlı"};
+}
 function sporTotoRender(){
  if(!sporTotoData||!Array.isArray(sporTotoData.matches))return;
+ let analyzed=0;
  const rows=sporTotoData.matches.map(m=>{
-  const chosen=Array.isArray(sporTotoPicks[String(m.number)])?sporTotoPicks[String(m.number)]:[];
-  const d=String(m.date||"").split("-");const date=d.length===3?d[2]+"."+d[1]+"."+d[0]:m.date||"";
-  const match='<div class="toto-match">'+sporTotoEsc(m.home)+' – '+sporTotoEsc(m.away)+'<small>'+sporTotoEsc(date)+' · '+sporTotoEsc(m.time)+'</small></div>';
-  const picks=["1","X","2"].map(p=>'<button type="button" class="toto-pick '+(chosen.includes(p)?"selected":"")+'" aria-pressed="'+chosen.includes(p)+'" onclick="sporTotoSecim('+Number(m.number)+',\''+p+'\')">'+p+'</button>').join("");
+  const chosen=Array.isArray(sporTotoPicks[String(m.number)])?sporTotoPicks[String(m.number)]:[],p=sporTotoTahmin(m);if(p)analyzed++;
+  const best=p?[["1",p.one],["X",p.draw],["2",p.two]].sort((a,b)=>b[1]-a[1])[0][0]:"";
+  const d=String(m.date||"").split("-"),date=d.length===3?d[2]+"."+d[1]+"."+d[0]:m.date||"";
+  const probs=p?'<small class="toto-probs">Model: <b>1 %'+(p.one*100).toFixed(0)+'</b> · <b>X %'+(p.draw*100).toFixed(0)+'</b> · <b>2 %'+(p.two*100).toFixed(0)+'</b><br>Öneri: <b>'+best+'</b> · Skor: '+p.scoreline.home+'-'+p.scoreline.away+' · Veri: '+p.quality+' ('+p.homeSamples+'/'+p.awaySamples+')</small>':'<small class="toto-analysis-note">Yeterli geçmiş maç verisi bulunamadı; otomatik tahmin üretilmedi.</small>';
+  const match='<div class="toto-match">'+sporTotoEsc(m.home)+' – '+sporTotoEsc(m.away)+'<small>'+sporTotoEsc(date)+' · '+sporTotoEsc(m.time)+'</small>'+probs+'</div>';
+  const picks=["1","X","2"].map(k=>'<button type="button" class="toto-pick '+(chosen.includes(k)?"selected ":"")+(best===k?"recommended":"")+'" title="'+(p?k+" olasılığı %"+(p[k==="1"?"one":k==="X"?"draw":"two"]*100).toFixed(1):"Analiz verisi yok")+'" aria-pressed="'+chosen.includes(k)+'" onclick="sporTotoSecim('+Number(m.number)+',\''+k+'\')">'+k+'</button>').join("");
   return '<div class="toto-row">'+match+picks+'</div>';
  }).join("");
  $("sporTotoMaclar").innerHTML=rows||"Bu hafta için maç bulunamadı.";
  let columns=1,selectedMatches=0;
  (sporTotoData.matches||[]).forEach(m=>{const n=(sporTotoPicks[String(m.number)]||[]).length;if(n){selectedMatches++;columns*=n}});
- $("sporTotoOzet").textContent=selectedMatches+" / 15 maç seçildi · "+(selectedMatches?columns.toLocaleString("tr-TR"):"0")+" kolon";
+ $("sporTotoOzet").textContent=analyzed+" / 15 maç analiz edildi · "+selectedMatches+" maçta seçim · "+(selectedMatches?columns.toLocaleString("tr-TR"):"0")+" kolon";
 }
 async function sporTotoYukle(force=false){
  if(sporTotoLoading)return;

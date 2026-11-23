@@ -446,7 +446,7 @@ function ligleriKaydet(){
  fillLeagues();$("ligSec").value="all";$("ligYonetim").classList.add("hidden");listele();
 }
 function fixtureTeamNorm(value){
- return String(value||"").toLocaleLowerCase("tr").replace(/ı/g,"i").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim().replace(/\\s+/g," ");
+ return String(value||"").toLocaleLowerCase("tr").replace(/ı/g,"i").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ");
 }
 function fixtureHistoryKey(m,date){
  return [String(m.league_id||""),date,fixtureTeamNorm(m.home),fixtureTeamNorm(m.away)].join("|");

@@ -32,7 +32,6 @@ button.secondary,.tab-button{background:#292929;color:#fff;border:1px solid #555
 .summary-label{display:block;color:#bbb;font-size:10px}
 .day-title{background:#292000;color:var(--yellow);padding:9px;border-radius:8px;margin:12px 0 6px;font-weight:bold}
 .match{border-left-color:var(--yellow);padding:10px}
-.match{content-visibility:auto;contain-intrinsic-size:auto 250px}
 .match-load-sentinel{padding:10px;text-align:center;color:#aaa;font-size:12px;min-height:34px}
 .match-top,.meta-row{display:flex;justify-content:space-between;align-items:center;gap:7px}
 .teams{font-weight:bold;font-size:15px;line-height:1.35;color:#7ee081!important}
@@ -82,22 +81,11 @@ th{color:var(--yellow)}
 @media(max-width:380px){.toto-row{grid-template-columns:minmax(0,1fr) repeat(3,34px);gap:4px}.toto-pick{font-size:12px;padding:7px 0!important}.toto-match{font-size:12px}}
 
 
-/* TEK AÇILIŞ EKRANI · TAÇLI ASLAN */
-#lionSplash{position:fixed;inset:0;z-index:99999;background:#050505;display:flex;align-items:center;justify-content:center;opacity:1;visibility:visible;transition:opacity .55s ease,visibility .55s ease}
-#lionSplash img{display:block;width:100%;height:100%;object-fit:cover;object-position:center center}
-#lionSplash.is-leaving{opacity:0;visibility:hidden;pointer-events:none}
-body.lion-splash-open{overflow:hidden}
-@media(prefers-reduced-motion:reduce){#lionSplash{transition:none}}
-
 
 
 </style>
 </head>
-<body class="lion-splash-open">
-
-<div id="lionSplash" role="img" aria-label="YAPAYCİN ANALİZ, altın taçlı heybetli aslan açılış ekranı">
- <img src="./file_00000000ae4881f493409516ddf5055a.png" alt="YAPAYCİN ANALİZ">
-</div>
+<body>
 
 <header class="brand-banner" aria-label="YaPaYCiN Analiz">
  <div class="brand-wordmark"><span class="brand-y">Y<img src="./genie.svg?v=99" alt=""></span><span>aPaYCiN</span></div>
@@ -1869,19 +1857,6 @@ if("serviceWorker" in navigator){
 }
 </script>
 
-
-<script>
-(()=> {
- const splash=document.getElementById("lionSplash");
- if(!splash)return;
- const closeSplash=()=>{
-  splash.classList.add("is-leaving");
-  document.body.classList.remove("lion-splash-open");
-  window.setTimeout(()=>splash.remove(),650);
- };
- window.setTimeout(closeSplash,2800);
-})();
-</script>
 
 
 

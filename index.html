@@ -159,6 +159,7 @@ th{color:var(--yellow)}
  <div class="panel">
   <div class="toto-status"><div id="sporTotoDurum">Spor Toto bülteni yüklenmeye hazır.</div><button type="button" class="secondary" onclick="sporTotoYukle(true)">↻ Listeyi Yenile</button></div>
   <div class="toto-summary" id="sporTotoOzet">Her maç için 1, X ve 2 seçeneklerinden bir veya birkaçını işaretle.</div>
+  <div class="panel" style="margin:10px 0;border:1px solid #8c6d00;background:#211d0b"><b>🎯 BANKO + SÜRPRİZ KARIŞIK KUPON</b><p class="small">Güçlü olasılıklara tek seçim, dengeli ve sürprize açık maçlara çift seçim yapar.</p><button type="button" onclick="sporTotoKarIsikKuponOlustur()">⚡ Karışık Kupon Oluştur</button><div id="sporTotoKarIsikSonuc" class="small" style="margin-top:8px">Kuponunu oluşturmak için dokun.</div></div>
   <div class="toto-row" style="border-bottom:1px solid #555">
    <div class="toto-head" style="text-align:left">MAÇ</div><div class="toto-head">1</div><div class="toto-head">X</div><div class="toto-head">2</div>
   </div>
@@ -728,6 +729,34 @@ function sporTotoTahmin(m){
  }
  const samples=Math.min(home.length,away.length);
  return {one:p.one,draw:p.draw,two:p.two,expectedHome:lh,expectedAway:la,scoreline:scorelineMostLikely(lh,la),homeSamples:home.length,awaySamples:away.length,quality:samples>=8?"İyi":samples>=5?"Sınırlı":"Düşük",fallback: samples<5};
+}
+let sporTotoMixedCoupon=null;
+function sporTotoKarIsikKuponOlustur(){
+ if(!sporTotoData||!Array.isArray(sporTotoData.matches)||sporTotoData.matches.length!==15){
+  $("sporTotoKarIsikSonuc").textContent="Önce 15 maçlık bülten yüklensin.";return;
+ }
+ const coupon=sporTotoData.matches.map(m=>{
+  const p=sporTotoTahmin(m);
+  if(!p)return {number:m.number,home:m.home,away:m.away,picks:["1","X","2"],kind:"ÜÇLÜ KORUMA",confidence:"Analiz verisi yetersiz"};
+  const ranked=[["1",p.one],["X",p.draw],["2",p.two]].sort((a,b)=>b[1]-a[1]);
+  const top=ranked[0],second=ranked[1],gap=top[1]-second[1];
+  if(!p.fallback&&top[1]>=.52&&gap>=.14){
+   return {number:m.number,home:m.home,away:m.away,picks:[top[0]],kind:"BANKO",confidence:"En yüksek olasılık %"+(top[1]*100).toFixed(0)};
+  }
+  return {number:m.number,home:m.home,away:m.away,picks:[top[0],second[0]],kind:"SÜRPRİZ KORUMALI",confidence:"İlk iki olasılık %"+(top[1]*100).toFixed(0)+" / %"+(second[1]*100).toFixed(0)};
+ });
+ sporTotoMixedCoupon=coupon;
+ sporTotoKarIsikKuponRender();
+}
+function sporTotoKarIsikKuponRender(){
+ const target=$("sporTotoKarIsikSonuc");if(!target||!sporTotoMixedCoupon)return;
+ let columns=1,bankos=0,doubles=0,triples=0;
+ const rows=sporTotoMixedCoupon.map(m=>{
+  columns*=m.picks.length;
+  if(m.picks.length===1)bankos++;else if(m.picks.length===2)doubles++;else triples++;
+  return '<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid #49412a"><span style="min-width:0"><b>'+m.number+'. '+sporTotoEsc(m.home)+' – '+sporTotoEsc(m.away)+'</b><small style="display:block;color:#c9bd91">'+m.kind+' · '+m.confidence+'</small></span><b style="color:#ffe45c;white-space:nowrap">'+m.picks.join(" / ")+'</b></div>';
+ }).join("");
+ target.innerHTML='<b style="color:#ffe45c">KARIŞIK KUPON HAZIR</b><br>'+bankos+' banko · '+doubles+' çift · '+triples+' üçlü koruma<br><b>Toplam kolon: '+columns.toLocaleString("tr-TR")+'</b>'+rows+'<small style="display:block;margin-top:8px;color:#aaa">Bu kupon analiz olasılıklarına göre hazırlanır; kesin sonuç veya kazanç garantisi değildir. Veri yetersiz maçlarda üçlü koruma kullanılır.</small>';
 }
 function sporTotoRender(){
  if(!sporTotoData||!Array.isArray(sporTotoData.matches))return;

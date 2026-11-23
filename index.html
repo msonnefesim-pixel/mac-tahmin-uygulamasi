@@ -86,6 +86,22 @@ th{color:var(--yellow)}
 body.lion-splash-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){#lionSplash{transition:none}}
 
+
+/* KULLANICI IKON SECIMI */
+.icon-choice-wrap{margin:0 0 10px}
+.icon-choice-open{width:auto;display:block;margin:0 auto;padding:7px 12px;background:#292929;color:#f5c400;border:1px solid #705900;border-radius:20px;font-size:12px}
+.icon-choice-panel{display:none;margin:8px 0;padding:10px;background:#191919;border:1px solid #705900;border-radius:10px}
+.icon-choice-panel.open{display:block}
+.icon-choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.icon-choice{min-width:0;margin:0;padding:8px 4px;background:#242424;color:#fff;border:1px solid #555;border-radius:9px;font-size:11px;line-height:1.25}
+.icon-choice.selected{border:2px solid var(--yellow);background:#302600;box-shadow:0 0 0 1px #f5c40055}
+.icon-choice img,.icon-choice .football-icon{display:flex;width:58px;height:58px;max-width:100%;margin:0 auto 7px;object-fit:cover;border-radius:12px;background:#080808;align-items:center;justify-content:center}
+.icon-choice .football-icon{font-size:37px;border:1px solid #725900}
+.icon-choice-current{display:flex;align-items:center;justify-content:center;gap:7px;margin:0 0 7px;color:#ddd;font-size:11px}
+.icon-choice-current img{width:25px;height:25px;object-fit:cover;border-radius:6px}
+.icon-choice-note{margin:8px 0 0;font-size:10px;color:#aaa;line-height:1.4}
+@media(max-width:340px){.icon-choice-grid{gap:4px}.icon-choice{font-size:10px;padding:6px 2px}.icon-choice img,.icon-choice .football-icon{width:48px;height:48px}}
+
 </style>
 </head>
 <body class="lion-splash-open">
@@ -99,6 +115,20 @@ body.lion-splash-open{overflow:hidden}
  <div class="brand-analysis">ANALİZ</div>
  <div class="brand-tagline">Bağımsız maç tahmin ve analiz sistemi</div>
 </header>
+
+<div class="icon-choice-wrap">
+ <button type="button" class="icon-choice-open" onclick="yapaycinIkonPaneli()">🎨 İKONUNU SEÇ</button>
+ <div id="iconChoicePanel" class="icon-choice-panel">
+  <div class="icon-choice-current"><span>Seçili tasarım:</span><b id="iconChoiceCurrentName">Orijinal YaPaYCiN</b></div>
+  <div class="icon-choice-grid">
+   <button type="button" class="icon-choice" data-icon-choice="original" onclick="yapaycinIkonSec('original')"><img src="./icon.svg?v=133" alt="Orijinal YaPaYCiN"><span>🧞‍♂️ Orijinal</span></button>
+   <button type="button" class="icon-choice" data-icon-choice="lion" onclick="yapaycinIkonSec('lion')"><img src="./file_00000000ae4881f493409516ddf5055a.png" alt="Taçlı aslan"><span>🦁 Heybetli Aslan</span></button>
+   <button type="button" class="icon-choice" data-icon-choice="football" onclick="yapaycinIkonSec('football')"><span class="football-icon" aria-hidden="true">⚽</span><span>⚽ Futbol</span></button>
+  </div>
+  <p class="icon-choice-note">Seçimin bu cihazda saklanır ve uygulama içindeki ikon görünümünü değiştirir. Ana ekran kısayolunun simgesi Android/PWA tarafından yönetilir; buradan otomatik değişmesi garanti değildir.</p>
+ </div>
+</div>
+
 
 <div class="tabbar">
  <button id="futbolButon" class="tab-button active" onclick="sekmeAc('futbol')">⚽ FUTBOL</button>
@@ -1861,5 +1891,52 @@ if("serviceWorker" in navigator){
  window.setTimeout(closeSplash,2800);
 })();
 </script>
+
+<script>
+(()=>{
+ const names={original:"Orijinal YaPaYCiN",lion:"Heybetli Aslan",football:"Futbol"};
+ const sources={original:"./icon.svg?v=133",lion:"./file_00000000ae4881f493409516ddf5055a.png"};
+ function current(){try{return localStorage.getItem("yapaycin-secili-ikon")||"original"}catch(e){return "original"}}
+ window.yapaycinIkonPaneli=()=>{
+  const panel=document.getElementById("iconChoicePanel");
+  if(panel)panel.classList.toggle("open");
+ };
+ window.yapaycinIkonSec=(key)=>{
+  if(!names[key])return;
+  try{localStorage.setItem("yapaycin-secili-ikon",key)}catch(e){}
+  render(key);
+ };
+ function render(key){
+  const name=document.getElementById("iconChoiceCurrentName");
+  if(name)name.textContent=names[key]||names.original;
+  document.querySelectorAll("[data-icon-choice]").forEach(el=>{
+   const active=el.getAttribute("data-icon-choice")===key;
+   el.classList.toggle("selected",active);
+   el.setAttribute("aria-pressed",active?"true":"false");
+  });
+  const banner=document.querySelector(".brand-banner");
+  if(!banner)return;
+  let badge=document.getElementById("chosenBrandIcon");
+  if(!badge){
+   badge=document.createElement("div");
+   badge.id="chosenBrandIcon";
+   badge.style.cssText="display:flex;align-items:center;justify-content:center;width:42px;height:42px;margin:0 auto 5px;border:1px solid #705900;border-radius:10px;background:#090909;overflow:hidden";
+   banner.insertBefore(badge,banner.firstChild);
+  }
+  if(key==="football"){
+   badge.innerHTML='<span style="font-size:29px;line-height:1">⚽</span>';
+  }else{
+   const img=document.createElement("img");
+   img.src=sources[key]||sources.original;
+   img.alt=names[key]||names.original;
+   img.style.cssText="width:100%;height:100%;object-fit:cover";
+   badge.replaceChildren(img);
+  }
+ }
+ document.addEventListener("DOMContentLoaded",()=>render(current()));
+ render(current());
+})();
+</script>
+
 </body>
 </html>

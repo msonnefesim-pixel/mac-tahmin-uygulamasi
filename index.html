@@ -1448,41 +1448,44 @@ async function halfBothBuild(force){
    $("halfBothStatus").textContent="Türkiye İddaa bülteni okunamadı. Bülten verisi gelmeden kupon oluşturulmadı; biraz sonra yeniden deneyebilirsin.";
    halfBothRender();return;
   }
-  if(!force&&saved&&saved.start===start&&saved.end===end&&saved.pools&&saved.iddaaFiltered===true&&saved.iddaaUpdatedAt===iddaaSourceUpdatedAt){
-   halfBothRender();$("halfBothStatus").textContent="Hazır · "+start+" – "+end+" · "+(saved.scanned||0)+" maç tarandı · İddaa bülteni güncel.";
+  if(!force&&saved&&saved.exclusiveVersion===2&&saved.start===start&&saved.end===end&&saved.pools&&saved.iddaaFiltered===true&&saved.iddaaUpdatedAt===iddaaSourceUpdatedAt){
+   halfBothRender();$("halfBothStatus").textContent="Hazır · "+start+" – "+end+" · "+(saved.scanned||0)+" maç tarandı · Her maç tek kategoride · İddaa bülteni güncel.";
    return;
   }
   const fixtures=FIXTURES.filter(m=>{const d=String(m.date||"").slice(0,10);return d>=start&&d<=end&&/^\d{1,2}:\d{2}$/.test(String(m.time||""))&&!macBasladiMi(m)});
-  const pools={yes_yes:[],no_yes:[],yes_no:[]};
+  const pools={yes_yes:[],no_yes:[],yes_no:[]},seenFixtures=new Set();
   let scanned=0,bulletinMatches=0,qualifiedSelections=0;
   for(let i=0;i<fixtures.length;i++){
    const m=fixtures[i],key=[m.league_id,m.date,m.time,m.home,m.away].join("|");
-   let t=predictionCache.get(key);if(t===undefined){t=predictFootball(m);predictionCache.set(key,t)}
    scanned++;
+   if(seenFixtures.has(key)){if(i%30===29)await new Promise(resolve=>setTimeout(resolve,0));continue}
+   seenFixtures.add(key);
+   let t=predictionCache.get(key);if(t===undefined){t=predictFootball(m);predictionCache.set(key,t)}
    if(t&&Number.isFinite(t.first)&&Number.isFinite(t.second)){
     const event=couponIddaaEventForFixture(m);
     if(event){
      bulletinMatches++;
      const first=Math.max(0,Math.min(1,t.first)),second=Math.max(0,Math.min(1,t.second));
      const base={date:String(m.date).slice(0,10),time:m.time||"",home:m.home,away:m.away,league:m.league||"",firstProb:first,secondProb:second,quality:t.quality||"Sınırlı",type:"halfCombo"};
-     const add=(id,firstPick,secondPick,prob)=>{
-      const firstMarket=iddaaMarket(event,2,69),secondMarket=iddaaMarket(event,2,72);
-      const firstOdd=couponOddsOutcome(firstMarket,firstPick==="Evet"?["Evet","Yes"]:["Hayır","Hayir","No"]);
-      const secondOdd=couponOddsOutcome(secondMarket,secondPick==="Evet"?["Evet","Yes"]:["Hayır","Hayir","No"]);
-      if(!firstOdd||!secondOdd)return;
-      pools[id].push({...base,combo:id,pick:firstPick+"/"+secondPick,firstPick,secondPick,firstOdd,secondOdd,prob});
+     const firstMarket=iddaaMarket(event,2,69),secondMarket=iddaaMarket(event,2,72);
+     const options=[
+      {id:"yes_yes",firstPick:"Evet",secondPick:"Evet",prob:first*second},
+      {id:"no_yes",firstPick:"Hayır",secondPick:"Evet",prob:(1-first)*second},
+      {id:"yes_no",firstPick:"Evet",secondPick:"Hayır",prob:first*(1-second)}
+     ].map(o=>({...o,firstOdd:couponOddsOutcome(firstMarket,o.firstPick==="Evet"?["Evet","Yes"]:["Hayır","Hayir","No"]),secondOdd:couponOddsOutcome(secondMarket,o.secondPick==="Evet"?["Evet","Yes"]:["Hayır","Hayir","No"])})).filter(o=>o.firstOdd&&o.secondOdd);
+     options.sort((a,b)=>b.prob-a.prob);
+     const best=options[0];
+     if(best){
+      pools[best.id].push({...base,combo:best.id,pick:best.firstPick+"/"+best.secondPick,firstPick:best.firstPick,secondPick:best.secondPick,firstOdd:best.firstOdd,secondOdd:best.secondOdd,prob:best.prob});
       qualifiedSelections++;
-     };
-     add("yes_yes","Evet","Evet",first*second);
-     add("no_yes","Hayır","Evet",(1-first)*second);
-     add("yes_no","Evet","Hayır",first*(1-second));
+     }
     }
    }
    if(i%30===29)await new Promise(resolve=>setTimeout(resolve,0));
   }
   Object.keys(pools).forEach(k=>pools[k].sort((a,b)=>b.prob-a.prob));
   const chosen={};for(const k of Object.keys(pools))chosen[k]=pools[k].slice(0,5);
-  const archive={start,end,scanned,bulletinMatches,qualifiedSelections,iddaaFiltered:true,iddaaUpdatedAt:iddaaSourceUpdatedAt,generatedAt:new Date().toISOString(),pools:chosen};
+  const archive={exclusiveVersion:2,start,end,scanned,bulletinMatches,qualifiedSelections,iddaaFiltered:true,iddaaUpdatedAt:iddaaSourceUpdatedAt,generatedAt:new Date().toISOString(),pools:chosen};
   halfBothSave(archive);halfBothRender();
   $("halfBothStatus").textContent="Hazır · "+start+" – "+end+" · "+scanned+" maç tarandı · "+bulletinMatches+" maç bültende bulundu · "+qualifiedSelections+" oynanabilir seçim bulundu.";
  }catch(e){$("halfBothStatus").textContent="Kupon oluşturma hatası: "+e.message}

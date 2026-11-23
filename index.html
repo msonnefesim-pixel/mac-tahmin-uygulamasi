@@ -767,37 +767,77 @@ function sporTotoKarIsikKuponRender(){
  }).join("");
  target.innerHTML='<b style="color:#ffe45c">KARIŞIK KUPON HAZIR</b><br>'+bankos+' banko · '+doubles+' çift · '+noData+' tahmin yok<br><b>Toplam kolon: '+columns.toLocaleString("tr-TR")+'</b><small style="display:block;color:#ffe45c;margin:5px 0">Çift ihtimal en fazla 4 maçla sınırlandırıldı. Üçlü ihtimal kullanılmaz.</small>'+rows+'<small style="display:block;margin-top:8px;color:#aaa">Kupon analiz olasılıklarına göre hazırlanır; kesin sonuç veya kazanç garantisi değildir. Veri yetersiz maçlar kolona eklenmez.</small>';
 }
+function sporTotoPredictionKey(m){return [m.number,m.home,m.away,m.date].join("|")}
+const sporTotoPredictionCache={};
+function sporTotoTahminCached(m){
+ const key=sporTotoPredictionKey(m);
+ if(Object.prototype.hasOwnProperty.call(sporTotoPredictionCache,key))return sporTotoPredictionCache[key];
+ const p=sporTotoTahmin(m);sporTotoPredictionCache[key]=p;return p;
+}
+function sporTotoSatirAnaliziniYaz(m,p){
+ const row=$("sporTotoSatir"+Number(m.number));if(!row)return;
+ const slot=row.querySelector(".toto-analysis-slot");if(!slot)return;
+ const best=p?[["1",p.one],["X",p.draw],["2",p.two]].sort((a,b)=>b[1]-a[1])[0][0]:"";
+ slot.innerHTML=p?'<small class="toto-probs">'+(p.fallback?'<b>Genel geçmiş ortalaması · düşük güven</b><br>':'')+'Model: <b>1 %'+(p.one*100).toFixed(0)+'</b> · <b>X %'+(p.draw*100).toFixed(0)+'</b> · <b>2 %'+(p.two*100).toFixed(0)+'</b><br>Öneri: <b>'+best+'</b> · Skor: '+p.scoreline.home+'-'+p.scoreline.away+' · Veri: '+p.quality+' ('+p.homeSamples+'/'+p.awaySamples+')</small>':'<small class="toto-analysis-note">Yeterli geçmiş maç verisi bulunamadı; otomatik tahmin üretilmedi.</small>';
+ row.querySelectorAll(".toto-pick").forEach(btn=>btn.classList.toggle("recommended",!!best&&btn.dataset.pick===best));
+}
+let sporTotoAnalysisQueue=[];
+let sporTotoAnalysisBusy=false;
+function sporTotoAnalizleriBaslat(){
+ if(sporTotoAnalysisBusy||!sporTotoData)return;
+ sporTotoAnalysisQueue=sporTotoData.matches.slice();sporTotoAnalysisBusy=true;
+ let done=0;
+ const step=()=>{
+  const m=sporTotoAnalysisQueue.shift();
+  if(!m){sporTotoAnalysisBusy=false;$("sporTotoOzet").textContent=done+" / 15 maç analiz edildi · "+sporTotoSecimOzeti();return}
+  const p=sporTotoTahminCached(m);sporTotoSatirAnaliziniYaz(m,p);done++;
+  $("sporTotoOzet").textContent=done+" / 15 maç analiz ediliyor · "+sporTotoSecimOzeti();
+  setTimeout(step,0);
+ };
+ setTimeout(step,0);
+}
+function sporTotoSecimOzeti(){
+ let columns=1,selectedMatches=0;
+ (sporTotoData?.matches||[]).forEach(m=>{const n=(sporTotoPicks[String(m.number)]||[]).length;if(n){selectedMatches++;columns*=n}});
+ return selectedMatches+" maçta seçim · "+(selectedMatches?columns.toLocaleString("tr-TR"):"0")+" kolon";
+}
 function sporTotoRender(){
  if(!sporTotoData||!Array.isArray(sporTotoData.matches))return;
- let analyzed=0;
  const rows=sporTotoData.matches.map(m=>{
-  const chosen=Array.isArray(sporTotoPicks[String(m.number)])?sporTotoPicks[String(m.number)]:[],p=sporTotoTahmin(m);if(p)analyzed++;
-  const best=p?[["1",p.one],["X",p.draw],["2",p.two]].sort((a,b)=>b[1]-a[1])[0][0]:"";
+  const chosen=Array.isArray(sporTotoPicks[String(m.number)])?sporTotoPicks[String(m.number)]:[];
   const d=String(m.date||"").split("-"),date=d.length===3?d[2]+"."+d[1]+"."+d[0]:m.date||"";
-  const probs=p?'<small class="toto-probs">'+(p.fallback?'<b>Genel geçmiş ortalaması · düşük güven</b><br>':'')+'Model: <b>1 %'+(p.one*100).toFixed(0)+'</b> · <b>X %'+(p.draw*100).toFixed(0)+'</b> · <b>2 %'+(p.two*100).toFixed(0)+'</b><br>Öneri: <b>'+best+'</b> · Skor: '+p.scoreline.home+'-'+p.scoreline.away+' · Veri: '+p.quality+' ('+p.homeSamples+'/'+p.awaySamples+')</small>':'<small class="toto-analysis-note">Yeterli geçmiş maç verisi bulunamadı; otomatik tahmin üretilmedi.</small>';
-  const match='<div class="toto-match">'+sporTotoEsc(m.home)+' – '+sporTotoEsc(m.away)+'<small>'+sporTotoEsc(date)+' · '+sporTotoEsc(m.time)+'</small>'+probs+'</div>';
-  const picks=["1","X","2"].map(k=>'<button type="button" class="toto-pick '+(chosen.includes(k)?"selected ":"")+(best===k?"recommended":"")+'" title="'+(p?k+" olasılığı %"+(p[k==="1"?"one":k==="X"?"draw":"two"]*100).toFixed(1):"Analiz verisi yok")+'" aria-pressed="'+chosen.includes(k)+'" onclick="sporTotoSecim('+Number(m.number)+',\''+k+'\')">'+k+'</button>').join("");
-  return '<div class="toto-row '+(chosen.length?'selected-match':'')+'">'+match+picks+'</div>';
+  const match='<div class="toto-match">'+sporTotoEsc(m.home)+' – '+sporTotoEsc(m.away)+'<small>'+sporTotoEsc(date)+' · '+sporTotoEsc(m.time)+'</small><span class="toto-analysis-slot"><small class="toto-analysis-note">Analiz hazırlanıyor…</small></span></div>';
+  const picks=["1","X","2"].map(k=>'<button type="button" data-pick="'+k+'" class="toto-pick '+(chosen.includes(k)?"selected":"")+'" title="'+k+'" aria-pressed="'+chosen.includes(k)+'" onclick="sporTotoSecim('+Number(m.number)+',\''+k+'\')">'+k+'</button>').join("");
+  return '<div id="sporTotoSatir'+Number(m.number)+'" class="toto-row '+(chosen.length?'selected-match':'')+'">'+match+picks+'</div>';
  }).join("");
  $("sporTotoMaclar").innerHTML=rows||"Bu hafta için maç bulunamadı.";
- let columns=1,selectedMatches=0;
- (sporTotoData.matches||[]).forEach(m=>{const n=(sporTotoPicks[String(m.number)]||[]).length;if(n){selectedMatches++;columns*=n}});
- $("sporTotoOzet").textContent=analyzed+" / 15 maç analiz edildi · "+selectedMatches+" maçta seçim · "+(selectedMatches?columns.toLocaleString("tr-TR"):"0")+" kolon";
+ $("sporTotoOzet").textContent="15 maç listelendi · analizler hazırlanıyor…";
+ sporTotoAnalizleriBaslat();
 }
 async function sporTotoYukle(force=false){
  if(sporTotoLoading)return;
  if(sporTotoData&&!force){sporTotoRender();return}
- sporTotoLoading=true;$("sporTotoDurum").textContent="Spor Toto listesi kontrol ediliyor...";
+ sporTotoLoading=true;
  try{
+  if(!force&&!sporTotoData&&"caches" in window){
+   try{
+    const cached=await caches.match(new URL("./spor-toto.json",location.href).href);
+    if(cached){const data=await cached.clone().json();if(data&&Array.isArray(data.matches)&&data.matches.length===15){sporTotoData=data;sporTotoSecimleriOku();sporTotoRender();$("sporTotoDurum").textContent=(data.week?data.week+". HAFTA":"SPOR TOTO")+" · "+data.matches.length+" maç · kayıtlı listeden açıldı";}}
+   }catch(_){}
+  }
+  $("sporTotoDurum").textContent=sporTotoData?"Liste açıldı · güncel bülten kontrol ediliyor…":"Spor Toto bülteni yükleniyor…";
   const response=await fetch("./spor-toto.json?v="+Date.now(),{cache:"no-store"});
   if(!response.ok)throw new Error("Bülten dosyası alınamadı ("+response.status+")");
   const data=await response.json();
   if(!data||!Array.isArray(data.matches)||data.matches.length!==15)throw new Error("15 maçlık geçerli bülten bulunamadı");
-  sporTotoData=data;sporTotoSecimleriOku();sporTotoRender();
+  const changed=!sporTotoData||JSON.stringify(sporTotoData.matches)!==JSON.stringify(data.matches);
+  sporTotoData=data;sporTotoSecimleriOku();
+  if(changed||force)sporTotoRender();
   const updated=data.updated_at?new Date(data.updated_at).toLocaleString("tr-TR"):"";
   $("sporTotoDurum").textContent=(data.week?data.week+". HAFTA":"SPOR TOTO")+" · "+data.matches.length+" maç"+(updated?" · Güncelleme: "+updated:"");
- }catch(e){$("sporTotoDurum").textContent="Spor Toto yükleme hatası: "+e.message}
- finally{sporTotoLoading=false}
+ }catch(e){
+  $("sporTotoDurum").textContent=sporTotoData?"Kayıtlı bülten gösteriliyor · güncel liste alınamadı":"Spor Toto yükleme hatası: "+e.message;
+ }finally{sporTotoLoading=false}
 }
 
 /* FUTBOL GEÇMİŞ TESTİ - İSTEĞE BAĞLI */

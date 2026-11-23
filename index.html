@@ -74,7 +74,7 @@ th{color:var(--yellow)}
 .toto-match{min-width:0;font-size:13px;font-weight:700;line-height:1.3}
 .toto-match small{display:block;color:#aaa;font-size:11px;font-weight:400;margin-top:3px}.toto-probs{display:block;margin-top:4px;color:#e7d58a;font-size:10px;line-height:1.35;font-weight:600}.toto-probs b{color:#f5c400}.toto-pick.recommended{border-color:#f5c400!important;box-shadow:0 0 0 1px #f5c40055}.toto-analysis-note{display:block;color:#aaa;font-size:10px;font-weight:400;margin-top:2px}
 .toto-pick{padding:8px 0!important;min-width:0;border-radius:8px!important;background:#292929!important;border:1px solid #555!important;color:#fff!important}
-.toto-pick.selected{background:var(--yellow)!important;color:#171000!important;border-color:var(--yellow)!important}
+.toto-row.selected-match{background:linear-gradient(90deg,#3b3000 0%,#241f0c 72%,#191919 100%);border:1px solid #f5c400;border-left:5px solid #ffe45c;border-radius:9px;padding:10px 7px;margin:7px 0;box-shadow:0 0 12px #f5c40035}.toto-row.selected-match .toto-match{color:#fff2a8}.toto-pick.selected{background:#ffe45c!important;color:#171000!important;border:2px solid #fff1a6!important;box-shadow:0 0 0 2px #f5c400,0 0 14px #ffd700b0!important;font-weight:1000;transform:scale(1.04)}
 .toto-summary{margin:10px 0;padding:10px;background:#1b1b1b;border-radius:8px;font-size:13px}
 @media(max-width:380px){.toto-row{grid-template-columns:minmax(0,1fr) repeat(3,34px);gap:4px}.toto-pick{font-size:12px;padding:7px 0!important}.toto-match{font-size:12px}}
 
@@ -702,19 +702,32 @@ function sporTotoTeamRates(matches,team){
 }
 function sporTotoTahmin(m){
  if(!Array.isArray(HISTORY)||HISTORY.length<20)return null;
- const sameFixture=FIXTURES.find(f=>fixtureTeamNorm(f.home)===fixtureTeamNorm(m.home)&&fixtureTeamNorm(f.away)===fixtureTeamNorm(m.away)&&String(f.date||"").slice(0,10)===String(m.date||"").slice(0,10));
+ const cutoff=String(m.date||"9999-12-31").slice(0,10);
+ const valid=HISTORY.filter(x=>String(x.date||"").slice(0,10)<cutoff&&num(x.ft_home)&&num(x.ft_away));
+ if(valid.length<20)return null;
+ const sameFixture=FIXTURES.find(f=>fixtureTeamNorm(f.home)===fixtureTeamNorm(m.home)&&fixtureTeamNorm(f.away)===fixtureTeamNorm(m.away)&&String(f.date||"").slice(0,10)===cutoff);
  if(sameFixture){const p=predictFootball(sameFixture);if(p)return p}
  const home=sporTotoTeamHistory(m.home,m.date),away=sporTotoTeamHistory(m.away,m.date);
- if(home.length<5||away.length<5)return null;
- const valid=HISTORY.filter(x=>num(x.ft_home)&&num(x.ft_away)),globalAvg=valid.length?valid.reduce((s,x)=>s+Number(x.ft_home)+Number(x.ft_away),0)/(valid.length*2):1.35;
+ const globalHome=valid.reduce((s,x)=>s+Number(x.ft_home),0)/valid.length;
+ const globalAway=valid.reduce((s,x)=>s+Number(x.ft_away),0)/valid.length;
+ const globalAvg=(globalHome+globalAway)/2;
  if(!globalAvg)return null;
- const h=sporTotoTeamRates(home,m.home),a=sporTotoTeamRates(away,m.away);
+ const h=home.length?sporTotoTeamRates(home,m.home):{scored:globalAvg,conceded:globalAvg,plainScored:globalAvg,plainConceded:globalAvg};
+ const a=away.length?sporTotoTeamRates(away,m.away):{scored:globalAvg,conceded:globalAvg,plainScored:globalAvg,plainConceded:globalAvg};
  const rawH=h.plainScored*a.plainConceded/globalAvg,rawA=a.plainScored*h.plainConceded/globalAvg;
- const recentH=h.scored*a.conceded/globalAvg,recentA=a.scored*h.conceded/globalAvg,reliability=Math.min(1,Math.min(home.length,away.length)/10);
- const lh=Math.max(.12,Math.min(3.8,(rawH*.65+recentH*.35)*reliability+globalAvg*(1-reliability)));
- const la=Math.max(.12,Math.min(3.8,(rawA*.65+recentA*.35)*reliability+globalAvg*(1-reliability)));
- const p=blendProbabilities(poissonResult(lh,la),poissonResult(rawH,rawA),poissonResult(recentH,recentA));
- return {one:p.one,draw:p.draw,two:p.two,expectedHome:lh,expectedAway:la,scoreline:scorelineMostLikely(lh,la),homeSamples:home.length,awaySamples:away.length,quality:Math.min(home.length,away.length)>=8?"İyi":"Sınırlı"};
+ const recentH=h.scored*a.conceded/globalAvg,recentA=a.scored*h.conceded/globalAvg;
+ const reliability=Math.min(1,home.length/8)*Math.min(1,away.length/8);
+ const lh=Math.max(.12,Math.min(3.8,(rawH*.65+recentH*.35)*reliability+globalHome*(1-reliability)));
+ const la=Math.max(.12,Math.min(3.8,(rawA*.65+recentA*.35)*reliability+globalAway*(1-reliability)));
+ let p=blendProbabilities(poissonResult(lh,la),poissonResult(rawH,rawA),poissonResult(recentH,recentA));
+ if(!home.length&&!away.length){
+  let one=0,draw=0,two=0;
+  valid.forEach(x=>{if(Number(x.ft_home)>Number(x.ft_away))one++;else if(Number(x.ft_home)===Number(x.ft_away))draw++;else two++});
+  const total=one+draw+two;
+  if(total){p=blendProbabilities(p,{one:one/total,draw:draw/total,two:two/total},p)}
+ }
+ const samples=Math.min(home.length,away.length);
+ return {one:p.one,draw:p.draw,two:p.two,expectedHome:lh,expectedAway:la,scoreline:scorelineMostLikely(lh,la),homeSamples:home.length,awaySamples:away.length,quality:samples>=8?"İyi":samples>=5?"Sınırlı":"Düşük",fallback: samples<5};
 }
 function sporTotoRender(){
  if(!sporTotoData||!Array.isArray(sporTotoData.matches))return;
@@ -726,7 +739,7 @@ function sporTotoRender(){
   const probs=p?'<small class="toto-probs">Model: <b>1 %'+(p.one*100).toFixed(0)+'</b> · <b>X %'+(p.draw*100).toFixed(0)+'</b> · <b>2 %'+(p.two*100).toFixed(0)+'</b><br>Öneri: <b>'+best+'</b> · Skor: '+p.scoreline.home+'-'+p.scoreline.away+' · Veri: '+p.quality+' ('+p.homeSamples+'/'+p.awaySamples+')</small>':'<small class="toto-analysis-note">Yeterli geçmiş maç verisi bulunamadı; otomatik tahmin üretilmedi.</small>';
   const match='<div class="toto-match">'+sporTotoEsc(m.home)+' – '+sporTotoEsc(m.away)+'<small>'+sporTotoEsc(date)+' · '+sporTotoEsc(m.time)+'</small>'+probs+'</div>';
   const picks=["1","X","2"].map(k=>'<button type="button" class="toto-pick '+(chosen.includes(k)?"selected ":"")+(best===k?"recommended":"")+'" title="'+(p?k+" olasılığı %"+(p[k==="1"?"one":k==="X"?"draw":"two"]*100).toFixed(1):"Analiz verisi yok")+'" aria-pressed="'+chosen.includes(k)+'" onclick="sporTotoSecim('+Number(m.number)+',\''+k+'\')">'+k+'</button>').join("");
-  return '<div class="toto-row">'+match+picks+'</div>';
+  return '<div class="toto-row '+(chosen.length?'selected-match':'')+'">'+match+picks+'</div>';
  }).join("");
  $("sporTotoMaclar").innerHTML=rows||"Bu hafta için maç bulunamadı.";
  let columns=1,selectedMatches=0;

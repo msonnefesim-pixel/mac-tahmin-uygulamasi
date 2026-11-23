@@ -78,9 +78,22 @@ th{color:var(--yellow)}
 .toto-summary{margin:10px 0;padding:10px;background:#1b1b1b;border-radius:8px;font-size:13px}
 @media(max-width:380px){.toto-row{grid-template-columns:minmax(0,1fr) repeat(3,34px);gap:4px}.toto-pick{font-size:12px;padding:7px 0!important}.toto-match{font-size:12px}}
 
+
+/* TEK AÇILIŞ EKRANI · TAÇLI ASLAN */
+#lionSplash{position:fixed;inset:0;z-index:99999;background:#050505;display:flex;align-items:center;justify-content:center;opacity:1;visibility:visible;transition:opacity .55s ease,visibility .55s ease}
+#lionSplash img{display:block;width:100%;height:100%;object-fit:cover;object-position:center center}
+#lionSplash.is-leaving{opacity:0;visibility:hidden;pointer-events:none}
+body.lion-splash-open{overflow:hidden}
+@media(prefers-reduced-motion:reduce){#lionSplash{transition:none}}
+
 </style>
 </head>
-<body>
+<body class="lion-splash-open">
+
+<div id="lionSplash" role="img" aria-label="YAPAYCİN ANALİZ, altın taçlı heybetli aslan açılış ekranı">
+ <img src="./file_00000000ae4881f493409516ddf5055a.png" alt="YAPAYCİN ANALİZ">
+</div>
+
 <header class="brand-banner" aria-label="YaPaYCiN Analiz">
  <div class="brand-wordmark"><span class="brand-y">Y<img src="./genie.svg?v=99" alt=""></span><span>aPaYCiN</span></div>
  <div class="brand-analysis">ANALİZ</div>
@@ -1831,11 +1844,22 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=98",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=99",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 
 
-<!-- Önceki açılış tasarımı geri yüklendi -->
+<script>
+(()=> {
+ const splash=document.getElementById("lionSplash");
+ if(!splash)return;
+ const closeSplash=()=>{
+  splash.classList.add("is-leaving");
+  document.body.classList.remove("lion-splash-open");
+  window.setTimeout(()=>splash.remove(),650);
+ };
+ window.setTimeout(closeSplash,2800);
+})();
+</script>
 </body>
 </html>

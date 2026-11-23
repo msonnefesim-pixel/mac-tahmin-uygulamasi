@@ -735,28 +735,37 @@ function sporTotoKarIsikKuponOlustur(){
  if(!sporTotoData||!Array.isArray(sporTotoData.matches)||sporTotoData.matches.length!==15){
   $("sporTotoKarIsikSonuc").textContent="Önce 15 maçlık bülten yüklensin.";return;
  }
- const coupon=sporTotoData.matches.map(m=>{
+ const rankedMatches=sporTotoData.matches.map(m=>{
   const p=sporTotoTahmin(m);
-  if(!p)return {number:m.number,home:m.home,away:m.away,picks:["1","X","2"],kind:"ÜÇLÜ KORUMA",confidence:"Analiz verisi yetersiz"};
+  if(!p)return {number:m.number,home:m.home,away:m.away,picks:[],kind:"VERİ YETERSİZ",confidence:"Güvenilir tahmin üretilemedi",gap:Infinity,top:null};
   const ranked=[["1",p.one],["X",p.draw],["2",p.two]].sort((a,b)=>b[1]-a[1]);
   const top=ranked[0],second=ranked[1],gap=top[1]-second[1];
-  if(!p.fallback&&top[1]>=.52&&gap>=.14){
-   return {number:m.number,home:m.home,away:m.away,picks:[top[0]],kind:"BANKO",confidence:"En yüksek olasılık %"+(top[1]*100).toFixed(0)};
+  return {number:m.number,home:m.home,away:m.away,picks:[top[0]],kind:"BANKO",confidence:(p.fallback?"Genel ortalama · ":"")+"En yüksek olasılık %"+(top[1]*100).toFixed(0),gap,top,second,fallback:!!p.fallback};
+ });
+ const doubles=rankedMatches
+  .filter(m=>m.top&&!( !m.fallback && m.top[1]>=.52 && m.gap>=.14))
+  .sort((a,b)=>a.gap-b.gap)
+  .slice(0,4);
+ const doubleNumbers=new Set(doubles.map(m=>String(m.number)));
+ const coupon=rankedMatches.map(m=>{
+  if(!m.top)return m;
+  if(doubleNumbers.has(String(m.number))){
+   return {...m,picks:[m.top[0],m.second[0]],kind:"SÜRPRİZ KORUMALI",confidence:"İlk iki olasılık %"+(m.top[1]*100).toFixed(0)+" / %"+(m.second[1]*100).toFixed(0)};
   }
-  return {number:m.number,home:m.home,away:m.away,picks:[top[0],second[0]],kind:"SÜRPRİZ KORUMALI",confidence:"İlk iki olasılık %"+(top[1]*100).toFixed(0)+" / %"+(second[1]*100).toFixed(0)};
+  return m;
  });
  sporTotoMixedCoupon=coupon;
  sporTotoKarIsikKuponRender();
 }
 function sporTotoKarIsikKuponRender(){
  const target=$("sporTotoKarIsikSonuc");if(!target||!sporTotoMixedCoupon)return;
- let columns=1,bankos=0,doubles=0,triples=0;
+ let columns=1,bankos=0,doubles=0,noData=0;
  const rows=sporTotoMixedCoupon.map(m=>{
-  columns*=m.picks.length;
-  if(m.picks.length===1)bankos++;else if(m.picks.length===2)doubles++;else triples++;
-  return '<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid #49412a"><span style="min-width:0"><b>'+m.number+'. '+sporTotoEsc(m.home)+' – '+sporTotoEsc(m.away)+'</b><small style="display:block;color:#c9bd91">'+m.kind+' · '+m.confidence+'</small></span><b style="color:#ffe45c;white-space:nowrap">'+m.picks.join(" / ")+'</b></div>';
+  if(m.picks.length)columns*=m.picks.length;
+  if(m.picks.length===1)bankos++;else if(m.picks.length===2)doubles++;else noData++;
+  return '<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid #49412a"><span style="min-width:0"><b>'+m.number+'. '+sporTotoEsc(m.home)+' – '+sporTotoEsc(m.away)+'</b><small style="display:block;color:#c9bd91">'+m.kind+' · '+m.confidence+'</small></span><b style="color:#ffe45c;white-space:nowrap">'+(m.picks.length?m.picks.join(" / "):"—")+'</b></div>';
  }).join("");
- target.innerHTML='<b style="color:#ffe45c">KARIŞIK KUPON HAZIR</b><br>'+bankos+' banko · '+doubles+' çift · '+triples+' üçlü koruma<br><b>Toplam kolon: '+columns.toLocaleString("tr-TR")+'</b>'+rows+'<small style="display:block;margin-top:8px;color:#aaa">Bu kupon analiz olasılıklarına göre hazırlanır; kesin sonuç veya kazanç garantisi değildir. Veri yetersiz maçlarda üçlü koruma kullanılır.</small>';
+ target.innerHTML='<b style="color:#ffe45c">KARIŞIK KUPON HAZIR</b><br>'+bankos+' banko · '+doubles+' çift · '+noData+' tahmin yok<br><b>Toplam kolon: '+columns.toLocaleString("tr-TR")+'</b><small style="display:block;color:#ffe45c;margin:5px 0">Çift ihtimal en fazla 4 maçla sınırlandırıldı. Üçlü ihtimal kullanılmaz.</small>'+rows+'<small style="display:block;margin-top:8px;color:#aaa">Kupon analiz olasılıklarına göre hazırlanır; kesin sonuç veya kazanç garantisi değildir. Veri yetersiz maçlar kolona eklenmez.</small>';
 }
 function sporTotoRender(){
  if(!sporTotoData||!Array.isArray(sporTotoData.matches))return;

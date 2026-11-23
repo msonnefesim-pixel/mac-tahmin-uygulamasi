@@ -66,12 +66,12 @@ def main():
         if not 1 <= number <= 15:
             continue
         teams = row[1].replace("–", "-").replace("—", "-")
-        parts = re.split(r"\\s+-\\s+", teams, maxsplit=1)
+        parts = re.split(r"\s+-\s+", teams, maxsplit=1)
         if len(parts) != 2:
             continue
         schedule = " ".join(row[2:])
-        date_match = re.search(r"(\\d{2}\\.\\d{2}\\.\\d{4})", schedule)
-        time_match = re.search(r"\\b([01]?\\d|2[0-3]):[0-5]\\d\\b", schedule)
+        date_match = re.search(r"(\d{2}\.\d{2}\.\d{4})", schedule)
+        time_match = re.search(r"\b([01]?\d|2[0-3]):[0-5]\d\b", schedule)
         if not date_match or not time_match:
             continue
         day, month, year = date_match.group(1).split(".")
@@ -85,7 +85,7 @@ def main():
     matches.sort(key=lambda item: item["number"])
     if len(matches) != 15 or [m["number"] for m in matches] != list(range(1, 16)):
         raise RuntimeError(f"Kaynakta 15 maçın tamamı doğrulanamadı ({len(matches)}/15); mevcut dosya korunuyor.")
-    title_match = re.search(r"(\\d+)\\.\\s*Hafta", re.sub(r"<[^>]+>", " ", html), re.I)
+    title_match = re.search(r"(\d+)\.\s*Hafta", re.sub(r"<[^>]+>", " ", html), re.I)
     week = int(title_match.group(1)) if title_match else None
     result = {
         "season": "2026/2027",

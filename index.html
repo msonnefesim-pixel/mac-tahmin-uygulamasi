@@ -18,6 +18,7 @@ p,.small{color:var(--muted);font-size:12px;line-height:1.45}
 .panel,.match,.nba-card{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:10px;padding:11px;margin:8px 0}
 input,select,button{width:100%;padding:11px;margin:5px 0;border-radius:8px;font-size:14px}
 input,select{background:#101010;color:#fff;border:1px solid #666}
+#ligSec{min-height:48px;touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer;position:relative;z-index:5}
 button{background:var(--yellow);color:#171000;border:0;font-weight:bold}
 button.secondary,.tab-button{background:#292929;color:#fff;border:1px solid #555}
 .tabbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:8px 0}
@@ -127,7 +128,7 @@ body.lion-splash-open{overflow:hidden}
    <button class="secondary" onclick="tarihKaydir(1)">Sonraki gün ▶</button>
   </div>
   <label><b>Ülke / Lig seç</b></label>
-  <select id="ligSec" onchange="listele()"><option value="all">Bütün görünür ligler</option></select>
+  <select id="ligSec" onchange="listele()" style="min-height:48px;position:relative;z-index:5;touch-action:manipulation;-webkit-appearance:menulist;cursor:pointer"><option value="all">Bütün görünür ligler</option></select>
   <button class="secondary" onclick="yonetimAc()">Ligleri Yönet / Gizle</button>
   <div id="ligYonetim" class="hidden">
    <p>Görmek istemediğin liglerin işaretini kaldır.</p>

@@ -788,6 +788,8 @@ function sporTotoAnalizleriBaslat(){
  sporTotoAnalysisQueue=sporTotoData.matches.slice();sporTotoAnalysisBusy=true;
  let done=0;
  const step=()=>{
+  // Spor Toto sekmesi kapatılınca ağır analizleri durdur; kullanıcı Futbol'a geçerken ana iş parçacığını meşgul etme.
+  if(activeTabName!=="sporToto"){sporTotoAnalysisBusy=false;return}
   const m=sporTotoAnalysisQueue.shift();
   if(!m){sporTotoAnalysisBusy=false;$("sporTotoOzet").textContent=done+" / 15 maç analiz edildi · "+sporTotoSecimOzeti();return}
   const p=sporTotoTahminCached(m);sporTotoSatirAnaliziniYaz(m,p);done++;

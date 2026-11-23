@@ -77,8 +77,8 @@ jobs:
                           # Danish Superliga 23.11.2026 resmi fikstur saati.
                           # Danimarka saati 19:00; +2 saat ile Turkiye saati 21:00 olur.
                           if not raw_time and league_id == "DEN_1_superliga" and row["date"] == "2026-11-23":
-                              home_name = row.get("home", "").strip().lower()
-                              away_name = row.get("away", "").strip().lower()
+                              home_name = row.get("home", "").strip().lower().replace("ø", "o")
+                              away_name = row.get("away", "").strip().lower().replace("ø", "o")
                               if home_name.startswith("brondby") and "midtjylland" in away_name:
                                   raw_time = "19:00"
 

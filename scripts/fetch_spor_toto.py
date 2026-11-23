@@ -65,11 +65,12 @@ def main():
         number = int(row[0].strip())
         if not 1 <= number <= 15:
             continue
-        teams = row[1].replace("–", "-").replace("—", "-")
+        schedule = " ".join(row[1:])
+        teams = re.sub(r"\s+\d{2}\.\d{2}\.\d{4}.*$", "", row[1])
+        teams = teams.replace("–", "-").replace("—", "-")
         parts = re.split(r"\s+-\s+", teams, maxsplit=1)
         if len(parts) != 2:
             continue
-        schedule = " ".join(row[2:])
         date_match = re.search(r"(\d{2}\.\d{2}\.\d{4})", schedule)
         time_match = re.search(r"\b([01]?\d|2[0-3]):[0-5]\d\b", schedule)
         if not date_match or not time_match:

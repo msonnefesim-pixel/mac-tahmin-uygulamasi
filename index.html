@@ -66,6 +66,18 @@ th{color:var(--yellow)}
 
 
 .coupon-datebar{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;margin:0 0 9px}.coupon-datebar input{margin:0;padding:9px 7px;min-width:0}.coupon-datebar button{width:auto;margin:0;padding:9px 10px;font-size:12px;white-space:nowrap}.coupon-date-label{grid-column:1/-1;color:#f5c400;font-size:12px;font-weight:bold;margin-bottom:-2px}.compact-status{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;margin:6px 0}.status-copy{min-width:0;flex:1}.status-copy #durum{font-size:14px;font-weight:bold}.status-copy #sayilar{font-size:10px;line-height:1.35;overflow-wrap:anywhere}.status-refresh{width:auto;flex:0 0 auto;padding:8px 11px;margin:0;font-size:12px;white-space:nowrap}.filter-toggle{margin:0 0 8px;padding:10px;text-align:left}.filter-toggle[aria-expanded="true"]{border-color:var(--yellow);color:var(--yellow)}#matchFilters{padding-top:2px}#matchFilters.hidden{display:none!important}
+
+/* SPOR TOTO */
+.toto-status{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.toto-row{display:grid;grid-template-columns:minmax(0,1fr) repeat(3,40px);gap:6px;align-items:center;padding:9px 0;border-bottom:1px solid #333}
+.toto-head{color:#aaa;font-size:11px;text-align:center;font-weight:bold}
+.toto-match{min-width:0;font-size:13px;font-weight:700;line-height:1.3}
+.toto-match small{display:block;color:#aaa;font-size:11px;font-weight:400;margin-top:3px}
+.toto-pick{padding:8px 0!important;min-width:0;border-radius:8px!important;background:#292929!important;border:1px solid #555!important;color:#fff!important}
+.toto-pick.selected{background:var(--yellow)!important;color:#171000!important;border-color:var(--yellow)!important}
+.toto-summary{margin:10px 0;padding:10px;background:#1b1b1b;border-radius:8px;font-size:13px}
+@media(max-width:380px){.toto-row{grid-template-columns:minmax(0,1fr) repeat(3,34px);gap:4px}.toto-pick{font-size:12px;padding:7px 0!important}.toto-match{font-size:12px}}
+
 </style>
 </head>
 <body>
@@ -80,6 +92,7 @@ th{color:var(--yellow)}
  <button id="iymsButon" class="tab-button" onclick="sekmeAc('iyms')">🎯 İY/MS</button>
  <button id="couponButon" class="tab-button" onclick="sekmeAc('coupons')">🎟️ HAZIR KUPONLAR</button>
  <button id="halfBothButon" class="tab-button" onclick="sekmeAc('halfBoth')">⚽ EVET/EVET</button>
+ <button id="sporTotoButon" class="tab-button" onclick="sekmeAc('sporToto')">🏆 SPOR TOTO</button>
  <!-- İDDAA arka planda çalışır; kullanıcı sekmesi gösterilmez. -->
 </div>
 
@@ -139,6 +152,20 @@ th{color:var(--yellow)}
   <p>Her kupon kendi seçeneğinde en yüksek ortak olasılığa sahip 5 maçtan oluşur. Maçlar farklı günlerden seçilebilir. Yalnızca Türkiye İddaa bülteninde bulunan, ilk yarı ve ikinci yarı KG marketlerinde seçilen iki sonucun oranı 1.00 üzerinde olan maçlar kullanılır. Bülten pazartesi/perşembe geceleri güncellendiğinde kuponlar yeni bülten verisine göre yenilenir.</p>
  </div>
  <div id="halfBothCards"></div>
+</section>
+
+<section id="sporTotoBolumu" class="hidden">
+ <h2>🏆 SPOR TOTO · 15 MAÇ</h2>
+ <div class="panel">
+  <div class="toto-status"><div id="sporTotoDurum">Spor Toto bülteni yüklenmeye hazır.</div><button type="button" class="secondary" onclick="sporTotoYukle(true)">↻ Listeyi Yenile</button></div>
+  <div class="toto-summary" id="sporTotoOzet">Her maç için 1, X ve 2 seçeneklerinden bir veya birkaçını işaretle.</div>
+  <div class="toto-row" style="border-bottom:1px solid #555">
+   <div class="toto-head" style="text-align:left">MAÇ</div><div class="toto-head">1</div><div class="toto-head">X</div><div class="toto-head">2</div>
+  </div>
+  <div id="sporTotoMaclar">Bülten bekleniyor...</div>
+  <button type="button" class="secondary" onclick="sporTotoTemizle()">Seçimleri Temizle</button>
+  <p class="small">Liste yayınlanan Spor Toto haftalık programından alınır ve yaklaşık 6 saatte bir kontrol edilir. Seçimlerin bu cihazda saklanır. Tahmin veya kazanç garantisi değildir.</p>
+ </div>
 </section>
 
 <section id="iymsBolumu" class="hidden">
@@ -604,10 +631,10 @@ async function baslat(force=false){
 }
 function sekmeAc(name){
  if(name==="nba")return; // NBA sekmesi geçici olarak gizli.
- const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",nba:"nbaBolumu",coupons:"couponsBolumu",halfBoth:"halfBothBolumu",iddaa:"iddaaBolumu"};
+ const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",nba:"nbaBolumu",coupons:"couponsBolumu",halfBoth:"halfBothBolumu",sporToto:"sporTotoBolumu",iddaa:"iddaaBolumu"};
  activeTabName=name;
  Object.keys(ids).forEach(k=>$(ids[k]).classList.toggle("hidden",k!==name));
- $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");const nbaButton=$("nbaButon");if(nbaButton)nbaButton.classList.toggle("active",name==="nba");$("couponButon").classList.toggle("active",name==="coupons");$("halfBothButon").classList.toggle("active",name==="halfBoth");
+ $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");const nbaButton=$("nbaButon");if(nbaButton)nbaButton.classList.toggle("active",name==="nba");$("couponButon").classList.toggle("active",name==="coupons");$("halfBothButon").classList.toggle("active",name==="halfBoth");$("sporTotoButon").classList.toggle("active",name==="sporToto");
  if(name==="halfBoth")halfBothRender(); // Kayıtlı kuponları sekme açılır açılmaz göster.
  // Sekme önce anında görünür; ağır hesaplar ilk çizimden sonra başlar.
  setTimeout(()=>{
@@ -621,10 +648,56 @@ function sekmeAc(name){
    if(couponIYMSRows===null&&!couponIYMSLoading){couponIYMSLoading=true;cGetIYMS().then(()=>{if(activeTabName==="coupons")kuponlariGoster()}).finally(()=>{couponIYMSLoading=false})}
   }
   if(name==="halfBoth")halfBothBuild(false);
+  if(name==="sporToto")sporTotoYukle();
   if(name==="iyms"&&!iymsYuklendi&&!iymsLoading)iymsBaslat();
   if(name==="nba"&&!nbaYuklendi&&!nbaLoading)nbaBaslat();
   if(name==="iddaa"){if(!iddaaYuklendi&&!iddaaLoading)iddaaBaslat();else iddaaListele();}
  },25);
+}
+
+/* SPOR TOTO */
+let sporTotoData=null;
+let sporTotoPicks={};
+let sporTotoLoading=false;
+function sporTotoEsc(value){return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]))}
+function sporTotoSecimleriOku(){
+ try{const raw=JSON.parse(localStorage.getItem("yapaycin_spor_toto_picks_v1")||"{}");sporTotoPicks=raw&&typeof raw==="object"?raw:{}}catch(e){sporTotoPicks={}}
+}
+function sporTotoSecim(no,pick){
+ const key=String(no),arr=Array.isArray(sporTotoPicks[key])?sporTotoPicks[key]:[];
+ sporTotoPicks[key]=arr.includes(pick)?arr.filter(x=>x!==pick):[...arr,pick].sort((a,b)=>["1","X","2"].indexOf(a)-["1","X","2"].indexOf(b));
+ try{localStorage.setItem("yapaycin_spor_toto_picks_v1",JSON.stringify(sporTotoPicks))}catch(e){}
+ sporTotoRender();
+}
+function sporTotoTemizle(){sporTotoPicks={};try{localStorage.removeItem("yapaycin_spor_toto_picks_v1")}catch(e){}sporTotoRender()}
+function sporTotoRender(){
+ if(!sporTotoData||!Array.isArray(sporTotoData.matches))return;
+ const rows=sporTotoData.matches.map(m=>{
+  const chosen=Array.isArray(sporTotoPicks[String(m.number)])?sporTotoPicks[String(m.number)]:[];
+  const d=String(m.date||"").split("-");const date=d.length===3?d[2]+"."+d[1]+"."+d[0]:m.date||"";
+  const match='<div class="toto-match">'+sporTotoEsc(m.home)+' – '+sporTotoEsc(m.away)+'<small>'+sporTotoEsc(date)+' · '+sporTotoEsc(m.time)+'</small></div>';
+  const picks=["1","X","2"].map(p=>'<button type="button" class="toto-pick '+(chosen.includes(p)?"selected":"")+'" aria-pressed="'+chosen.includes(p)+'" onclick="sporTotoSecim('+Number(m.number)+',\''+p+'\')">'+p+'</button>').join("");
+  return '<div class="toto-row">'+match+picks+'</div>';
+ }).join("");
+ $("sporTotoMaclar").innerHTML=rows||"Bu hafta için maç bulunamadı.";
+ let columns=1,selectedMatches=0;
+ (sporTotoData.matches||[]).forEach(m=>{const n=(sporTotoPicks[String(m.number)]||[]).length;if(n){selectedMatches++;columns*=n}});
+ $("sporTotoOzet").textContent=selectedMatches+" / 15 maç seçildi · "+(selectedMatches?columns.toLocaleString("tr-TR"):"0")+" kolon";
+}
+async function sporTotoYukle(force=false){
+ if(sporTotoLoading)return;
+ if(sporTotoData&&!force){sporTotoRender();return}
+ sporTotoLoading=true;$("sporTotoDurum").textContent="Spor Toto listesi kontrol ediliyor...";
+ try{
+  const response=await fetch("./spor-toto.json?v="+Date.now(),{cache:"no-store"});
+  if(!response.ok)throw new Error("Bülten dosyası alınamadı ("+response.status+")");
+  const data=await response.json();
+  if(!data||!Array.isArray(data.matches)||data.matches.length!==15)throw new Error("15 maçlık geçerli bülten bulunamadı");
+  sporTotoData=data;sporTotoSecimleriOku();sporTotoRender();
+  const updated=data.updated_at?new Date(data.updated_at).toLocaleString("tr-TR"):"";
+  $("sporTotoDurum").textContent=(data.week?data.week+". HAFTA":"SPOR TOTO")+" · "+data.matches.length+" maç"+(updated?" · Güncelleme: "+updated:"");
+ }catch(e){$("sporTotoDurum").textContent="Spor Toto yükleme hatası: "+e.message}
+ finally{sporTotoLoading=false}
 }
 
 /* FUTBOL GEÇMİŞ TESTİ - İSTEĞE BAĞLI */

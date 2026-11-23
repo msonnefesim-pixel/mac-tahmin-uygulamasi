@@ -1,25 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<defs>
- <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#25080d"/><stop offset=".55" stop-color="#10090a"/><stop offset="1" stop-color="#050505"/></linearGradient>
- <linearGradient id="gold" x1="0" y1="0" x2=".15" y2="1"><stop stop-color="#fff0a6"/><stop offset=".42" stop-color="#f5c400"/><stop offset="1" stop-color="#a85c00"/></linearGradient>
- <linearGradient id="face" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe98a"/><stop offset="1" stop-color="#d58a00"/></linearGradient>
- <filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-</defs>
-<rect width="512" height="512" rx="112" fill="url(#bg)"/>
-<rect x="12" y="12" width="488" height="488" rx="100" fill="none" stroke="#b51d2d" stroke-width="8"/>
-<circle cx="256" cy="248" r="194" fill="none" stroke="#6d1720" stroke-width="2"/>
-<path d="M256 54 290 88 335 70 350 116 397 119 394 166 441 190 420 232 451 271 414 304 425 352 378 367 365 415 318 404 286 447 256 415 226 447 194 404 147 415 134 367 87 352 98 304 61 271 92 232 71 190 118 166 115 119 162 116 177 70 222 88Z" fill="url(#gold)" stroke="#6b3100" stroke-width="9" stroke-linejoin="round"/>
-<path d="M256 91 288 124 328 115 337 157 376 176 358 214 379 250 350 280 355 326 315 343 292 387 256 370 220 387 197 343 157 326 162 280 133 250 154 214 136 176 175 157 184 115 224 124Z" fill="#201014" stroke="#f7c83c" stroke-width="7" stroke-linejoin="round"/>
-<path d="M183 167 217 145 233 184 207 214Z" fill="url(#face)" stroke="#8b4c00" stroke-width="5"/>
-<path d="M329 167 295 145 279 184 305 214Z" fill="url(#face)" stroke="#8b4c00" stroke-width="5"/>
-<path d="M191 192Q256 143 321 192L306 302Q291 355 256 374Q221 355 206 302Z" fill="url(#face)" stroke="#8b4c00" stroke-width="6"/>
-<path d="M205 237Q229 215 248 235L238 250Q221 243 207 253Z" fill="#7d111c" filter="url(#glow)"/>
-<path d="M307 237Q283 215 264 235L274 250Q291 243 305 253Z" fill="#7d111c" filter="url(#glow)"/>
-<path d="M210 230 243 228M302 230 269 228" stroke="#4a1c0a" stroke-width="8" stroke-linecap="round"/>
-<path d="M256 250 237 282Q256 299 275 282Z" fill="#54131a" stroke="#8b3b00" stroke-width="4"/>
-<path d="M256 298Q238 318 218 307M256 298Q274 318 294 307" fill="none" stroke="#5b1b13" stroke-width="7" stroke-linecap="round"/>
-<path d="M219 328Q256 350 293 328" fill="none" stroke="#7a1b19" stroke-width="6" stroke-linecap="round"/>
-<path d="M169 258 205 267M165 279 202 282M343 258 307 267M347 279 310 282" stroke="#f7d86a" stroke-width="4" stroke-linecap="round"/>
-<path d="M256 60V92M114 250H139M373 250H398" stroke="#fff0a6" stroke-width="4" stroke-linecap="round" opacity=".8"/>
-<circle cx="256" cy="460" r="5" fill="#f5c400"/>
-</svg>
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#270b10"/><stop offset="1" stop-color="#080808"/></linearGradient><linearGradient id="y" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff1a1"/><stop offset="1" stop-color="#e5a900"/></linearGradient></defs>
+<rect width="512" height="512" rx="112" fill="url(#bg)"/><rect x="13" y="13" width="486" height="486" rx="102" fill="none" stroke="#c8102e" stroke-width="12"/>
+<path d="M111 235l75 93 70-93h62L210 391h-49l-112-156z" fill="url(#y)" stroke="#21110b" stroke-width="9" stroke-linejoin="round"/>
+<g transform="translate(174 42) scale(1.05)"><path d="M36 127c-19-9-19-23-2-30 11-5 17 1 13 8-4 7-15 5-15 14 1 8 13 12 29 8" fill="none" stroke="#f5c400" stroke-width="8" stroke-linecap="round"/><path d="M53 70c-11 10-17 21-17 34 0 20 19 32 44 32s44-12 44-32c0-13-7-25-18-35-10-9-14-17-13-27H66c2 12-2 20-13 28z" fill="#f5c400" stroke="#21110b" stroke-width="5"/><path d="M59 47c1-18 14-30 31-30 16 0 28 12 28 28-13 6-43 7-59 2z" fill="#c8102e" stroke="#21110b" stroke-width="5"/><path d="M58 47c16 7 44 7 62-1l-6 12c-17 7-39 7-53-1z" fill="#f5c400" stroke="#21110b" stroke-width="4"/><path d="M72 62q7-7 14 0M99 62q7-7 14 0M83 75q11 10 22 0" fill="none" stroke="#21110b" stroke-width="4" stroke-linecap="round"/><circle cx="96" cy="32" r="5" fill="#fff4be"/></g>
+<text x="256" y="456" text-anchor="middle" font-family="Arial,sans-serif" font-size="43" font-weight="900" fill="#f5c400">YaPaYCiN</text></svg>

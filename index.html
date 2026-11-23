@@ -736,7 +736,7 @@ function sporTotoKarIsikKuponOlustur(){
   $("sporTotoKarIsikSonuc").textContent="Önce 15 maçlık bülten yüklensin.";return;
  }
  const rankedMatches=sporTotoData.matches.map(m=>{
-  const p=sporTotoTahmin(m);
+  const p=sporTotoTahminCached(m);
   if(!p)return {number:m.number,home:m.home,away:m.away,picks:[],kind:"VERİ YETERSİZ",confidence:"Güvenilir tahmin üretilemedi",gap:Infinity,top:null};
   const ranked=[["1",p.one],["X",p.draw],["2",p.two]].sort((a,b)=>b[1]-a[1]);
   const top=ranked[0],second=ranked[1],gap=top[1]-second[1];

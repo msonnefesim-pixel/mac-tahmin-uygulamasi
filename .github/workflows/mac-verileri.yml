@@ -74,6 +74,13 @@ jobs:
                               if teams in (("hammarby", "goteborg"), ("orgryte", "kalmar")):
                                   raw_time = "19:00"
 
+                          # Danish Superliga 23.11.2026 resmi fikstur saati.
+                          # Danimarka saati 19:00; +2 saat ile Turkiye saati 21:00 olur.
+                          if not raw_time and league_id == "DEN_1_superliga" and row["date"] == "2026-11-23":
+                              teams = (row.get("home", "").strip().lower(), row.get("away", "").strip().lower())
+                              if teams == ("brondby", "midtjylland"):
+                                  raw_time = "19:00"
+
                           if raw_time:
                               kickoff = datetime.strptime(
                                   row["date"] + " " + raw_time,

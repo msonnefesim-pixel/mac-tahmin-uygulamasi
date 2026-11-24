@@ -823,8 +823,8 @@ function listele(){
    previewShown=true;
   }
   if(i<source.length){
-   macAlan.querySelector(".small")?.replaceChildren(document.createTextNode("Diğer maçların analizleri hazırlanıyor... "+i+" / "+source.length));
-   macAlan.textContent=macAlan.textContent.includes("Diğer maçların analizleri hazırlanıyor")?macAlan.textContent.replace(/Diğer maçların analizleri hazırlanıyor\.\.\. \d+ \/ \d+/, "Diğer maçların analizleri hazırlanıyor... "+i+" / "+source.length):macAlan.textContent;
+   const progress=macAlan.querySelector(".small");
+   if(progress)progress.textContent="Diğer maçların analizleri hazırlanıyor... "+i+" / "+source.length;
    if(!previewShown)macAlan.textContent=(past?"Geçmiş maçlar hazırlanıyor... ":"Maçlar hazırlanıyor... ")+i+" / "+source.length;
    setTimeout(prepareBatch,16);return
   }

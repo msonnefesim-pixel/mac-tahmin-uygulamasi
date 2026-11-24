@@ -2027,6 +2027,24 @@ function liveMatchKey(m){
  const slug=m.slug||m.id||m.fixture_id||m.match_id;
  return slug!==undefined&&slug!==null?String(slug):[home,away,raw].join("|");
 }
+function liveWithinLiveWindow(m){
+ const raw=String(m.start_time||m.kickoff||m.date||(m.fixture&&m.fixture.date)||"");
+ const date=raw.slice(0,10);
+ if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date))return true;
+ let kickoff=raw.includes("T")?Date.parse(raw):NaN;
+ if(!Number.isFinite(kickoff)){
+  const clock=String(m.time||m.startTime||"").match(/(?:^|\\D)(\\d{1,2}):(\\d{2})(?:\\D|$)/);
+  if(clock)kickoff=Date.parse(date+"T"+clock[1].padStart(2,"0")+":"+clock[2]+":00");
+ }
+ if(!Number.isFinite(kickoff)){
+  const today=new Date().toLocaleDateString("en-CA");
+  return date>=today;
+ }
+ const age=Date.now()-kickoff;
+ // Futbol maci normal sure ve uzatmalar dahil en gec 5 saat icinde tamamlanir.
+ // Saglayici eski maci hala CANLI gonderirse canli listesinden cikar.
+ return age<=5*60*60*1000;
+}
 function liveFixtureEquivalent(a,b){
  const team=(m,home)=>liveNorm(m[home?'home':'away']||m[home?'home_team':'away_team']||m[home?'homeTeam':'awayTeam']||m[home?'home_name':'away_name']||'');
  const ah=team(a,true),aa=team(a,false),bh=team(b,true),ba=team(b,false);
@@ -2131,7 +2149,7 @@ async function liveScoresLoad(){
   lists[1].forEach(m=>add(m,"finished"));
   lists[2].forEach(m=>add(m,"today"));
   lists[3].forEach(m=>add(m,"yesterday"));
-  let current=collapseLiveFixtures([...merged.values()].filter(m=>liveState(m)!=="other"));
+  let current=collapseLiveFixtures([...merged.values()].filter(m=>liveState(m)==="finished"||liveState(m)==="live"&&liveWithinLiveWindow(m)));
   if(dateChanged){
    const confirmedFinished=[...finishedTodayList,...widgetFinished,...espnFinishedList,...finishedYesterdayList];
    for(const old of liveFootballMatches.filter(m=>liveState(m)==="live")){
@@ -2140,7 +2158,7 @@ async function liveScoresLoad(){
     if(confirmedFinished.some(done=>liveSameFixture(old,done)))continue;
     const key=liveMatchKey(old);if(!merged.has(key))merged.set(key,old);
    }
-   current=collapseLiveFixtures([...merged.values()].filter(m=>liveState(m)!=="other"));
+   current=collapseLiveFixtures([...merged.values()].filter(m=>liveState(m)==="finished"||liveState(m)==="live"&&liveWithinLiveWindow(m)));
   }
   liveFootballMatches=current;
   rebuildLiveFixtureLookup();

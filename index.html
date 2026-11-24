@@ -1491,6 +1491,7 @@ function couponTarihiDegisti(){kuponlariGoster();const date=$("couponTarih")?.va
 /* HER İKİ YARI KG ÖZEL KUPONLARI */
 function halfBothArchive(){try{return JSON.parse(localStorage.getItem("yapaycinHalfBothCouponsV1")||"null")}catch(e){return null}}
 function halfBothSave(value){try{localStorage.setItem("yapaycinHalfBothCouponsV1",JSON.stringify(value))}catch(e){}}
+function halfBothMbs(event){const raw=event&&(event.mbs??event.MBS??event.minimum_bet??event.minimumBet??event.minBet??event.minimum_bet_number);if(raw===undefined||raw===null||raw==="")return null;const match=String(raw).match(/\d+/);return match?Number(match[0]):null;}
 function halfBothToggleCard(id){if(halfBothOpenCards.has(id))halfBothOpenCards.delete(id);else halfBothOpenCards.add(id);halfBothRender()}
 function halfBothRender(){
  const archive=halfBothArchive(),el=$("halfBothCards");if(!el)return;
@@ -1527,7 +1528,7 @@ async function halfBothBuild(force){
    $("halfBothStatus").textContent="Türkiye İddaa bülteni okunamadı. Bülten verisi gelmeden kupon oluşturulmadı; biraz sonra yeniden deneyebilirsin.";
    halfBothRender();return;
   }
-  if(!force&&saved&&saved.exclusiveVersion===2&&saved.start===start&&saved.end===end&&saved.pools&&saved.iddaaFiltered===true&&saved.iddaaUpdatedAt===iddaaSourceUpdatedAt){
+  if(!force&&saved&&saved.exclusiveVersion===3&&saved.start===start&&saved.end===end&&saved.pools&&saved.iddaaFiltered===true&&saved.iddaaUpdatedAt===iddaaSourceUpdatedAt){
    halfBothRender();$("halfBothStatus").textContent="Hazır · "+start+" – "+end+" · "+(saved.scanned||0)+" maç tarandı · Her maç tek kategoride · İddaa bülteni güncel.";
    return;
   }
@@ -1542,7 +1543,7 @@ async function halfBothBuild(force){
    let t=predictionCache.get(key);if(t===undefined){t=predictFootball(m);predictionCache.set(key,t)}
    if(t&&Number.isFinite(t.first)&&Number.isFinite(t.second)){
     const event=couponIddaaEventForFixture(m);
-    if(event){
+    if(event&&halfBothMbs(event)!==3){
      bulletinMatches++;
      const first=Math.max(0,Math.min(1,t.first)),second=Math.max(0,Math.min(1,t.second));
      const base={date:String(m.date).slice(0,10),time:m.time||"",home:m.home,away:m.away,league:m.league||"",firstProb:first,secondProb:second,quality:t.quality||"Sınırlı",type:"halfCombo"};
@@ -1564,7 +1565,7 @@ async function halfBothBuild(force){
   }
   Object.keys(pools).forEach(k=>pools[k].sort((a,b)=>b.prob-a.prob));
   const chosen={};for(const k of Object.keys(pools))chosen[k]=pools[k].slice(0,5);
-  const archive={exclusiveVersion:2,start,end,scanned,bulletinMatches,qualifiedSelections,iddaaFiltered:true,iddaaUpdatedAt:iddaaSourceUpdatedAt,generatedAt:new Date().toISOString(),pools:chosen};
+  const archive={exclusiveVersion:3,start,end,scanned,bulletinMatches,qualifiedSelections,iddaaFiltered:true,iddaaUpdatedAt:iddaaSourceUpdatedAt,generatedAt:new Date().toISOString(),pools:chosen};
   halfBothSave(archive);halfBothRender();
   $("halfBothStatus").textContent="Hazır · "+start+" – "+end+" · "+scanned+" maç tarandı · "+bulletinMatches+" maç bültende bulundu · "+qualifiedSelections+" oynanabilir seçim bulundu.";
  }catch(e){$("halfBothStatus").textContent="Kupon oluşturma hatası: "+e.message}
@@ -1918,7 +1919,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=163",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=164",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

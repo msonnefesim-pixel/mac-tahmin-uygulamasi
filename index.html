@@ -229,7 +229,13 @@ th{color:var(--yellow)}
 <section id="successBolumu" class="hidden">
  <h2>📊 YAPAYCİN · BAŞARI KARNESİ</h2>
  <div class="panel">
-  <div class="small">Tahminler bu cihazda, üretildikleri andaki olasılıklarıyla saklanır. Yeni sürümden sonra kaydedilen tahminler sonuçlandıkça burada ölçülür.</div>
+  <div class="small">Tahminler bu cihazda, üretildikleri andaki olasılıklarıyla saklanır. Telefon değiştirirken aşağıdan yedek alıp yeni telefonda geri yükleyebilirsin.</div>
+  <div class="controls" style="margin-top:8px">
+   <button type="button" onclick="successBackupExport()">⬇️ Yedeği İndir</button>
+   <button type="button" class="secondary" onclick="document.getElementById('successBackupFile').click()">⬆️ Yedeği Geri Yükle</button>
+  </div>
+  <input id="successBackupFile" type="file" accept=".json,application/json" style="display:none" onchange="successBackupImport(this)">
+  <div id="successBackupStatus" class="small" aria-live="polite"></div>
   <div class="predictions" style="margin-top:10px">
    <button type="button" class="secondary" onclick="successSetRange(7)">Son 7 gün</button>
    <button type="button" class="secondary" onclick="successSetRange(30)">Son 30 gün</button>
@@ -535,6 +541,45 @@ function successNorm(v){return fixtureTeamNorm(v)}
 function successFixtureId(m){return [String(m.date||"").slice(0,10),successNorm(m.home),successNorm(m.away)].join("|")}
 function successRead(){try{const x=JSON.parse(localStorage.getItem(SUCCESS_ARCHIVE_KEY)||"[]");return Array.isArray(x)?x:[]}catch(e){return []}}
 function successWrite(rows){try{localStorage.setItem(SUCCESS_ARCHIVE_KEY,JSON.stringify(rows.slice(-2000)))}catch(e){}}
+function successBackupExport(){
+ const rows=successRead();
+ const backup={app:"YaPaYCiN Maç Analiz",type:"yapaycin-success-backup",version:1,exportedAt:new Date().toISOString(),records:rows};
+ const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
+ const url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download="yapaycin-basari-karnesi-yedek-"+today()+".json";
+ document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ const status=$("successBackupStatus");if(status)status.textContent=rows.length+" tahmin yedek dosyasına aktarıldı. Dosyayı yeni telefona gönderip orada geri yükleyebilirsin.";
+}
+function successBackupImport(input){
+ const file=input&&input.files&&input.files[0];if(!file)return;
+ const status=$("successBackupStatus");if(status)status.textContent="Yedek dosyası okunuyor...";
+ const reader=new FileReader();
+ reader.onload=()=>{
+  try{
+   const parsed=JSON.parse(String(reader.result||""));
+   const incoming=Array.isArray(parsed)?parsed:(parsed&&parsed.type==="yapaycin-success-backup"&&Array.isArray(parsed.records)?parsed.records:null);
+   if(!incoming)throw new Error("Bu dosya geçerli bir YaPaYCiN yedeği değil.");
+   const clean=[];
+   for(const r of incoming){
+    if(!r||!["football","iyms"].includes(r.type)||!/^\d{4}-\d{2}-\d{2}$/.test(String(r.date||""))||!r.home||!r.away||!Array.isArray(r.markets))continue;
+    const markets=r.markets.filter(m=>m&&typeof m.key==="string"&&typeof m.label==="string"&&Number.isFinite(Number(m.prob))&&typeof m.pick==="string").map(m=>({key:m.key.slice(0,40),label:m.label.slice(0,80),prob:Math.max(0,Math.min(1,Number(m.prob))),pick:m.pick.slice(0,40)}));
+    if(!markets.length)continue;
+    const esc=v=>String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+    clean.push({type:r.type,date:String(r.date),league:esc(r.league).slice(0,120),league_id:String(r.league_id||"").slice(0,40),home:esc(r.home).slice(0,100),away:esc(r.away).slice(0,100),markets});
+   }
+   if(!clean.length)throw new Error("Yedekte aktarılabilecek tahmin bulunamadı.");
+   const current=successRead(),merged=[...current],ids=new Set(current.map(r=>r.id||r.type+"|"+successFixtureId(r)));
+   let added=0;
+   for(const r of clean){const id=r.type+"|"+successFixtureId(r);if(ids.has(id))continue;r.id=id;r.recordedAt=Date.now();merged.push(r);ids.add(id);added++}
+   successWrite(merged);
+   if(status)status.textContent=added+" yeni tahmin aktarıldı. "+(clean.length-added)+" kayıt zaten bulunduğu için tekrar eklenmedi.";
+   successRender();
+  }catch(e){if(status)status.textContent="Yedek yüklenemedi: "+e.message}
+  finally{input.value=""}
+ };
+ reader.onerror=()=>{if(status)status.textContent="Dosya okunamadı. Tekrar deneyebilirsin.";input.value=""};
+ reader.readAsText(file);
+}
 function successStore(record){
  const rows=successRead(),id=record.type+"|"+successFixtureId(record);
  if(rows.some(x=>x.id===id))return;

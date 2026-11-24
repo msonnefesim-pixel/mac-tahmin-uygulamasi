@@ -93,6 +93,7 @@ th{color:var(--yellow)}
 
 
 
+.success-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}.success-stat{background:#202020;border:1px solid #393939;border-radius:9px;padding:10px;text-align:center}.success-stat b{display:block;font-size:20px;color:#f5c400}.success-stat span{font-size:11px;color:#bbb}.success-table{width:100%;border-collapse:collapse;font-size:12px}.success-table th,.success-table td{padding:9px 6px;border-bottom:1px solid #383838;text-align:left}.success-table th{color:#f5c400}.success-good{color:#83d49a}.success-pending{color:#f5c400}@media(max-width:430px){.success-grid{gap:5px}.success-stat{padding:8px 4px}.success-stat b{font-size:17px}.success-table{font-size:11px}.success-table th,.success-table td{padding:8px 4px}}
 </style>
 </head>
 <body>
@@ -110,6 +111,7 @@ th{color:var(--yellow)}
  <button id="couponButon" class="tab-button" onclick="sekmeAc('coupons')">🎟️ HAZIR KUPONLAR</button>
  <button id="halfBothButon" class="tab-button" onclick="sekmeAc('halfBoth')">⚽ EVET/EVET</button>
  <button id="sporTotoButon" class="tab-button" onclick="sekmeAc('sporToto')">🏆 SPOR TOTO</button>
+ <button id="successButon" class="tab-button" onclick="sekmeAc('success')">📊 BAŞARI KARNESİ</button>
  <!-- İDDAA arka planda çalışır; kullanıcı sekmesi gösterilmez. -->
 </div>
 
@@ -222,6 +224,19 @@ th{color:var(--yellow)}
   <div id="nbaMaclar"></div>
   <button onclick="nbaBaslat(true)">NBA Verilerini Yenile</button>
  </div>
+</section>
+
+<section id="successBolumu" class="hidden">
+ <h2>📊 YAPAYCİN · BAŞARI KARNESİ</h2>
+ <div class="panel">
+  <div class="small">Tahminler bu cihazda, üretildikleri andaki olasılıklarıyla saklanır. Yeni sürümden sonra kaydedilen tahminler sonuçlandıkça burada ölçülür.</div>
+  <div class="predictions" style="margin-top:10px">
+   <button type="button" class="secondary" onclick="successSetRange(7)">Son 7 gün</button>
+   <button type="button" class="secondary" onclick="successSetRange(30)">Son 30 gün</button>
+   <button type="button" class="secondary" onclick="successSetRange(0)">Tüm kayıtlar</button>
+  </div>
+ </div>
+ <div id="successContent"><div class="panel">Başarı karnesi hazırlanıyor...</div></div>
 </section>
 
 <script>
@@ -461,6 +476,7 @@ function matchInsight(m,t){
 }
 function matchCard(m,t,past=false,rank=0){
  const finalPrediction=!past?iddaaAdjustedPrediction(m,t):t;
+ if(!past)successRecordFootball(m,finalPrediction);
  return `<div class="match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}`}><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?(finalPrediction&&highest(finalPrediction)>=0?("#"+rank+" · "+pct(highest(finalPrediction))):"Tahmin hazırlanıyor"):"Tahmin yok"}</span>`:""}</div>
  <div class="meta-row"><div class="meta">${leagueView(m)}</div><div class="kickoff">${m.time||"Saat yok"}</div></div>
  ${past?`<div class="result">Maç sonucu: ${m.ft_home}-${m.ft_away}</div>`:`<div class="predictions">${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}${predictionBox("2,5 Üst",finalPrediction?.over25)}${predictionBox("3,5 Üst",finalPrediction?.over35)}${predictionBox("İY 1,5 Üst",finalPrediction?.firstOver15)}${predictionBox("6+ Gol",finalPrediction?.six)}${predictionBox("KG Var",finalPrediction?.btts)}${predictionBox("KG Yok",finalPrediction?.btts==null?null:1-finalPrediction.btts)}</div>${matchInsight(m,finalPrediction)}`}</div>`;
@@ -511,6 +527,124 @@ function buildFixtureResultIndex(){
   if(date)fixtureResultIndex.add(fixtureHistoryKey(m,date));
  }
 }
+
+/* BAŞARI KARNESİ — tahminler üretildikleri andaki değerleriyle cihazda saklanır. */
+const SUCCESS_ARCHIVE_KEY="yapaycinPredictionArchiveV1";
+let successRangeDays=30,successIYMSIndex=null,successIYMSLoading=null;
+function successNorm(v){return fixtureTeamNorm(v)}
+function successFixtureId(m){return [String(m.date||"").slice(0,10),successNorm(m.home),successNorm(m.away)].join("|")}
+function successRead(){try{const x=JSON.parse(localStorage.getItem(SUCCESS_ARCHIVE_KEY)||"[]");return Array.isArray(x)?x:[]}catch(e){return []}}
+function successWrite(rows){try{localStorage.setItem(SUCCESS_ARCHIVE_KEY,JSON.stringify(rows.slice(-2000)))}catch(e){}}
+function successStore(record){
+ const rows=successRead(),id=record.type+"|"+successFixtureId(record);
+ if(rows.some(x=>x.id===id))return;
+ record.id=id;record.recordedAt=Date.now();rows.push(record);successWrite(rows);
+}
+function successRecordFootball(m,p){
+ if(!m||!p||!m.date||String(m.date).slice(0,10)<today())return;
+ const markets=[],add=(key,label,prob,pick)=>{if(Number.isFinite(prob))markets.push({key,label,prob:Number(prob),pick})};
+ const result=[["1",p.one],["X",p.draw],["2",p.two]].filter(x=>Number.isFinite(x[1])).sort((a,b)=>b[1]-a[1])[0];
+ if(result)add("result","Maç Sonucu",result[1],result[0]);
+ if(Number.isFinite(p.over25)&&p.over25>=.5)add("over25","2,5 Üst",p.over25,"over");
+ if(Number.isFinite(p.over35)&&p.over35>=.5)add("over35","3,5 Üst",p.over35,"over");
+ if(Number.isFinite(p.six)&&p.six>=.2)add("six","6+ Gol",p.six,"yes");
+ if(Number.isFinite(p.btts)){if(p.btts>=.5)add("bttsYes","KG Var",p.btts,"yes");else if(1-p.btts>=.5)add("bttsNo","KG Yok",1-p.btts,"no")}
+ if(Number.isFinite(p.first)&&p.first>=.4)add("first","İlk Yarı KG",p.first,"yes");
+ if(Number.isFinite(p.second)&&p.second>=.5)add("second","İkinci Yarı KG",p.second,"yes");
+ if(Number.isFinite(p.firstOver15)&&p.firstOver15>=.4)add("firstOver15","İY 1,5 Üst",p.firstOver15,"over");
+ if(!markets.length)return;
+ successStore({type:"football",date:String(m.date).slice(0,10),league:String(m.league||""),league_id:String(m.league_id||""),home:String(m.home||""),away:String(m.away||""),markets});
+}
+function successRecordIYMS(m,probs){
+ if(!m||!probs||!m.date||String(m.date).slice(0,10)<today())return;
+ const ranked=Object.entries(probs).filter(x=>Number.isFinite(Number(x[1]))).sort((a,b)=>Number(b[1])-Number(a[1]));
+ if(!ranked.length)return;
+ successStore({type:"iyms",date:String(m.date).slice(0,10),league:String(m.league||""),home:String(m.home||""),away:String(m.away||""),markets:[{key:"iyms",label:"İY/MS",pick:ranked[0][0],prob:Number(ranked[0][1])/100}]});
+}
+async function successLoadIYMS(){
+ if(successIYMSIndex)return successIYMSIndex;
+ if(successIYMSLoading)return successIYMSLoading;
+ successIYMSLoading=(async()=>{
+  const response=await fetch("./iyms-veri.json",{cache:"default"});if(!response.ok)throw new Error("İY/MS sonuç dosyası okunamadı");
+  const data=await response.json(),map=new Map();
+  for(const m of (Array.isArray(data.matches)?data.matches:[])){
+   const get=keys=>{for(const k of keys)if(m[k]!==undefined&&m[k]!==null&&m[k]!==""){const n=Number(m[k]);if(Number.isFinite(n))return n}return null};
+   const htHome=get(["ht_home","home_ht","halftime_home"]),htAway=get(["ht_away","away_ht","halftime_away"]),ftHome=get(["ft_home","home_ft","home_score"]),ftAway=get(["ft_away","away_ft","away_score"]);
+   const date=String(m.date||m.match_date||m.fixture_date||"").slice(0,10),home=successNorm(m.home||m.home_team||m.home_name||""),away=successNorm(m.away||m.away_team||m.away_name||"");
+   if(!date||!home||!away||[htHome,htAway,ftHome,ftAway].some(x=>x===null))continue;
+   const outcome=(a,b)=>a>b?"1":a<b?"2":"X";
+   map.set([date,home,away].join("|"),{code:outcome(htHome,htAway)+"/"+outcome(ftHome,ftAway),htHome,htAway,ftHome,ftAway});
+  }
+  successIYMSIndex=map;return map;
+ })().catch(e=>{successIYMSLoading=null;throw e});
+ return successIYMSLoading;
+}
+function successEvaluate(record,market,fullResults,iymsResults){
+ const id=successFixtureId(record),half=iymsResults.get(id);
+ if(market.key==="iyms")return half?half.code===market.pick:null;
+ if(["first","second","firstOver15"].includes(market.key)){
+  if(!half)return null;
+  const first=half.htHome>0&&half.htAway>0,second=half.ftHome-half.htHome>0&&half.ftAway-half.htAway>0;
+  if(market.key==="first")return first;
+  if(market.key==="second")return second;
+  return half.htHome+half.htAway>=2;
+ }
+ const score=fullResults.get(id);if(!score)return null;
+ const h=score.h,a=score.a,total=h+a;
+ if(market.key==="result")return (h>a?"1":h<a?"2":"X")===market.pick;
+ if(market.key==="over25")return total>=3;
+ if(market.key==="over35")return total>=4;
+ if(market.key==="six")return total>=6;
+ if(market.key==="bttsYes")return h>0&&a>0;
+ if(market.key==="bttsNo")return h===0||a===0;
+ return null;
+}
+function successSetRange(days){successRangeDays=days;successRender()}
+async function successRender(){
+ const area=$("successContent");if(!area)return;
+ area.innerHTML="<div class='panel'>Tahmin kayıtları ve maç sonuçları kontrol ediliyor...</div>";
+ let iymsResults;
+ try{iymsResults=await successLoadIYMS()}catch(e){iymsResults=new Map()}
+ const fullResults=new Map();
+ for(const m of HISTORY){
+  const h=m.ft_home,a=m.ft_away;if(h===null||h===undefined||h===""||a===null||a===undefined||a===""||!Number.isFinite(Number(h))||!Number.isFinite(Number(a)))continue;
+  const date=String(m.date||"").slice(0,10),home=successNorm(m.home),away=successNorm(m.away);
+  if(date&&home&&away)fullResults.set([date,home,away].join("|"),{h:Number(h),a:Number(a)});
+ }
+ const all=successRead(),cutoff=successRangeDays?dateAdd(today(),-successRangeDays):"0000-00-00";
+ const rows=all.filter(x=>!successRangeDays||x.date>=cutoff);
+ const stats=new Map(),types={football:[],iyms:[]};let pendingMatches=0,graded=0,wins=0;
+ for(const rec of rows){
+  let recPending=false;
+  for(const market of rec.markets||[]){
+   if(!stats.has(market.key))stats.set(market.key,{label:market.label,n:0,ok:0,pending:0});
+   const st=stats.get(market.key),result=successEvaluate(rec,market,fullResults,iymsResults);
+   if(result===null){st.pending++;recPending=true;continue}
+   st.n++;graded++;if(result){st.ok++;wins++}
+  }
+  if(recPending)pendingMatches++;
+  if(types[rec.type])types[rec.type].push(rec);
+ }
+ const pct=graded?(wins/graded*100).toFixed(1):"0.0",losses=graded-wins;
+ let html="<div class='success-grid'><div class='success-stat'><b>"+graded+"</b><span>Değerlendirilen tahmin</span></div><div class='success-stat'><b class='success-good'>"+wins+"</b><span>Doğru</span></div><div class='success-stat'><b>%"+pct+"</b><span>Başarı oranı</span></div></div>";
+ html+="<div class='success-grid'><div class='success-stat'><b>"+losses+"</b><span>Yanlış</span></div><div class='success-stat'><b class='success-pending'>"+pendingMatches+"</b><span>Sonucu beklenen maç</span></div><div class='success-stat'><b>"+rows.length+"</b><span>Kaydedilen maç</span></div></div>";
+ if(!rows.length)html+="<div class='panel'>Henüz bu dönemde kaydedilmiş tahmin yok. Yeni sürümden sonra Futbol ve İY/MS bölümlerinde üretilen tahminler burada birikmeye başlayacak.</div>";
+ for(const [type,title] of [["football","⚽ FUTBOL PAZARLARI"],["iyms","🎯 İY/MS"]]){
+  const keys=type==="iyms"?["iyms"]:["result","over25","over35","six","bttsYes","bttsNo","first","second","firstOver15"];
+  const relevant=keys.map(k=>[k,stats.get(k)]).filter(x=>x[1]);
+  html+="<div class='panel'><b>"+title+"</b>";
+  if(!relevant.length)html+="<p class='small'>Bu bölüm için henüz sonuçlanmış tahmin bulunmuyor.</p>";
+  else{
+   html+="<div style='overflow-x:auto'><table class='success-table'><thead><tr><th>Market</th><th>Tahmin</th><th>Doğru</th><th>Başarı</th><th>Bekleyen</th></tr></thead><tbody>";
+   for(const [key,st] of relevant){const rate=st.n?(st.ok/st.n*100).toFixed(1):"0.0";html+="<tr><td>"+st.label+"</td><td>"+st.n+"</td><td class='success-good'>"+st.ok+"</td><td>%"+rate+"</td><td class='success-pending'>"+st.pending+"</td></tr>"}
+   html+="</tbody></table></div>";
+  }
+  html+="</div>";
+ }
+ html+="<div class='small' style='padding:8px'>Kayıtlar yalnızca bu telefondaki tarayıcıda saklanır. Sonuç verisi henüz gelmeyen maçlar başarı yüzdesine dahil edilmez. Eski tahminler geriye dönük uydurulmaz.</div>";
+ area.innerHTML=html;
+}
+
 function fixtureFinished(m){
  if(m.completed===true||m.finished===true||m.is_finished===true||m.isFinished===true)return true;
  const st=m.status&&typeof m.status==="object"?m.status:{};
@@ -710,15 +844,16 @@ async function baslat(force=false){
 }
 function sekmeAc(name){
  if(name==="nba")return; // NBA sekmesi geçici olarak gizli.
- const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",nba:"nbaBolumu",coupons:"couponsBolumu",halfBoth:"halfBothBolumu",sporToto:"sporTotoBolumu",iddaa:"iddaaBolumu"};
+ const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",nba:"nbaBolumu",coupons:"couponsBolumu",halfBoth:"halfBothBolumu",sporToto:"sporTotoBolumu",success:"successBolumu",iddaa:"iddaaBolumu"};
  activeTabName=name;
  Object.keys(ids).forEach(k=>$(ids[k]).classList.toggle("hidden",k!==name));
- $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");const nbaButton=$("nbaButon");if(nbaButton)nbaButton.classList.toggle("active",name==="nba");$("couponButon").classList.toggle("active",name==="coupons");$("halfBothButon").classList.toggle("active",name==="halfBoth");$("sporTotoButon").classList.toggle("active",name==="sporToto");
+ $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");const nbaButton=$("nbaButon");if(nbaButton)nbaButton.classList.toggle("active",name==="nba");$("couponButon").classList.toggle("active",name==="coupons");$("halfBothButon").classList.toggle("active",name==="halfBoth");$("sporTotoButon").classList.toggle("active",name==="sporToto");$("successButon").classList.toggle("active",name==="success");
  // Önce görünür sekmeyi değiştir; içerik çizimini ilk ekrandan sonraya bırak.
  requestAnimationFrame(()=>{
  setTimeout(()=>{
   if(activeTabName!==name)return;
   if(name==="halfBoth")halfBothRender();
+  if(name==="success")successRender();
   if(name==="coupons"){
    kuponlariGoster();
    const couponDate=$("couponTarih")?.value||today();
@@ -1028,6 +1163,7 @@ async function iymsBaslat(){
    const sum=Object.values(probs).reduce((x,y)=>x+y,0);options.forEach(k=>probs[k]=sum?probs[k]/sum*100:0);
    return {match:m,probs,h:h.length,a:a.length};
   }).filter(Boolean);
+  upcoming.forEach(x=>successRecordIYMS(x.match,x.probs));
   const days=[...new Set(upcoming.map(x=>x.match.date))];
   let futureHtml="<h3>🎯 Gelecek maçlar - İY/MS</h3><div class='panel'><b>Lig seç</b><br><select id='iymsLeague' style='width:100%;margin:8px 0'><option value='all'>🌍 Bütün ligler</option>";
   [...new Set(upcoming.map(x=>x.match.league||"Diğer"))].sort((a,b)=>a.localeCompare(b,"tr")).forEach(l=>{const match=upcoming.find(x=>(x.match.league||"Diğer")===l)?.match||{};const country=countryInfo(match);futureHtml+=`<option value="${encodeURIComponent(l)}">${country.flag} ${country.name} · ${leagueTR(l)}</option>`});
@@ -1921,7 +2057,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=168",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=169",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

@@ -1894,7 +1894,15 @@ function liveMinuteLabel(m){
  }
  const explicit=raw.match(/(?:^|\D)(\d{1,3})(?:\s*['’′]|\s*min(?:ute)?s?|:\d{2})/i);
  if(explicit&&Number(explicit[1])<=130)valid.push(Number(explicit[1]));
- if(valid.length)return Math.max(...valid)+"' dakika";
+ if(valid.length){
+  let minute=Math.max(...valid);
+  const stamp=Date.parse(m.__feedUpdatedAt||"");
+  if(Number.isFinite(stamp)){
+   const age=Math.max(0,Math.min(15,Math.floor((Date.now()-stamp)/60000)));
+   minute=Math.min(130,minute+age);
+  }
+  return minute+"' dakika";
+ }
  return "Dakika bilgisi yok";
 }
 function liveScoreCard(m){
@@ -2021,8 +2029,9 @@ async function liveScoresLoad(){
   const espnList=espnLiveList(feedSources.espn);
   const espnFinishedList=espnList.filter(m=>liveState(m)==="finished");
   const widgetFinished=widgetList.filter(m=>liveState(m)==="finished");
+  const feedStamp=feed&&feed.updated_at?feed.updated_at:null;
   const lists=[
-   [...widgetList.filter(m=>liveState(m)==="live"),...fixtureLiveList.map(m=>({...m,__feedStatus:"live"})),...espnList],
+   [...widgetList.filter(m=>liveState(m)==="live"),...fixtureLiveList.map(m=>({...m,__feedStatus:"live"})),...espnList].map(m=>({...m,__feedUpdatedAt:feedStamp})),
    [...finishedTodayList,...widgetFinished,...espnFinishedList],
    [],
    finishedYesterdayList

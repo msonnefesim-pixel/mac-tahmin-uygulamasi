@@ -224,7 +224,7 @@ let footballRefreshBusy=false, predictionCache=new Map();
 let fixtureDateIndex=new Map(), historyDateIndex=new Map(), listRenderToken=0, matchRenderState=null;
 let matchRenderObserver=null;
 function makeDateIndex(rows){const map=new Map();for(const m of rows){const d=String(m.date||"");if(!map.has(d))map.set(d,[]);map.get(d).push(m)}return map;}
-let teamIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map();
+let teamIndex=new Map(), teamAllIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map();
 let hiddenLeagues=new Set();
 let iymsYuklendi=false, iymsLoading=false, nbaYuklendi=false, nbaLoading=false, couponBuildBusy=false, activeTabName="futbol", iddaaYuklendi=false, iddaaLoading=false, analysisRunning=false;
 let couponOpenCards=new Set(), halfBothOpenCards=new Set(), halfBothBuilding=false;
@@ -274,8 +274,8 @@ function dateText(s){return new Date(s+"T12:00:00").toLocaleDateString("tr-TR",{
 
 /* FUTBOL TAHMİN MOTORU */
 function buildIndexes(){
- teamIndex.clear();leagueIndex.clear();leaguePrefix.clear();
- // Geçmişi bir kez sırala; ardından tüm takım ve lig indeksleri aynı sırayı miras alır.
+ teamIndex.clear();teamAllIndex.clear();leagueIndex.clear();leaguePrefix.clear();
+ // Geçmişi bir kez sırala; takım ve lig indekslerini aynı sırayla hazırla.
  HISTORY.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
  for(const m of HISTORY){
   const lid=String(m.league_id||"");
@@ -285,6 +285,8 @@ function buildIndexes(){
    const key=lid+"|"+team;
    if(!teamIndex.has(key))teamIndex.set(key,[]);
    teamIndex.get(key).push(m);
+   if(!teamAllIndex.has(team))teamAllIndex.set(team,[]);
+   teamAllIndex.get(team).push(m);
   }
  }
  for(const [lid,arr] of leagueIndex){
@@ -302,13 +304,42 @@ function buildIndexes(){
  }
 }
 function lowerDate(arr,date){let lo=0,hi=arr.length;while(lo<hi){const mid=(lo+hi)>>1;if(String(arr[mid].date)<String(date))lo=mid+1;else hi=mid;}return lo;}
+function isChampionsLeague(league){
+ const rows=leagueIndex.get(String(league))||[];
+ const name=String(rows[0]?.league||"");
+ return /champions league/i.test(name)||/uefa.*champions/i.test(String(league));
+}
 function previousMatches(team,league,date,limit=10){
  const arr=teamIndex.get(String(league)+"|"+team)||[],end=lowerDate(arr,date),out=[];
  for(let i=end-1;i>=0&&out.length<limit;i--){const m=arr[i];if(num(m.ft_home)&&num(m.ft_away))out.push(m)}
- return out;
+ // Şampiyonlar Ligi'nde takım başına aynı sezon Avrupa maçı az olabilir.
+ // Beş maç eşiği dolmuyorsa yalnızca bu turnuvada tüm organizasyonlardaki geçmiş maçlarla tamamla.
+ if(isChampionsLeague(league)&&out.length<5){
+  const all=teamAllIndex.get(team)||[],allEnd=lowerDate(all,date),seen=new Set(out.map(m=>String(m.league_id)+"|"+m.date+"|"+m.home+"|"+m.away));
+  const extra=[];
+  for(let i=allEnd-1;i>=0&&out.length+extra.length<limit;i--){
+   const m=all[i],key=String(m.league_id)+"|"+m.date+"|"+m.home+"|"+m.away";
+   if(!num(m.ft_home)||!num(m.ft_away)||seen.has(key))continue;
+   extra.push(m);seen.add(key);
+  }
+  out.push(...extra);
+  out.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+ }
+ return out.slice(0,limit);
 }
 function leagueAverage(league,date){
- const x=leaguePrefix.get(String(league));if(!x)return 0;const n=lowerDate(x.arr,date),count=x.count[n];return count?x.goals[n]/count/2:0;
+ const x=leaguePrefix.get(String(league));
+ if(x){
+  const n=lowerDate(x.arr,date),count=x.count[n];
+  if(count&&(!isChampionsLeague(league)||count>=20))return x.goals[n]/count/2;
+ }
+ if(!isChampionsLeague(league))return 0;
+ let count=0,goals=0;
+ for(const m of HISTORY){
+  if(String(m.date)>=String(date))break;
+  if(num(m.ft_home)&&num(m.ft_away)){count++;goals+=Number(m.ft_home)+Number(m.ft_away)}
+ }
+ return count?goals/count/2:0;
 }
 function teamGoals(matches,team,scored){
  return avg(matches.map(m=>{
@@ -1870,7 +1901,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=156",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=157",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

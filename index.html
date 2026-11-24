@@ -259,7 +259,7 @@ let successFullResultsSource=null, successFullResultsCache=null;
 let fixtureDateIndex=new Map(), historyDateIndex=new Map(), listRenderToken=0, matchRenderState=null;
 let matchRenderObserver=null;
 function makeDateIndex(rows){const map=new Map();for(const m of rows){const d=String(m.date||"");if(!map.has(d))map.set(d,[]);map.get(d).push(m)}return map;}
-let teamIndex=new Map(), teamAllIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map(), overallHistoryPrefix={count:[0],goals:[0]};
+let teamIndex=new Map(), teamAllIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map(), previousMatchCache=new Map(), overallHistoryPrefix={count:[0],goals:[0]};
 let hiddenLeagues=new Set();
 let iymsYuklendi=false, iymsLoading=false, nbaYuklendi=false, nbaLoading=false, couponBuildBusy=false, activeTabName="futbol", iddaaYuklendi=false, iddaaLoading=false, analysisRunning=false;
 let couponOpenCards=new Set(), halfBothOpenCards=new Set(), halfBothBuilding=false, halfBothForcePending=false;
@@ -270,7 +270,8 @@ const $=id=>document.getElementById(id);
 const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
 const num=v=>v!==null&&v!==undefined&&v!==""&&Number.isFinite(Number(v));
 const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
-const factorial=n=>{let x=1;for(let i=2;i<=n;i++)x*=i;return x};
+const FACTORIALS=[1,1,2,6,24,120,720,5040,40320,362880,3628800,39916800,479001600];
+const factorial=n=>FACTORIALS[n]??(()=>{let x=FACTORIALS[12];for(let i=13;i<=n;i++)x*=i;return x})();
 const poisson=(k,l)=>Math.exp(-l)*Math.pow(l,k)/factorial(k);
 const pct=v=>Number.isFinite(v)?(v*100).toFixed(1)+"%":"-";
 const success=(a,b)=>a?(b/a*100).toFixed(1)+"%":"-";
@@ -309,7 +310,7 @@ function dateText(s){return new Date(s+"T12:00:00").toLocaleDateString("tr-TR",{
 
 /* FUTBOL TAHMİN MOTORU */
 function buildIndexes(){
- teamIndex.clear();teamAllIndex.clear();leagueIndex.clear();leaguePrefix.clear();
+ teamIndex.clear();teamAllIndex.clear();leagueIndex.clear();leaguePrefix.clear();previousMatchCache.clear();
  // Geçmişi bir kez sırala; takım ve lig indekslerini aynı sırayla hazırla.
  HISTORY.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
  overallHistoryPrefix={count:[0],goals:[0]};
@@ -351,6 +352,8 @@ function isChampionsLeague(league){
  return /champions league/i.test(name)||/uefa.*champions/i.test(String(league));
 }
 function previousMatches(team,league,date,limit=10){
+ const cacheKey=String(league)+"|"+team+"|"+date+"|"+limit;
+ if(previousMatchCache.has(cacheKey))return previousMatchCache.get(cacheKey);
  const arr=teamIndex.get(String(league)+"|"+team)||[],end=lowerDate(arr,date),out=[];
  for(let i=end-1;i>=0&&out.length<limit;i--){const m=arr[i];if(num(m.ft_home)&&num(m.ft_away))out.push(m)}
  // Şampiyonlar Ligi'nde takım başına aynı sezon Avrupa maçı az olabilir.
@@ -366,7 +369,7 @@ function previousMatches(team,league,date,limit=10){
   out.push(...extra);
   out.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
  }
- return out.slice(0,limit);
+ const result=out.slice(0,limit);previousMatchCache.set(cacheKey,result);return result;
 }
 function leagueAverage(league,date){
  const x=leaguePrefix.get(String(league));
@@ -484,9 +487,8 @@ function matchInsight(m,t){
  const why="Ev sahibi gol beklentisi "+t.expectedHome.toFixed(2)+", deplasman gol beklentisi "+t.expectedAway.toFixed(2)+".";
  return "<div class='analysis-box'><b>🧠 Çoklu model değerlendirmesi</b><br>En güçlü seçenek: <b>"+best[0]+" (%"+(best[1]*100).toFixed(1)+")</b> · Güven: <b>"+level+"</b><br><small>Olası skor: <b>"+score+"</b> · Senaryo: "+scenario+"</small><br><small>Veri kalitesi: "+quality+" · Ev/dep. geçmişi: "+t.homeSamples+"/"+t.awaySamples+" maç · Model uyumu: %"+(agreement*100).toFixed(0)+"</small><br><small>"+why+" Temel Poisson, son form ve birleşik model birlikte değerlendirildi.</small>"+(strong.length?"<br><small>Güçlü adaylar: "+strong.map(x=>x[0]+" %"+(x[1]*100).toFixed(1)).join(" · ")+"</small>":"")+(upset?"<br><span style='color:#ff9b6b;font-weight:bold'>⚠️ Sürpriz alarmı: Favori olmayan "+(favorite==="Ev sahibi"?"deplasman":"ev sahibi")+" galibiyeti ihtimali %"+(underdog*100).toFixed(1)+". Favorinin üstünlüğü kesin değil.</span>":"")+(drawRisk?"<br><span style='color:#ffcf5a;font-weight:bold'>⚠️ Beraberlik/sürpriz alarmı: X olasılığı %"+(t.draw*100).toFixed(1)+"</span>":"")+"</div>";
 }
-function matchCard(m,t,past=false,rank=0){
- const finalPrediction=!past?iddaaAdjustedPrediction(m,t):t;
- if(!past)successRecordFootball(m,finalPrediction);
+function matchCard(m,t,past=false,rank=0,adjusted=null){
+ const finalPrediction=!past?(adjusted||iddaaAdjustedPrediction(m,t)):t;
  return `<div class="match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}`}><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?(finalPrediction&&highest(finalPrediction)>=0?("#"+rank+" · "+pct(highest(finalPrediction))):"Tahmin hazırlanıyor"):"Tahmin yok"}</span>`:""}</div>
  <div class="meta-row"><div class="meta">${leagueView(m)}</div><div class="kickoff">${m.time||"Saat yok"}</div></div>
  ${past?`<div class="result">Maç sonucu: ${m.ft_home}-${m.ft_away}</div>`:`<div class="predictions">${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}${predictionBox("2,5 Üst",finalPrediction?.over25)}${predictionBox("3,5 Üst",finalPrediction?.over35)}${predictionBox("İY 1,5 Üst",finalPrediction?.firstOver15)}${predictionBox("6+ Gol",finalPrediction?.six)}${predictionBox("KG Var",finalPrediction?.btts)}${predictionBox("KG Yok",finalPrediction?.btts==null?null:1-finalPrediction.btts)}</div>${matchInsight(m,finalPrediction)}`}</div>`;
@@ -806,7 +808,7 @@ function listele(){
     const displayT=iddaaAdjustedPrediction(m,t);
     if(displayT)successRecordFootball(m,displayT);
     if(!filterMatch(displayT,filter))continue;
-    list.push({m,t,rank:highest(displayT)});
+    list.push({m,t,displayT,rank:highest(displayT)});
    }catch(err){
     console.warn("Maç analiz hatası:",m&&m.home,m&&m.away,err);
     if(!past&&filter==="all")list.push({m,t:null,rank:-1});
@@ -838,7 +840,7 @@ function maclariDevamEttir(){
  for(;state.renderIndex<stop;state.renderIndex++){
   const x=state.list[state.renderIndex];
   if(x.m.date!==state.last){html+=`<div class="day-title">${dateText(x.m.date)}</div>`;state.last=x.m.date}
-  html+=matchCard(x.m,x.t,state.past,state.renderIndex+1);
+  html+=matchCard(x.m,x.t,state.past,state.renderIndex+1,x.displayT);
  }
  alan.insertAdjacentHTML("beforeend",html);
  if(state.renderIndex<state.list.length){

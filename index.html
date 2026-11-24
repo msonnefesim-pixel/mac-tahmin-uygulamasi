@@ -451,7 +451,7 @@ function matchInsight(m,t){
 }
 function matchCard(m,t,past=false,rank=0){
  const finalPrediction=!past?iddaaAdjustedPrediction(m,t):t;
- return `<div class="match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}`}><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?("#"+rank+" · "+pct(highest(finalPrediction))):"Tahmin yok"}</span>`:""}</div>
+ return `<div class="match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}`}><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?(finalPrediction&&highest(finalPrediction)>=0?("#"+rank+" · "+pct(highest(finalPrediction))):"Tahmin hazırlanıyor"):"Tahmin yok"}</span>`:""}</div>
  <div class="meta-row"><div class="meta">${leagueView(m)}</div><div class="kickoff">${m.time||"Saat yok"}</div></div>
  ${past?`<div class="result">Maç sonucu: ${m.ft_home}-${m.ft_away}</div>`:`<div class="predictions">${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}${predictionBox("2,5 Üst",finalPrediction?.over25)}${predictionBox("3,5 Üst",finalPrediction?.over35)}${predictionBox("İY 1,5 Üst",finalPrediction?.firstOver15)}${predictionBox("6+ Gol",finalPrediction?.six)}${predictionBox("KG Var",finalPrediction?.btts)}${predictionBox("KG Yok",finalPrediction?.btts==null?null:1-finalPrediction.btts)}</div>${matchInsight(m,finalPrediction)}`}</div>`;
 }
@@ -690,11 +690,9 @@ async function baslat(force=false){
   fetch("./sw.js",{cache:"no-store"}).then(r=>r.text()).then(t=>{const m=t.match(/yapaycin-mac-analiz-v([0-9]+)/);$("sayilar").textContent+=" · S.v"+(m?m[1]:"?")}).catch(()=>{$("sayilar").textContent+=" · S.v?"});
   listele();
   if(activeTabName==="halfBoth")halfBothBuild(false);
-  // Önce futbol ekranını göster; İddaa bültenini kısa bir gecikmeyle boşta çalıştır.
-  setTimeout(()=>{
-   const yukle=()=>{if(!iddaaYuklendi&&!iddaaLoading)iddaaBaslat()};
-   if("requestIdleCallback" in window)requestIdleCallback(yukle,{timeout:12000});else yukle();
-  },6000);
+  // İlk maç listesi çizildikten hemen sonra oran bültenini arka planda başlat.
+  // Gecikmeli idle kuyruğu, geçmişi az olan maçların tahminini gereksiz yere bekletiyordu.
+  setTimeout(()=>{if(!iddaaYuklendi&&!iddaaLoading)iddaaBaslat()},500);
   // Canlı skorları ilk ekran çizildikten sonra al; tahmin listesini yeniden hesaplatmaz.
   setTimeout(startLiveScores,2500);
  }catch(e){$("durum").textContent="Futbol veri hatası: "+e.message}
@@ -1364,9 +1362,8 @@ async function iddaaBaslat(force=false){
   // Oran verisi futbol ekranı açıkken geldiyse kartları ana iş parçacığını kilitlemeden,
   // tarayıcı boşta kaldığında yenile. İlk ekranın akıcılığı korunur.
   if(activeTabName==="futbol"){
-   const refreshOddsView=()=>{if(activeTabName==="futbol")listele()};
-   if("requestIdleCallback" in window)requestIdleCallback(refreshOddsView,{timeout:5000});
-   else setTimeout(refreshOddsView,1200);
+   // Oranlar hazır olur olmaz boş kalan maç kartlarını yenile.
+   setTimeout(()=>{if(activeTabName==="futbol")listele()},250);
   }
   // Gizli İddaa sekmesinin maç kartlarını ve futbol listesini arka planda yeniden çizme.
   // İddaa ekranı kullanıcıya kapalı; veriler yalnızca tahmin eşleştirmesinde kullanılır.
@@ -1903,7 +1900,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=158",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=159",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

@@ -783,8 +783,9 @@ function listele(){
  const list=[];
  let i=0;
  // Geçmiş günlerde tahmin hesaplanmadığı için kayıtları daha büyük gruplarla hazırla.
- const prepareSize=past?100:8;
+ const prepareSize=past?100:4;
  macAlan.textContent=(past?"Geçmiş maçlar hazırlanıyor... ":"Maçlar hazırlanıyor... ")+ "0 / "+source.length;
+ let previewShown=false;
  function prepareBatch(){
   if(token!==listRenderToken)return;
   const stop=Math.min(i+prepareSize,source.length);
@@ -814,8 +815,17 @@ function listele(){
     if(!past&&filter==="all")list.push({m,t:null,rank:-1});
    }
   }
+  if(!previewShown&&!past&&list.length){
+   const preview=list.slice().sort((a,b)=>String(a.m.time||"").localeCompare(String(b.m.time||""))||String(a.m.home||"").localeCompare(String(b.m.home||""),"tr")).slice(0,4);
+   let previewHtml="";
+   preview.forEach((x,n)=>{if(n===0||x.m.date!==preview[n-1].m.date)previewHtml+=`<div class="day-title">${dateText(x.m.date)}</div>`;previewHtml+=matchCard(x.m,x.t,false,n+1,x.displayT)});
+   macAlan.innerHTML=previewHtml+`<div class="small">Diğer maçların analizleri hazırlanıyor... ${i} / ${source.length}</div>`;
+   previewShown=true;
+  }
   if(i<source.length){
-   macAlan.textContent=(past?"Geçmiş maçlar hazırlanıyor... ":"Maçlar hazırlanıyor... ")+i+" / "+source.length;
+   macAlan.querySelector(".small")?.replaceChildren(document.createTextNode("Diğer maçların analizleri hazırlanıyor... "+i+" / "+source.length));
+   macAlan.textContent=macAlan.textContent.includes("Diğer maçların analizleri hazırlanıyor")?macAlan.textContent.replace(/Diğer maçların analizleri hazırlanıyor\.\.\. \d+ \/ \d+/, "Diğer maçların analizleri hazırlanıyor... "+i+" / "+source.length):macAlan.textContent;
+   if(!previewShown)macAlan.textContent=(past?"Geçmiş maçlar hazırlanıyor... ":"Maçlar hazırlanıyor... ")+i+" / "+source.length;
    setTimeout(prepareBatch,16);return
   }
   if(token!==listRenderToken)return;

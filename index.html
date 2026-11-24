@@ -801,9 +801,12 @@ function listele(){
     if(predictionCache.has(key))t=predictionCache.get(key);
     else{t=predictFootball(m);predictionCache.set(key,t)}
     // Filtrelerden bağımsız olarak görünümde hesaplanan her gelecek maçı kaydet.
-    if(t)successRecordFootball(m,t);
-    if(!filterMatch(t,filter))continue;
-    list.push({m,t,rank:highest(t)});
+    // Güncel İddaa oranlarını model tahminiyle birleştir; filtre ve sıralama da
+    // ekranda gösterilen son olasılıkları kullansın.
+    const displayT=iddaaAdjustedPrediction(m,t);
+    if(displayT)successRecordFootball(m,displayT);
+    if(!filterMatch(displayT,filter))continue;
+    list.push({m,t,rank:highest(displayT)});
    }catch(err){
     console.warn("Maç analiz hatası:",m&&m.home,m&&m.away,err);
     if(!past&&filter==="all")list.push({m,t:null,rank:-1});

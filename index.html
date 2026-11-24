@@ -1834,10 +1834,17 @@ function espnLiveList(payload){
   const completed=type.completed===true||state==="post"||/finished|full.?time|final/i.test(statusText);
   const isLive=state==="in"&&!completed;
   if(!completed&&!isLive)return null;
-  const clock=Number(status.clock||0),display=type.shortDetail||type.detail||type.description||(completed?"BİTTİ":"CANLI"),period=Number(status.period||0);
-  let minute=clock?Math.floor(clock/60):null;
-  if(!minute){const match=String(status.displayClock||"").match(/^(\d+)/);if(match)minute=Number(match[1]);}
-  if(period>=2&&minute!==null&&minute<45)minute+=45;
+  const display=type.shortDetail||type.detail||type.description||(completed?"BİTTİ":"CANLI"),period=Number(status.period||0);
+  const clockText=String(status.displayClock||status.clock||"");
+  const clockMatch=clockText.match(/^(\d{1,3}):(\d{2})$/);
+  const clockNumber=Number(status.clock);
+  let minute=clockMatch?Number(clockMatch[1]):(Number.isFinite(clockNumber)&&clockNumber>0?Math.floor(clockNumber/60):null);
+  if(minute===null){const match=display.match(/(\d{1,3})(?:\+\d+)?['’′]|(\d{1,3}):\d{2}/);if(match)minute=Number(match[1]||match[2]);}
+  if(minute!==null){
+   if(period===2&&minute<45)minute+=45;
+   else if(period===3&&minute<15)minute+=90;
+   else if(period===4&&minute<15)minute+=105;
+  }
   const notes=(c.notes||[]).map(n=>n.headline||n.text||"").filter(Boolean);
   const league=c.altGameNote||notes[0]||e.league&&e.league.name||e.season&&e.season.slug||"Futbol";
   return {id:e.id,slug:String(e.id||""),home:home.team&&(home.team.displayName||home.team.name)||home.displayName||home.name||"Ev sahibi",away:away.team&&(away.team.displayName||away.team.name)||away.displayName||away.name||"Deplasman",home_score:home.score??null,away_score:away.score??null,competition:league,status:completed?"finished":"inprogress",status_text:display,minute,start_time:e.date||c.date||"",__feedStatus:completed?"finished":"live"};
@@ -1882,26 +1889,16 @@ function liveMinuteLabel(m){
   .filter(v=>v!==null&&v!==undefined).map(v=>String(v)).join(" ");
  if(/(^|[^a-z])ht([^a-z]|$)|half[\s_-]?time|devre arası|interval|(^|[^a-z])break([^a-z]|$)/i.test(raw))return "DEVRE ARASI";
  if(/extra.?time|uzatma/i.test(raw))return "UZATMALAR";
- // Kaynaklarda hem dönem dakikası hem toplam geçen dakika bulunabiliyor.
- // Başlama saatinden tahmin yapma; mevcut güvenilir dakika alanlarının en yükseğini seç.
- const candidates=[m.minute,m.elapsed,m.elapsed_time,m.time_elapsed,m.match_minute,m.matchMinute,m.current_minute,m.currentMinute,m.clock&&m.clock.elapsed,m.time&&typeof m.time==="object"?m.time.elapsed:null,m.status&&typeof m.status==="object"?m.status.elapsed:null,m.period&&typeof m.period==="object"?m.period.elapsed:null];
- const valid=[];
+ // Sağlayıcıların farklı dakika alanlarını birbirine ekleme veya en büyüğünü seçme:
+ // önce doğrudan maç dakikasını, sonra alternatif alanları sırayla kullan.
+ const candidates=[m.minute,m.current_minute,m.currentMinute,m.match_minute,m.matchMinute,m.elapsed,m.elapsed_time,m.time_elapsed,m.clock&&m.clock.elapsed,m.time&&typeof m.time==="object"?m.time.elapsed:null,m.status&&typeof m.status==="object"?m.status.elapsed:null,m.period&&typeof m.period==="object"?m.period.elapsed:null];
  for(const value of candidates){
   if(value===null||value===undefined||value==="")continue;
-  const match=String(value).match(/\d+/),n=match?Number(match[0]):NaN;
-  if(Number.isFinite(n)&&n>=0&&n<=130)valid.push(n);
+  const match=String(value).match(/\d{1,3}/),n=match?Number(match[0]):NaN;
+  if(Number.isFinite(n)&&n>=0&&n<=130)return n+"' dakika";
  }
  const explicit=raw.match(/(?:^|\D)(\d{1,3})(?:\s*['’′]|\s*min(?:ute)?s?|:\d{2})/i);
- if(explicit&&Number(explicit[1])<=130)valid.push(Number(explicit[1]));
- if(valid.length){
-  let minute=Math.max(...valid);
-  const stamp=Date.parse(m.__feedUpdatedAt||"");
-  if(Number.isFinite(stamp)){
-   const age=Math.max(0,Math.min(15,Math.floor((Date.now()-stamp)/60000)));
-   minute=Math.min(130,minute+age);
-  }
-  return minute+"' dakika";
- }
+ if(explicit&&Number(explicit[1])<=130)return Number(explicit[1])+"' dakika";
  return "Dakika bilgisi yok";
 }
 function liveScoreValue(m,home){
@@ -2034,7 +2031,15 @@ function liveSameFixture(a,b){
  const bh=liveNorm(b.home||b.home_team||b.homeTeam||b.home_name||""),ba=liveNorm(b.away||b.away_team||b.awayTeam||b.away_name||"");
  const ad=String(a.start_time||a.time||a.kickoff||a.date||(a.fixture&&a.fixture.date)||"").slice(0,10);
  const bd=String(b.start_time||b.time||b.kickoff||b.date||(b.fixture&&b.fixture.date)||"").slice(0,10);
- const same=(x,y)=>x===y||(Math.min(x.length,y.length)>=6&&(x.startsWith(y)||y.startsWith(x)));
+ const same=(x,y)=>{
+  if(!x||!y)return false;
+  if(x===y)return true;
+  if(Math.min(x.length,y.length)>=5&&(x.includes(y)||y.includes(x)))return true;
+  const noise=new Set(["fc","cf","sc","afc","club","the","football"]);
+  const ax=x.split(" ").filter(t=>t&&!noise.has(t)),ay=y.split(" ").filter(t=>t&&!noise.has(t));
+  const common=ax.filter(t=>ay.includes(t)).length;
+  return common>=2&&common/Math.min(ax.length,ay.length)>=0.8;
+ };
  const dayDiff=ad&&bd?Math.abs(Date.parse(ad+"T12:00:00")-Date.parse(bd+"T12:00:00"))/86400000:99;
  return !!(ah&&aa&&bh&&ba&&same(ah,bh)&&same(aa,ba)&&dayDiff<=1);
 }
@@ -2054,11 +2059,13 @@ async function liveScoresLoad(){
   const finishedTodayList=liveList(feedSources.finished_today).map(m=>({...m,__feedStatus:"finished"}));
   const finishedYesterdayList=liveList(feedSources.finished_yesterday).map(m=>({...m,__feedStatus:"finished"}));
   const espnList=espnLiveList(feedSources.espn);
-  const espnFinishedList=espnList.filter(m=>liveState(m)==="finished");
+  const espnUclList=espnLiveList(feedSources.espn_ucl).map(m=>({...m,competition:"UEFA Champions League"}));
+  const espnAllList=[...espnList,...espnUclList];
+  const espnFinishedList=espnAllList.filter(m=>liveState(m)==="finished");
   const widgetFinished=widgetList.filter(m=>liveState(m)==="finished");
   const feedStamp=feed&&feed.updated_at?feed.updated_at:null;
   const lists=[
-   [...widgetList.filter(m=>liveState(m)==="live"),...fixtureLiveList.map(m=>({...m,__feedStatus:"live"})),...espnList].map(m=>({...m,__feedUpdatedAt:feedStamp})),
+   [...widgetList.filter(m=>liveState(m)==="live"),...fixtureLiveList.map(m=>({...m,__feedStatus:"live"})),...espnAllList].map(m=>({...m,__feedUpdatedAt:feedStamp})),
    [...finishedTodayList,...widgetFinished,...espnFinishedList],
    [],
    finishedYesterdayList

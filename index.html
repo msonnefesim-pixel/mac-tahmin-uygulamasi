@@ -714,10 +714,11 @@ function sekmeAc(name){
  activeTabName=name;
  Object.keys(ids).forEach(k=>$(ids[k]).classList.toggle("hidden",k!==name));
  $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");const nbaButton=$("nbaButon");if(nbaButton)nbaButton.classList.toggle("active",name==="nba");$("couponButon").classList.toggle("active",name==="coupons");$("halfBothButon").classList.toggle("active",name==="halfBoth");$("sporTotoButon").classList.toggle("active",name==="sporToto");
- if(name==="halfBoth")halfBothRender(); // Kayıtlı kuponları sekme açılır açılmaz göster.
- // Sekme önce anında görünür; ağır hesaplar ilk çizimden sonra başlar.
+ // Önce görünür sekmeyi değiştir; içerik çizimini ilk ekrandan sonraya bırak.
+ requestAnimationFrame(()=>{
  setTimeout(()=>{
   if(activeTabName!==name)return;
+  if(name==="halfBoth")halfBothRender();
   if(name==="coupons"){
    kuponlariGoster();
    const couponDate=$("couponTarih")?.value||today();
@@ -731,7 +732,8 @@ function sekmeAc(name){
   if(name==="iyms"&&!iymsYuklendi&&!iymsLoading)iymsBaslat();
   if(name==="nba"&&!nbaYuklendi&&!nbaLoading)nbaBaslat();
   if(name==="iddaa"){if(!iddaaYuklendi&&!iddaaLoading)iddaaBaslat();else iddaaListele();}
- },25);
+ },0);
+ });
 }
 
 /* SPOR TOTO */

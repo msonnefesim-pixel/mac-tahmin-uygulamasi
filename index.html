@@ -677,7 +677,7 @@ async function baslat(force=false){
   let data=null,lastError=null;
   for(let attempt=0;attempt<3;attempt++){
    try{
-    const r=await fetch("./data.json?v="+Date.now(),{cache:"no-store"});
+    const r=await fetch("./data.json");
     if(!r.ok)throw new Error("data.json yüklenemedi ("+r.status+")");
     const parsed=await r.json();
     if(!parsed||!Array.isArray(parsed.fixtures)||!Array.isArray(parsed.history))throw new Error("Futbol veri dosyasının biçimi geçersiz");
@@ -1919,7 +1919,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=165",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=166",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

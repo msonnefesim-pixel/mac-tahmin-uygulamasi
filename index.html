@@ -785,7 +785,7 @@ function listele(){
  // Geçmiş günlerde tahmin hesaplanmadığı için kayıtları daha büyük gruplarla hazırla.
  const prepareSize=past?100:4;
  macAlan.textContent=(past?"Geçmiş maçlar hazırlanıyor... ":"Maçlar hazırlanıyor... ")+ "0 / "+source.length;
- let previewShown=false;
+ let previewShown=false,previewCount=0,previewLastDate="";
  function prepareBatch(){
   if(token!==listRenderToken)return;
   const stop=Math.min(i+prepareSize,source.length);
@@ -815,17 +815,24 @@ function listele(){
     if(!past&&filter==="all")list.push({m,t:null,rank:-1});
    }
   }
-  if(!previewShown&&!past&&list.length){
-   const preview=list.slice().sort((a,b)=>String(a.m.time||"").localeCompare(String(b.m.time||""))||String(a.m.home||"").localeCompare(String(b.m.home||""),"tr")).slice(0,4);
+  if(!past&&list.length>previewCount){
    let previewHtml="";
-   preview.forEach((x,n)=>{if(n===0||x.m.date!==preview[n-1].m.date)previewHtml+=`<div class="day-title">${dateText(x.m.date)}</div>`;previewHtml+=matchCard(x.m,x.t,false,n+1,x.displayT)});
-   macAlan.innerHTML=previewHtml+`<div class="small">Diğer maçların analizleri hazırlanıyor... ${i} / ${source.length}</div>`;
+   for(;previewCount<list.length;previewCount++){
+    const x=list[previewCount];
+    if(x.m.date!==previewLastDate){previewHtml+=`<div class="day-title">${dateText(x.m.date)}</div>`;previewLastDate=x.m.date}
+    previewHtml+=matchCard(x.m,x.t,false,previewCount+1,x.displayT);
+   }
+   let progress=macAlan.querySelector(".small");
+   if(progress)progress.remove();
+   macAlan.insertAdjacentHTML("beforeend",previewHtml);
    previewShown=true;
   }
   if(i<source.length){
-   const progress=macAlan.querySelector(".small");
-   if(progress)progress.textContent="Diğer maçların analizleri hazırlanıyor... "+i+" / "+source.length;
-   if(!previewShown)macAlan.textContent=(past?"Geçmiş maçlar hazırlanıyor... ":"Maçlar hazırlanıyor... ")+i+" / "+source.length;
+   if(previewShown){
+    let progress=macAlan.querySelector(".small");
+    if(!progress){progress=document.createElement("div");progress.className="small";macAlan.appendChild(progress)}
+    progress.textContent="Diğer maçların analizleri hazırlanıyor... "+i+" / "+source.length;
+   }else macAlan.textContent=(past?"Geçmiş maçlar hazırlanıyor... ":"Maçlar hazırlanıyor... ")+i+" / "+source.length;
    setTimeout(prepareBatch,16);return
   }
   if(token!==listRenderToken)return;

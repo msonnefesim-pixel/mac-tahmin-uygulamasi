@@ -1810,7 +1810,8 @@ function liveState(m){
   .filter(v=>v!==null&&v!==undefined).map(v=>String(v)).join(" ").toLowerCase().replace(/[ -]+/g,"_");
  // Bitis bilgisi her zaman canli/devre arasi bilgisinden ustundur.
  if(m.completed===true||String(m.completed).toLowerCase()==="true"||/finished|full_time|fulltime|(^|_)ft($|_)|after_penalt|(^|_)aet($|_)|ended|final|complete|completed|match_over|game_over/.test(raw))return "finished";
- if(m.__feedStatus==="finished")return "finished";
+
+  if(m.__feedStatus==="finished")return "finished";
  if(/cancel|postpon|abandon|suspend|not_started|notstarted|scheduled|upcoming|(^|_)ns($|_)/.test(raw))return "other";
  if(/live|in_play|inplay|in_progress|inprogress|playing|first_half|second_half|1st_half|2nd_half|half_time|halftime|(^|_)ht($|_)|(^|_)int($|_)|(^|_)bt($|_)|(^|_)break($|_)|extra_time|extra-time|penalt|(^|_)1h($|_)|(^|_)2h($|_)|(^|_)q[1-4]($|_)|1st_quarter|2nd_quarter|3rd_quarter|4th_quarter|overtime/.test(raw))return "live";
  if(m.__feedStatus==="live")return "live";

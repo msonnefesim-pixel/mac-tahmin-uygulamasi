@@ -1888,7 +1888,7 @@ function liveMinuteLabel(m){
   fixtureStatus.short,fixtureStatus.long,fixtureStatus.description,fixtureStatus.name,fixtureStatus.code,
   periodObj.short,periodObj.long,periodObj.description,periodObj.name,periodObj.type]
   .filter(v=>v!==null&&v!==undefined).map(v=>String(v)).join(" ");
- if(/(^|[^a-z])ht([^a-z]|$)|half[\\s_-]?time|devre arası|interval|(^|[^a-z])break([^a-z]|$)/i.test(raw))return "DEVRE ARASI";
+ if(/(^|[^a-z])ht([^a-z]|$)|half[\s_-]?time|devre arası|interval|(^|[^a-z])break([^a-z]|$)/i.test(raw))return "DEVRE ARASI";
  if(/extra.?time|uzatma/i.test(raw))return "UZATMALAR";
  // Kaynaklarda hem dönem dakikası hem toplam geçen dakika bulunabiliyor.
  // Başlama saatinden tahmin yapma; mevcut güvenilir dakika alanlarının en yükseğini seç.

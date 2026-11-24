@@ -1569,7 +1569,7 @@ async function halfBothBuild(force){
   halfBothSave(archive);halfBothRender();
   $("halfBothStatus").textContent="Hazır · "+start+" – "+end+" · "+scanned+" maç tarandı · "+bulletinMatches+" maç bültende bulundu · "+qualifiedSelections+" oynanabilir seçim bulundu.";
  }catch(e){$("halfBothStatus").textContent="Kupon oluşturma hatası: "+e.message}
- finally{halfBothBuilding=false;if(halfBothForcePending){halfBothForcePending=false;const status=$("halfBothStatus");if(status)status.textContent="Yenileme başlatılıyor...";setTimeout(()=>halfBothBuild(true),0)}
+ finally{halfBothBuilding=false;if(halfBothForcePending){halfBothForcePending=false;const status=$("halfBothStatus");if(status)status.textContent="Yenileme başlatılıyor...";setTimeout(()=>halfBothBuild(true),0)}}
 }
 function kuponlariGoster(){
  if(!$("couponCards"))return;const date=$("couponTarih")?.value||today(),day=cArchive()[date]||{};let total=0,done=0,hits=0,html="";$("couponDate").textContent=date+" · Her kupon 5 farklı maçtan oluşur; güçlü maçlarda iki ayrı tahmin olabilir.";

@@ -4,9 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#c8102e">
-<link rel="manifest" href="./manifest.json?v=153">
-<link rel="icon" href="./icon-192.png?v=153" type="image/png" sizes="192x192">
-<link rel="preload" as="image" href="./yapaycin-splash.jpg?v=153" fetchpriority="high">
+<link rel="manifest" href="./manifest.json?v=154">
+<link rel="icon" href="./icon-192.png?v=154" type="image/png" sizes="192x192">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
 :root{--red:#c8102e;--yellow:#f5c400;--bg:#101010;--panel:#1b1b1b;--line:#383838;--muted:#bbb}
@@ -85,20 +84,9 @@ th{color:var(--yellow)}
 
 
 
-/* YENİ TEK EKRAN AÇILIŞ */
-#yapaycinSplash{position:fixed;inset:0;z-index:99999;background:#080808;display:flex;align-items:center;justify-content:center;overflow:hidden;opacity:1;visibility:visible;transition:opacity .35s ease,visibility .35s ease}
-#yapaycinSplash img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}
-#yapaycinSplash.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
-@media(prefers-reduced-motion:reduce){#yapaycinSplash{transition:none}}
-
 </style>
 </head>
 <body>
-
-<div id="yapaycinSplash" aria-label="YaPaYCiN Analiz açılış ekranı">
- <img src="./yapaycin-splash.jpg?v=153" alt="YaPaYCiN Analiz" fetchpriority="high">
-</div>
-
 
 <header class="brand-banner" aria-label="YaPaYCiN Analiz">
  <div class="brand-wordmark"><span class="brand-y">Y<img src="./genie.svg?v=99" alt=""></span><span>aPaYCiN</span></div>
@@ -1480,7 +1468,8 @@ async function halfBothBuild(force){
   if(iddaaLoading){
    let wait=0;while(iddaaLoading&&wait<300){await new Promise(resolve=>setTimeout(resolve,100));wait++}
   }
-  if(!iddaaLoading)await iddaaBaslat(true);
+  // İddaa verisi daha önce yüklendiyse tekrar indirme; mevcut indeksleri kullan.
+  if(!iddaaYuklendi&&!iddaaLoading)await iddaaBaslat();
   if(!iddaaYuklendi||!IDDAA_EVENTS.length){
    $("halfBothStatus").textContent="Türkiye İddaa bülteni okunamadı. Bülten verisi gelmeden kupon oluşturulmadı; biraz sonra yeniden deneyebilirsin.";
    halfBothRender();return;
@@ -1875,7 +1864,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=153",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=154",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

@@ -1880,8 +1880,15 @@ function fixtureConfirmedByLiveFeed(fixture){
  return false;
 }
 function liveMinuteLabel(m){
- const raw=[m.status_text,m.statusText,m.status_label,m.status,m.match_status,m.period,m.phase].filter(v=>typeof v==="string").join(" ");
- if(/half.?time|halftime|devre arası|interval/i.test(raw))return "DEVRE ARASI";
+ const statusObj=m.status&&typeof m.status==="object"?m.status:{};
+ const fixtureStatus=m.fixture&&m.fixture.status&&typeof m.fixture.status==="object"?m.fixture.status:{};
+ const periodObj=m.period&&typeof m.period==="object"?m.period:{};
+ const raw=[m.status_text,m.statusText,m.status_label,m.status,m.match_status,m.status_code,m.status_short,m.period,m.phase,
+  statusObj.short,statusObj.long,statusObj.description,statusObj.name,statusObj.type,statusObj.code,
+  fixtureStatus.short,fixtureStatus.long,fixtureStatus.description,fixtureStatus.name,fixtureStatus.code,
+  periodObj.short,periodObj.long,periodObj.description,periodObj.name,periodObj.type]
+  .filter(v=>v!==null&&v!==undefined).map(v=>String(v)).join(" ");
+ if(/(^|[^a-z])ht([^a-z]|$)|half[\\s_-]?time|devre arası|interval|(^|[^a-z])break([^a-z]|$)/i.test(raw))return "DEVRE ARASI";
  if(/extra.?time|uzatma/i.test(raw))return "UZATMALAR";
  // Kaynaklarda hem dönem dakikası hem toplam geçen dakika bulunabiliyor.
  // Başlama saatinden tahmin yapma; mevcut güvenilir dakika alanlarının en yükseğini seç.

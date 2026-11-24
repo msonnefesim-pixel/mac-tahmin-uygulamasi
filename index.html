@@ -119,6 +119,7 @@ th{color:var(--yellow)}
  <div class="panel compact-status">
   <div class="status-copy"><div id="durum">Veriler yükleniyor...</div><div id="sayilar" class="small"></div></div>
   <button class="status-refresh" onclick="baslat(true)">↻ Yenile</button>
+  <button type="button" id="footballOddsRefresh" class="secondary" style="width:auto;padding:7px 10px;font-size:11px;margin:0 0 8px" onclick="iddaaBaslat(true)">💹 İddaa Oranlarını Yenile</button>
  </div>
  <h2>Maç Takvimi</h2>
  <div class="panel">
@@ -1548,6 +1549,8 @@ function iddaaListele(reset=true){
 async function iddaaBaslat(force=false){
  if(iddaaLoading)return;
  iddaaLoading=true;
+ const footballOddsButton=$("footballOddsRefresh");
+ if(footballOddsButton){footballOddsButton.disabled=true;footballOddsButton.textContent="⏳ Oranlar alınıyor..."}
  const couponStatus=$("iddaaCouponStatus");if(couponStatus)couponStatus.textContent="İddaa oranları yenileniyor...";
  const status=$("iddaaDurum");status.textContent="Sunucudaki güncel İddaa oranları okunuyor...";$("iddaaMaclar").innerHTML="";
  try{
@@ -1583,7 +1586,11 @@ async function iddaaBaslat(force=false){
   status.innerHTML="Sunucu oran dosyası okunamadı: "+String(e.message||e)+
    "<br><span class='small'>Sunucu bülteni 15 dakikada bir yenilenir. Önceki oran verileri varsa korunur.</span>";
   const couponStatus=$("iddaaCouponStatus");if(couponStatus)couponStatus.textContent="İddaa oranları şu an alınamadı. Daha sonra yeniden deneyebilirsin."; 
- }finally{iddaaLoading=false}
+ }finally{
+  iddaaLoading=false;
+  const footballOddsButton=$("footballOddsRefresh");
+  if(footballOddsButton){footballOddsButton.disabled=false;footballOddsButton.textContent="💹 İddaa Oranlarını Yenile"}
+ }
 }
 
 const COUPON_TYPES=[["safe1","SAĞLAM KUPON 1","safe"],["safe2","SAĞLAM KUPON 2","safe"],["surprise1","SÜRPRİZ KUPON 1","surprise"],["surprise2","SÜRPRİZ KUPON 2","surprise"],["mixed1","KARIŞIK KUPON 1","mixed"],["mixed2","KARIŞIK KUPON 2","mixed"]];
@@ -2124,7 +2131,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=173",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=174",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

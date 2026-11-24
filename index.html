@@ -1849,13 +1849,6 @@ async function nbaBaslat(force=false){
 }
 
 
-/* Yeni açılış görseli tek kez gösterilir; uygulama içeriği arka planda yüklenir. */
-(()=>{
- const splash=document.getElementById("yapaycinSplash");
- if(!splash)return;
- const close=()=>{splash.classList.add("is-hidden");setTimeout(()=>splash.remove(),400)};
- window.setTimeout(close,2200);
-})();
 
 /* AÇILIŞ */
 $("tarih").value=today();

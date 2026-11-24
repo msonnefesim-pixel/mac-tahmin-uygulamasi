@@ -318,7 +318,7 @@ function previousMatches(team,league,date,limit=10){
   const all=teamAllIndex.get(team)||[],allEnd=lowerDate(all,date),seen=new Set(out.map(m=>String(m.league_id)+"|"+m.date+"|"+m.home+"|"+m.away));
   const extra=[];
   for(let i=allEnd-1;i>=0&&out.length+extra.length<limit;i--){
-   const m=all[i],key=String(m.league_id)+"|"+m.date+"|"+m.home+"|"+m.away";
+   const m=all[i],key=String(m.league_id)+"|"+m.date+"|"+m.home+"|"+m.away;
    if(!num(m.ft_home)||!num(m.ft_away)||seen.has(key))continue;
    extra.push(m);seen.add(key);
   }

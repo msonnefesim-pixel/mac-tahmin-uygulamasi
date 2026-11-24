@@ -2015,6 +2015,15 @@ function liveMatchKey(m){
  const slug=m.slug||m.id||m.fixture_id||m.match_id;
  return slug!==undefined&&slug!==null?String(slug):[home,away,raw].join("|");
 }
+function liveSameFixture(a,b){
+ const ah=liveNorm(a.home||a.home_team||a.homeTeam||a.home_name||""),aa=liveNorm(a.away||a.away_team||a.awayTeam||a.away_name||"");
+ const bh=liveNorm(b.home||b.home_team||b.homeTeam||b.home_name||""),ba=liveNorm(b.away||b.away_team||b.awayTeam||b.away_name||"");
+ const ad=String(a.start_time||a.time||a.kickoff||a.date||(a.fixture&&a.fixture.date)||"").slice(0,10);
+ const bd=String(b.start_time||b.time||b.kickoff||b.date||(b.fixture&&b.fixture.date)||"").slice(0,10);
+ const same=(x,y)=>x===y||(Math.min(x.length,y.length)>=6&&(x.startsWith(y)||y.startsWith(x)));
+ const dayDiff=ad&&bd?Math.abs(Date.parse(ad+"T12:00:00")-Date.parse(bd+"T12:00:00"))/86400000:99;
+ return !!(ah&&aa&&bh&&ba&&same(ah,bh)&&same(aa,ba)&&dayDiff<=1);
+}
 async function liveScoresLoad(){
  if(liveScoresBusy)return;liveScoresBusy=true;
  try{
@@ -2042,7 +2051,11 @@ async function liveScoresLoad(){
   ];
   const merged=new Map();
   const add=(m,source)=>{
-   const key=liveMatchKey(m);if(key==="||")return;
+   let key=liveMatchKey(m);if(key==="||")return;
+   // Farkli saglayicilarin farkli ID/isim uzantilariyla yolladigi ayni maci birlestir.
+   if(!merged.has(key)){
+    for(const [existingKey,existing] of merged){if(liveSameFixture(existing,m)){key=existingKey;break}}
+   }
    const incoming={...m};
    if(source==="live-endpoint")incoming.__feedStatus="live";
    if(source==="finished")incoming.__feedStatus="finished";

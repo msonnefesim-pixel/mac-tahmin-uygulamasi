@@ -41,7 +41,8 @@ jobs:
               "fixtures": f"https://sportscore.com/api/v1/fixtures/?sport=football&date={today}&status=live&limit=200&src=yapaycin",
               "finished_today": f"https://sportscore.com/api/v1/fixtures/?sport=football&date={today}&status=finished&limit=200&src=yapaycin",
               "finished_yesterday": f"https://sportscore.com/api/v1/fixtures/?sport=football&date={yesterday}&status=finished&limit=200&src=yapaycin",
-              "espn": "https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard"
+              "espn": "https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard",
+              "espn_ucl": "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/scoreboard"
           }
 
           sources = {}

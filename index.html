@@ -645,11 +645,14 @@ function successEvaluate(record,market,fullResults,iymsResults){
  return null;
 }
 function successSetRange(days){successRangeDays=days;successRender()}
-async function successRender(){
+function successRender(){
  const area=$("successContent");if(!area)return;
- area.innerHTML="<div class='panel'>Tahmin kayıtları ve maç sonuçları kontrol ediliyor...</div>";
- let iymsResults;
- try{iymsResults=await successLoadIYMS()}catch(e){iymsResults=new Map()}
+ area.innerHTML="<div class='panel'>Başarı karnesi hazırlanıyor...</div>";
+ let iymsResults=successIYMSIndex||new Map();
+ // İY/MS dosyasını beklerken sekmeyi boş bırakma; futbol sonuçlarını hemen çiz.
+ if(!successIYMSIndex&&!successIYMSLoading){
+  successLoadIYMS().then(()=>{if(activeTabName==="success")successRender()}).catch(()=>{});
+ }
  const fullResults=new Map();
  for(const m of HISTORY){
   const h=m.ft_home,a=m.ft_away;if(h===null||h===undefined||h===""||a===null||a===undefined||a===""||!Number.isFinite(Number(h))||!Number.isFinite(Number(a)))continue;
@@ -2104,7 +2107,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=170",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=171",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

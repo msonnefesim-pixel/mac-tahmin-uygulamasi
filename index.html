@@ -2039,7 +2039,10 @@ function liveSameFixture(a,b){
   const noise=new Set(["fc","cf","sc","afc","club","the","football"]);
   const ax=x.split(" ").filter(t=>t&&!noise.has(t)),ay=y.split(" ").filter(t=>t&&!noise.has(t));
   const common=ax.filter(t=>ay.includes(t)).length;
-  return common>=2&&common/Math.min(ax.length,ay.length)>=0.8;
+  // Bodo/Glimt gibi tek kelimelik takim adlari da saglayicilar arasinda
+  // farkli yazilabildiginden, iki takim ve mac tarihi birlikte eslesince
+  // tek anlamli ortak takim kelimesini kabul et.
+  return common>=1&&common/Math.min(ax.length,ay.length)>=0.8&&ax.some(t=>t.length>=4);
  };
  const dayDiff=ad&&bd?Math.abs(Date.parse(ad+"T12:00:00")-Date.parse(bd+"T12:00:00"))/86400000:99;
  return !!(ah&&aa&&bh&&ba&&same(ah,bh)&&same(aa,ba)&&dayDiff<=1);
@@ -2103,7 +2106,11 @@ async function liveScoresLoad(){
   lists[3].forEach(m=>add(m,"yesterday"));
   let current=[...merged.values()].filter(m=>liveState(m)!=="other");
   if(dateChanged){
+   const confirmedFinished=[...finishedTodayList,...widgetFinished,...espnFinishedList,...finishedYesterdayList];
    for(const old of liveFootballMatches.filter(m=>liveState(m)==="live")){
+    // Onceki gunden kalan canli kaydi, bitis kaynagi ayni maci farkli
+    // takim yazimiyla bildirdiyse yeniden listeye ekleme.
+    if(confirmedFinished.some(done=>liveSameFixture(old,done)))continue;
     const key=liveMatchKey(old);if(!merged.has(key))merged.set(key,old);
    }
    current=[...merged.values()].filter(m=>liveState(m)!=="other");

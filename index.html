@@ -611,7 +611,7 @@ async function successRender(){
   const date=String(m.date||"").slice(0,10),home=successNorm(m.home),away=successNorm(m.away);
   if(date&&home&&away)fullResults.set([date,home,away].join("|"),{h:Number(h),a:Number(a)});
  }
- const all=successRead(),cutoff=successRangeDays?dateAdd(today(),-successRangeDays):"0000-00-00";
+ const all=successRead(),cutoff=successRangeDays?dateAdd(today(),-(successRangeDays-1)):"0000-00-00";
  const rows=all.filter(x=>!successRangeDays||x.date>=cutoff);
  const stats=new Map(),types={football:[],iyms:[]};let pendingMatches=0,graded=0,wins=0;
  for(const rec of rows){
@@ -744,6 +744,8 @@ function listele(){
     let t;
     if(predictionCache.has(key))t=predictionCache.get(key);
     else{t=predictFootball(m);predictionCache.set(key,t)}
+    // Filtrelerden bağımsız olarak görünümde hesaplanan her gelecek maçı kaydet.
+    if(t)successRecordFootball(m,t);
     if(!filterMatch(t,filter))continue;
     list.push({m,t,rank:highest(t)});
    }catch(err){

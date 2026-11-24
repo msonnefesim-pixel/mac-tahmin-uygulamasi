@@ -53,7 +53,7 @@ button.secondary,.tab-button{background:#292929;color:#fff;border:1px solid #555
 .ucl-ticker{display:flex;align-items:center;gap:8px;min-height:39px;margin:0 0 8px;padding:0 9px;overflow:hidden;background:#310b12;border:1px solid #c8102e;border-left:5px solid #ff263f;border-radius:8px;box-shadow:0 2px 9px #0008}
 .ucl-ticker-label{flex:0 0 auto;color:#fff;font-size:10px;font-weight:900;letter-spacing:.4px;white-space:nowrap}
 .ucl-ticker-window{min-width:0;flex:1;overflow:hidden;white-space:nowrap}
-.ucl-ticker-track{display:inline-flex;align-items:center;gap:34px;min-width:max-content;animation:uclTickerMove 52s linear infinite;color:#fff;font-size:12px;font-weight:800}
+.ucl-ticker-track{display:inline-flex;align-items:center;gap:34px;min-width:max-content;animation:uclTickerMove 32s linear infinite;color:#fff;font-size:12px;font-weight:800}
 .ucl-ticker-track span{white-space:nowrap}.ucl-ticker.paused .ucl-ticker-track{animation-play-state:paused}
 .ucl-ticker-goal{color:#fff!important;font-size:14px!important;font-weight:1000!important;letter-spacing:1px;text-align:center;animation:uclGoalPulse .55s ease-in-out infinite alternate}
 @keyframes uclTickerMove{from{transform:translateX(0)}to{transform:translateX(-50%)}}
@@ -1918,7 +1918,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=161",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=162",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

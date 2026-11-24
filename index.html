@@ -2027,6 +2027,33 @@ function liveMatchKey(m){
  const slug=m.slug||m.id||m.fixture_id||m.match_id;
  return slug!==undefined&&slug!==null?String(slug):[home,away,raw].join("|");
 }
+function liveFixtureEquivalent(a,b){
+ const team=(m,home)=>liveNorm(m[home?'home':'away']||m[home?'home_team':'away_team']||m[home?'homeTeam':'awayTeam']||m[home?'home_name':'away_name']||'');
+ const ah=team(a,true),aa=team(a,false),bh=team(b,true),ba=team(b,false);
+ if(!ah||!aa||!bh||!ba)return false;
+ const similar=(x,y)=>{if(x===y)return true;const xs=x.split(' ').filter(t=>t.length>=3),ys=y.split(' ').filter(t=>t.length>=3);if(!xs.length||!ys.length)return false;const common=xs.filter(t=>ys.includes(t)).length;return common>0&&common/Math.min(xs.length,ys.length)>=0.8};
+ if(!similar(ah,bh)||!similar(aa,ba))return false;
+ const dateOf=m=>String(m.start_time||m.time||m.kickoff||m.date||(m.fixture&&m.fixture.date)||'').slice(0,10);
+ const ad=dateOf(a),bd=dateOf(b);
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(ad)||!/^\d{4}-\d{2}-\d{2}$/.test(bd))return true;
+ return Math.abs(Date.parse(ad+'T12:00:00')-Date.parse(bd+'T12:00:00'))/86400000<=1;
+}
+function collapseLiveFixtures(items){
+ const out=[];
+ const quality=m=>(liveState(m)==='finished'?100:(liveState(m)==='live'?50:0))+(Number.isFinite(Number(m.minute))?20:0)+(liveScoreValue(m,true)!==null&&liveScoreValue(m,false)!==null?10:0);
+ for(const item of items){
+  const at=out.findIndex(existing=>liveFixtureEquivalent(existing,item));
+  if(at<0){out.push(item);continue}
+  const old=out[at],winner=quality(item)>quality(old)?item:old,loser=winner===item?old:item;
+  const combined={...loser,...winner};
+  for(const key of ['home_score','away_score','score_home','score_away','homeScore','awayScore'])if(combined[key]===null||combined[key]===undefined||combined[key]==='')combined[key]=loser[key]??old[key]??item[key];
+  if(liveState(old)==='finished'||liveState(item)==='finished')combined.__feedStatus='finished';
+  const bestMinute=[old.minute,item.minute].find(v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v)));
+  if(bestMinute!==undefined)combined.minute=bestMinute;
+  out[at]=combined;
+ }
+ return out;
+}
 function liveSameFixture(a,b){
  const ah=liveNorm(a.home||a.home_team||a.homeTeam||a.home_name||""),aa=liveNorm(a.away||a.away_team||a.awayTeam||a.away_name||"");
  const bh=liveNorm(b.home||b.home_team||b.homeTeam||b.home_name||""),ba=liveNorm(b.away||b.away_team||b.awayTeam||b.away_name||"");
@@ -2104,7 +2131,7 @@ async function liveScoresLoad(){
   lists[1].forEach(m=>add(m,"finished"));
   lists[2].forEach(m=>add(m,"today"));
   lists[3].forEach(m=>add(m,"yesterday"));
-  let current=[...merged.values()].filter(m=>liveState(m)!=="other");
+  let current=collapseLiveFixtures([...merged.values()].filter(m=>liveState(m)!=="other"));
   if(dateChanged){
    const confirmedFinished=[...finishedTodayList,...widgetFinished,...espnFinishedList,...finishedYesterdayList];
    for(const old of liveFootballMatches.filter(m=>liveState(m)==="live")){
@@ -2113,7 +2140,7 @@ async function liveScoresLoad(){
     if(confirmedFinished.some(done=>liveSameFixture(old,done)))continue;
     const key=liveMatchKey(old);if(!merged.has(key))merged.set(key,old);
    }
-   current=[...merged.values()].filter(m=>liveState(m)!=="other");
+   current=collapseLiveFixtures([...merged.values()].filter(m=>liveState(m)!=="other"));
   }
   liveFootballMatches=current;
   rebuildLiveFixtureLookup();

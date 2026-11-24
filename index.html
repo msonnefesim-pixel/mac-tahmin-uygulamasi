@@ -1799,8 +1799,6 @@ function kuponlariGoster(){
 function liveEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function liveState(m){
  if(!m||typeof m!=="object")return "other";
- if(m.__feedStatus==="live")return "live";
- if(m.__feedStatus==="finished")return "finished";
  const st=m.status&&typeof m.status==="object"?m.status:{};
  const fixture=m.fixture&&typeof m.fixture==="object"?m.fixture:{};
  const fs=fixture.status&&typeof fixture.status==="object"?fixture.status:{};
@@ -1810,19 +1808,13 @@ function liveState(m){
   fixture.status,fs.type,fs.short,fs.long,fs.description,fs.code,fs.name,
   period.type,period.name,period.short,period.description]
   .filter(v=>v!==null&&v!==undefined).map(v=>String(v)).join(" ").toLowerCase().replace(/[ -]+/g,"_");
- if(/finished|full_time|fulltime|(^|_)ft($|_)|after_penalt|(^|_)aet($|_)|ended|final|complete|completed|match_over|game_over/.test(raw))return "finished";
+ // Bitis bilgisi her zaman canli/devre arasi bilgisinden ustundur.
+ if(m.completed===true||String(m.completed).toLowerCase()==="true"||/finished|full_time|fulltime|(^|_)ft($|_)|after_penalt|(^|_)aet($|_)|ended|final|complete|completed|match_over|game_over/.test(raw))return "finished";
+ if(m.__feedStatus==="finished")return "finished";
  if(/cancel|postpon|abandon|suspend|not_started|notstarted|scheduled|upcoming|(^|_)ns($|_)/.test(raw))return "other";
  if(/live|in_play|inplay|in_progress|inprogress|playing|first_half|second_half|1st_half|2nd_half|half_time|halftime|(^|_)ht($|_)|(^|_)int($|_)|(^|_)bt($|_)|(^|_)break($|_)|extra_time|extra-time|penalt|(^|_)1h($|_)|(^|_)2h($|_)|(^|_)q[1-4]($|_)|1st_quarter|2nd_quarter|3rd_quarter|4th_quarter|overtime/.test(raw))return "live";
- if(m.completed===true||String(m.completed).toLowerCase()==="true")return "finished";
- // Sağlayıcı bazı maçlarda durum kodunu boş/alışılmadık gönderiyor.
- // Başlama saati geçmiş ve skor alanları doluysa, yakın zamanlı karşılaşmayı canlı kabul et.
- const homeScore=m.home_score??m.homeScore??(m.score&&m.score.home)??(m.home&&typeof m.home==="object"?m.home.score:null);
- const awayScore=m.away_score??m.awayScore??(m.score&&m.score.away)??(m.away&&typeof m.away==="object"?m.away.score:null);
- const kickoff=m.time||m.kickoff||m.start_time||m.date||fixture.date||fixture.timestamp||"";
- const kickoffMs=typeof kickoff==="number"?(kickoff<1e12?kickoff*1000:kickoff):Date.parse(kickoff);
- const age=Date.now()-kickoffMs;
- const hasScore=homeScore!==null&&homeScore!==undefined&&awayScore!==null&&awayScore!==undefined&&homeScore!==""&&awayScore!==""&&Number.isFinite(Number(homeScore))&&Number.isFinite(Number(awayScore));
- if(hasScore&&Number.isFinite(kickoffMs)&&age>=0&&age<=210*60000)return "live";
+ if(m.__feedStatus==="live")return "live";
+ // Durumu bos kayitlarda skor ve saat tek basina canli sayilmaz.
  return "other";
 }
 function liveList(data){
@@ -2014,9 +2006,14 @@ function liveLocalDate(){
  return new Date().toISOString().slice(0,10);
 }
 function liveMatchKey(m){
+ const home=liveNorm(m.home||m.home_team||m.homeTeam||m.home_name||"");
+ const away=liveNorm(m.away||m.away_team||m.awayTeam||m.away_name||"");
+ const raw=m.start_time||m.time||m.kickoff||m.date||(m.fixture&&m.fixture.date)||"";
+ const date=String(raw).slice(0,10);
+ // Saglayicilar ayni mac icin farkli ID kullanabildiginden takim+tarih ile eslestir.
+ if(home&&away&&/^\\d{4}-\\d{2}-\\d{2}$/.test(date))return date+"|"+home+"|"+away;
  const slug=m.slug||m.id||m.fixture_id||m.match_id;
- if(slug!==undefined&&slug!==null)return String(slug);
- return [m.home||m.home_team||m.homeTeam||m.home_name||"",m.away||m.away_team||m.awayTeam||m.away_name||"",m.time||m.kickoff||m.start_time||m.date||""].join("|").toLowerCase();
+ return slug!==undefined&&slug!==null?String(slug):[home,away,raw].join("|");
 }
 async function liveScoresLoad(){
  if(liveScoresBusy)return;liveScoresBusy=true;

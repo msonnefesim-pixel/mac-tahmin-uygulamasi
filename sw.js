@@ -1,4 +1,4 @@
-const CACHE_NAME = "yapaycin-mac-analiz-v155";
+const CACHE_NAME = "yapaycin-mac-analiz-v156";
 
 const FILES_TO_CACHE = ["./","./index.html","./manifest.json","./icon.svg","./icon-192-pal.png","./icon-512-pal.png"];
 
@@ -74,7 +74,7 @@ self.addEventListener("fetch", event => {
       event.respondWith((async () => {
         const cache = await cachePromise;
         try {
-          const fresh = await fetch(event.request);
+          const fresh = await fetch(event.request, { cache: "no-store" });
           if (fresh.ok) await cache.put(baseRequest, fresh.clone());
           return fresh;
         } catch (e) {

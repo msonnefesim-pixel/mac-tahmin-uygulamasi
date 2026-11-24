@@ -224,7 +224,7 @@ let footballRefreshBusy=false, predictionCache=new Map();
 let fixtureDateIndex=new Map(), historyDateIndex=new Map(), listRenderToken=0, matchRenderState=null;
 let matchRenderObserver=null;
 function makeDateIndex(rows){const map=new Map();for(const m of rows){const d=String(m.date||"");if(!map.has(d))map.set(d,[]);map.get(d).push(m)}return map;}
-let teamIndex=new Map(), teamAllIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map();
+let teamIndex=new Map(), teamAllIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map(), overallHistoryPrefix={count:[0],goals:[0]};
 let hiddenLeagues=new Set();
 let iymsYuklendi=false, iymsLoading=false, nbaYuklendi=false, nbaLoading=false, couponBuildBusy=false, activeTabName="futbol", iddaaYuklendi=false, iddaaLoading=false, analysisRunning=false;
 let couponOpenCards=new Set(), halfBothOpenCards=new Set(), halfBothBuilding=false;
@@ -277,6 +277,12 @@ function buildIndexes(){
  teamIndex.clear();teamAllIndex.clear();leagueIndex.clear();leaguePrefix.clear();
  // Geçmişi bir kez sırala; takım ve lig indekslerini aynı sırayla hazırla.
  HISTORY.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+ overallHistoryPrefix={count:[0],goals:[0]};
+ for(const m of HISTORY){
+  const valid=num(m.ft_home)&&num(m.ft_away);
+  overallHistoryPrefix.count.push(overallHistoryPrefix.count[overallHistoryPrefix.count.length-1]+(valid?1:0));
+  overallHistoryPrefix.goals.push(overallHistoryPrefix.goals[overallHistoryPrefix.goals.length-1]+(valid?Number(m.ft_home)+Number(m.ft_away):0));
+ }
  for(const m of HISTORY){
   const lid=String(m.league_id||"");
   if(!leagueIndex.has(lid))leagueIndex.set(lid,[]);
@@ -334,11 +340,7 @@ function leagueAverage(league,date){
   if(count&&(!isChampionsLeague(league)||count>=20))return x.goals[n]/count/2;
  }
  if(!isChampionsLeague(league))return 0;
- let count=0,goals=0;
- for(const m of HISTORY){
-  if(String(m.date)>=String(date))break;
-  if(num(m.ft_home)&&num(m.ft_away)){count++;goals+=Number(m.ft_home)+Number(m.ft_away)}
- }
+ const n=lowerDate(HISTORY,date),count=overallHistoryPrefix.count[n]||0,goals=overallHistoryPrefix.goals[n]||0;
  return count?goals/count/2:0;
 }
 function teamGoals(matches,team,scored){
@@ -1901,7 +1903,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=157",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=158",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

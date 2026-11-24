@@ -928,6 +928,7 @@ function sekmeAc(name){
 
 /* SPOR TOTO */
 let sporTotoData=null;
+let sporTotoRenderedData=null;
 let sporTotoPicks={};
 let sporTotoLoading=false;
 function sporTotoEsc(value){return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]))}
@@ -938,7 +939,14 @@ function sporTotoSecim(no,pick){
  const key=String(no),arr=Array.isArray(sporTotoPicks[key])?sporTotoPicks[key]:[];
  sporTotoPicks[key]=arr.includes(pick)?arr.filter(x=>x!==pick):[...arr,pick].sort((a,b)=>["1","X","2"].indexOf(a)-["1","X","2"].indexOf(b));
  try{localStorage.setItem("yapaycin_spor_toto_picks_v1",JSON.stringify(sporTotoPicks))}catch(e){}
- sporTotoRender();
+ const row=$("sporTotoSatir"+Number(no));
+ if(row){
+  const selected=sporTotoPicks[key];
+  row.classList.toggle("selected-match",selected.length>0);
+  row.querySelectorAll(".toto-pick").forEach(btn=>{const active=selected.includes(btn.dataset.pick);btn.classList.toggle("selected",active);btn.setAttribute("aria-pressed",String(active))});
+ }
+ const summary=$("sporTotoOzet");
+ if(summary)summary.textContent="15 maç listelendi · "+sporTotoSecimOzeti();
 }
 function sporTotoTemizle(){sporTotoPicks={};try{localStorage.removeItem("yapaycin_spor_toto_picks_v1")}catch(e){}sporTotoRender()}
 function sporTotoTeamAliases(name){
@@ -1082,12 +1090,13 @@ function sporTotoRender(){
   return '<div id="sporTotoSatir'+Number(m.number)+'" class="toto-row '+(chosen.length?'selected-match':'')+'">'+match+picks+'</div>';
  }).join("");
  $("sporTotoMaclar").innerHTML=rows||"Bu hafta için maç bulunamadı.";
+ sporTotoRenderedData=sporTotoData;
  $("sporTotoOzet").textContent="15 maç listelendi · analizler hazırlanıyor…";
  sporTotoAnalizleriBaslat();
 }
 async function sporTotoYukle(force=false){
  if(sporTotoLoading)return;
- if(sporTotoData&&!force){sporTotoRender();return}
+ if(sporTotoData&&!force){if(sporTotoRenderedData!==sporTotoData||!$("sporTotoMaclar").children.length)sporTotoRender();else if(!sporTotoAnalysisBusy)sporTotoAnalizleriBaslat();return}
  sporTotoLoading=true;
  try{
   if(!force&&!sporTotoData&&"caches" in window){
@@ -1190,9 +1199,9 @@ async function iymsBaslat(){
   const sorted=records.filter(m=>/^\d{4}-\d{2}-\d{2}$/.test(m.date)).sort((a,b)=>a.date.localeCompare(b.date));
   const homeData={},awayData={},test={total:0,correct:0,by:{}};
   options.forEach(k=>test.by[k]={n:0,ok:0});
-  const dates=[...new Set(sorted.map(m=>m.date))];
-  dates.forEach(day=>{
-   const dayMatches=sorted.filter(m=>m.date===day);
+  const byDate=new Map();
+  for(const m of sorted){if(!byDate.has(m.date))byDate.set(m.date,[]);byDate.get(m.date).push(m)}
+  for(const dayMatches of byDate.values()){
    dayMatches.forEach(m=>{
     const h=homeData[m.home]||[],a=awayData[m.away]||[];
     if(h.length<3||a.length<3)return;
@@ -1202,7 +1211,7 @@ async function iymsBaslat(){
     test.total++;test.by[pick].n++;if(pick===m.code){test.correct++;test.by[pick].ok++}
    });
    dayMatches.forEach(m=>{(homeData[m.home]||(homeData[m.home]=[])).push(m.code);(awayData[m.away]||(awayData[m.away]=[])).push(reverse(m.code))});
-  });
+  }
   let testHtml="<h3>📊 Geriye dönük kronolojik başarı testi</h3>";
   if(!test.total)testHtml+="<div class='panel'>Test için yeterli tarihli takım verisi bulunamadı.</div>";
   else{
@@ -1664,10 +1673,13 @@ async function kuponlariYenile(){
  if(couponBuildBusy)return;couponBuildBusy=true;const date=$("couponTarih")?.value||today(),archive=cArchive();$("couponDate").textContent="Altı kupon hazırlanıyor...";
  try{
   const iyRows=await cGetIYMS(),fixtures=FIXTURES.filter(m=>String(m.date).slice(0,10)===date&&/^\d{1,2}:\d{2}$/.test(String(m.time||""))&&!macBasladiMi(m));
-  const rows=fixtures.map(m=>{const key=[m.league_id,m.date,m.time,m.home,m.away].join("|");let t=predictionCache.get(key);if(!t){t=predictFootball(m);predictionCache.set(key,t)}if(!t)return null;
+  const rows=[];
+  for(let fixtureIndex=0;fixtureIndex<fixtures.length;fixtureIndex++){
+   const m=fixtures[fixtureIndex];const key=[m.league_id,m.date,m.time,m.home,m.away].join("|");let t=predictionCache.get(key);if(!t){t=predictFootball(m);predictionCache.set(key,t)}if(!t)return null;
    const opts=[{type:"result",pick:"1",prob:t.one,safe:t.one>=.56,surprise:t.one<Math.max(t.draw,t.two)&&t.one>=.20&&t.one<=.46},{type:"result",pick:"X",prob:t.draw,safe:t.draw>=.34,surprise:t.draw>=.25&&t.draw<=.42},{type:"result",pick:"2",prob:t.two,safe:t.two>=.56,surprise:t.two<Math.max(t.one,t.draw)&&t.two>=.20&&t.two<=.46},{type:"over25",pick:"2,5 Üst",prob:t.over25,safe:t.over25>=.62,surprise:t.over25>=.40&&t.over25<.62},{type:"over35",pick:"3,5 Üst",prob:t.over35,safe:t.over35>=.58,surprise:t.over35>=.34&&t.over35<.58},{type:"six",pick:"6+ Gol",prob:t.six,safe:t.six>=.34,surprise:t.six>=.12&&t.six<.34},{type:"btts",pick:"KG Var",prob:t.btts,safe:t.btts>=.58,surprise:t.btts>=.40&&t.btts<.58}];
-   if(t.firstOver15!==null)opts.push({type:"firstOver15",pick:"İlk Yarı 1,5 Üst",prob:t.firstOver15,safe:t.firstOver15>=.42,surprise:t.firstOver15>=.25&&t.firstOver15<.42});if(t.first!==null)opts.push({type:"first",pick:"İlk Yarı KG",prob:t.first,safe:t.first>=.50,surprise:t.first>=.34&&t.first<.50});if(t.second!==null)opts.push({type:"second",pick:"İkinci Yarı KG",prob:t.second,safe:t.second>=.55,surprise:t.second>=.38&&t.second<.55});const iy=cIYMS(m,iyRows);if(iy)opts.push({type:"iyms",pick:iy.pick,prob:iy.p,safe:iy.p>=.20,surprise:iy.p>=.12&&iy.p<.20});return {m,t,opts};
-  }).filter(Boolean);
+   if(t.firstOver15!==null)opts.push({type:"firstOver15",pick:"İlk Yarı 1,5 Üst",prob:t.firstOver15,safe:t.firstOver15>=.42,surprise:t.firstOver15>=.25&&t.firstOver15<.42});if(t.first!==null)opts.push({type:"first",pick:"İlk Yarı KG",prob:t.first,safe:t.first>=.50,surprise:t.first>=.34&&t.first<.50});if(t.second!==null)opts.push({type:"second",pick:"İkinci Yarı KG",prob:t.second,safe:t.second>=.55,surprise:t.second>=.38&&t.second<.55});const iy=cIYMS(m,iyRows);if(iy)opts.push({type:"iyms",pick:iy.pick,prob:iy.p,safe:iy.p>=.20,surprise:iy.p>=.12&&iy.p<.20});rows.push({m,t,opts});
+   if(fixtureIndex%20===19)await new Promise(resolve=>setTimeout(resolve,0));
+  }
   const buildPool=kind=>{const out=[];rows.forEach(x=>x.opts.forEach(o=>{if((kind==="safe"&&!o.safe)||(kind==="surprise"&&!o.surprise)||(kind==="mixed"&&!o.safe&&!o.surprise))return;const quality=x.t.quality==="İyi"?1:x.t.quality==="Orta"?.7:.4,score=kind==="safe"?o.prob*.82+quality*.18:kind==="surprise"?(1-Math.abs(o.prob-.39))*.62+(x.t.methodAgreement||0)*.18+quality*.20:(o.safe?o.prob:.39)*.65+quality*.2+(o.surprise?.15:0),reason=o.type==="result"?"1-X-2 olasılık dağılımı":o.type==="over25"||o.type==="over35"||o.type==="six"?"Beklenen gol üretimi":o.type==="firstOver15"?"İlk yarı gol beklentisi":o.type==="btts"?"İki takımın gol bulma olasılığı":o.type==="iyms"?"Geçmiş İY/MS dağılımı":"İlgili yarıdaki gol verileri";out.push({type:o.type,pick:o.pick,prob:o.prob,date:x.m.date,time:x.m.time||"",home:x.m.home,away:x.m.away,league:x.m.league||"",matchKey:[x.m.date,x.m.time,x.m.home,x.m.away].join("|"),score,reason,quality:x.t.quality||"Sınırlı",risk:kind==="safe"?"Düşük":kind==="surprise"?"Yüksek":o.safe?"Orta":"Yüksek"})}));return out};
   const groupBest=pool=>{const map=new Map();pool.forEach(x=>{if(!map.has(x.matchKey))map.set(x.matchKey,[]);map.get(x.matchKey).push(x)});return [...map.entries()].map(([key,items])=>({key,items:items.sort((a,b)=>b.score-a.score)})).sort((a,b)=>b.items[0].score-a.items[0].score)};
   const choose=(pool,count,excluded=new Set())=>{const all=groupBest(pool),groups=all.filter(g=>!excluded.has(g.key)).slice(0,count);return groups.map(g=>g.items[0])};
@@ -2112,7 +2124,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=172",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=173",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

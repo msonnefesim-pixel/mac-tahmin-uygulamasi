@@ -84,7 +84,7 @@ th{color:var(--yellow)}
 
 
 
-.success-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}.success-stat{background:#202020;border:1px solid #393939;border-radius:9px;padding:10px;text-align:center}.success-stat b{display:block;font-size:20px;color:#f5c400}.success-stat span{font-size:11px;color:#bbb}.success-table{width:100%;border-collapse:collapse;font-size:12px}.success-table th,.success-table td{padding:9px 6px;border-bottom:1px solid #383838;text-align:left}.success-table th{color:#f5c400}.success-good{color:#83d49a}.success-pending{color:#f5c400}@media(max-width:430px){.success-grid{gap:5px}.success-stat{padding:8px 4px}.success-stat b{font-size:17px}.success-table{font-size:11px}.success-table th,.success-table td{padding:8px 4px}}
+.success-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}.success-stat{background:#202020;border:1px solid #393939;border-radius:9px;padding:10px;text-align:center}.success-stat b{display:block;font-size:20px;color:#f5c400}.success-stat span{font-size:11px;color:#bbb}.success-table{width:100%;border-collapse:collapse;font-size:12px}.success-table th,.success-table td{padding:9px 6px;border-bottom:1px solid #383838;text-align:left}.success-table th{color:#f5c400}.success-good{color:#83d49a}.success-pending{color:#f5c400}.success-chart{margin-top:13px;padding:11px;background:#151515;border:1px solid #383838;border-radius:9px}.success-chart-title{font-weight:800;color:#f5c400;font-size:12px;margin-bottom:10px}.success-chart-row{margin:10px 0}.success-chart-label{display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-bottom:5px}.success-chart-label b{color:#f5c400;white-space:nowrap}.success-chart-track{height:9px;background:#303030;border-radius:10px;overflow:hidden}.success-chart-fill{height:100%;background:linear-gradient(90deg,#8f1024,#f5c400);border-radius:10px;min-width:0}.success-chart-count{font-size:10px;color:#aaa;margin-top:4px}@media(max-width:430px){.success-grid{gap:5px}.success-stat{padding:8px 4px}.success-stat b{font-size:17px}.success-table{font-size:11px}.success-table th,.success-table td{padding:8px 4px}}
 
 /* V185 - profesyonel futbol maç kartları */
 .match{
@@ -818,6 +818,13 @@ function successRender(){
    html+="<div style='overflow-x:auto'><table class='success-table'><thead><tr><th>Market</th><th>Tahmin</th><th>Doğru</th><th>Başarı</th><th>Bekleyen</th></tr></thead><tbody>";
    for(const [key,st] of relevant){const rate=st.n?(st.ok/st.n*100).toFixed(1):"0.0";html+="<tr><td>"+st.label+"</td><td>"+st.n+"</td><td class='success-good'>"+st.ok+"</td><td>%"+rate+"</td><td class='success-pending'>"+st.pending+"</td></tr>"}
    html+="</tbody></table></div>";
+   html+="<div class='success-chart'><div class='success-chart-title'>📈 Market başarı grafiği</div>";
+   for(const [key,st] of relevant){
+    const rate=st.n?st.ok/st.n*100:0;
+    const width=Math.max(0,Math.min(100,rate));
+    html+="<div class='success-chart-row'><div class='success-chart-label'><span>"+st.label+"</span><b>%"+rate.toFixed(1)+"</b></div><div class='success-chart-track'><div class='success-chart-fill' style='width:"+width.toFixed(1)+"%'></div></div><div class='success-chart-count'>"+st.ok+" doğru / "+st.n+" sonuçlanan tahmin</div></div>";
+   }
+   html+="</div>";
   }
   html+="</div>";
  }

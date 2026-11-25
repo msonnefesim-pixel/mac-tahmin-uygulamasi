@@ -755,7 +755,20 @@ function successBackupImport(input){
 }
 function successStore(record){
  const rows=successRead(),id=record.type+"|"+successFixtureId(record);
- if(rows.some(x=>x.id===id))return;
+ const existing=rows.find(x=>x.id===id);
+ if(existing){
+  // Aynı maç yeniden analiz edildiğinde ilk kaydedilen tahminleri koru;
+  // daha sonra oluşan ve eksik kalan marketleri kayda ekle.
+  const markets=Array.isArray(existing.markets)?existing.markets:[];
+  const known=new Set(markets.map(x=>x.key));
+  for(const market of (Array.isArray(record.markets)?record.markets:[])){
+   if(!known.has(market.key)){markets.push(market);known.add(market.key)}
+  }
+  existing.markets=markets;
+  if(!existing.league&&record.league)existing.league=record.league;
+  if(!existing.league_id&&record.league_id)existing.league_id=record.league_id;
+  successWrite(rows);return;
+ }
  record.id=id;record.recordedAt=Date.now();rows.push(record);successWrite(rows);
 }
 function successRecordFootball(m,p){
@@ -2573,7 +2586,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=212",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=213",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

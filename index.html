@@ -972,7 +972,7 @@ function fixtureFinished(m){
 }
 function macBasladiMi(m){
  if(fixtureFinished(m))return true;
- if(fixtureConfirmedByLiveFeed(m))return true;
+ // Canlı skor kaynağı kaldırıldı; tanımsız canlı besleme kontrolüne başvurma.
  const dateRaw=String(m.date||"").trim();
  const date=dateRaw.slice(0,10);
  if(date){
@@ -1098,7 +1098,7 @@ function listele(){
   if(token!==listRenderToken)return;
   list.sort((a,b)=>String(a.m.time||"").localeCompare(String(b.m.time||""))||String(a.m.home||"").localeCompare(String(b.m.home||""),"tr"));
   if(!past&&featuredSection&&featuredArea){
-   const featured=list.map(x=>{const picks=footballPickCandidates(x.displayT);return {...x,featuredPick:picks[0]||null}}).filter(x=>x.featuredPick).sort((a,b)=>b.featuredPick.prob-a.featuredPick.prob||String(a.m.time||"").localeCompare(String(b.m.time||""))).slice(0,5);
+   const featured=list.map(x=>{const picks=footballPickCandidates(x.displayT),favorite=footballModelFavorite(x.displayT),fallback=x.displayT?[["1 · Ev sahibi",x.displayT.one],["X · Beraberlik",x.displayT.draw],["2 · Deplasman",x.displayT.two]].filter(y=>Number.isFinite(y[1])).sort((a,b)=>b[1]-a[1])[0]:null;return {...x,featuredPick:picks[0]||favorite||(fallback?{label:fallback[0],prob:fallback[1]}:null)}}).filter(x=>x.featuredPick).sort((a,b)=>b.featuredPick.prob-a.featuredPick.prob||String(a.m.time||"").localeCompare(String(b.m.time||""))).slice(0,5);
    if(featured.length){featuredArea.innerHTML=featured.map(featuredMatchCard).join("");featuredSection.classList.remove("hidden")}
   }
   const count=list.filter(x=>x.rank>=0).length;

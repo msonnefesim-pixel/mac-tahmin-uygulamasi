@@ -14,7 +14,7 @@ jobs:
           python - <<'PY'
           import re
           s = open("index.html", encoding="utf-8").read()
-          scripts = re.findall(r"<script\\b[^>]*>([\\s\\S]*?)</script>", s, re.I)
+          scripts = re.findall(r'<script[^>]*>(.*?)</script>', s, re.S | re.I)
           if not scripts:
               raise SystemExit("No inline scripts found")
           for i, script in enumerate(scripts, 1):

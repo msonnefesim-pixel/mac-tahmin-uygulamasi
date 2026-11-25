@@ -651,7 +651,28 @@ function successEvaluate(record,market,fullResults,iymsResults){
  return null;
 }
 function successSetRange(days){successRangeDays=days;successRender()}
+let successCouponIYMSLoading=false;
+function successCouponArchiveHtml(){
+ const archive=cArchive(),groups=[];
+ for(const date of Object.keys(archive||{}).sort().reverse()){
+  const day=archive[date]||{};
+  for(const type of COUPON_TYPES){const items=day[type[0]]||[];if(items.length)groups.push({date,name:type[1],items})}
+ }
+ const half=halfBothArchive();
+ if(half&&half.pools)for(const [key,name] of [["yes_yes","EVET / EVET"],["no_yes","HAYIR / EVET"],["yes_no","EVET / HAYIR"]]){const items=half.pools[key]||[];if(items.length)groups.push({date:(half.start||"")+(half.end?" – "+half.end:""),name,items})}
+ if(!groups.length)return "<div class='panel'><b>🎟️ KUPON GEÇMİŞİ</b><p class='small'>Henüz arşivlenmiş kupon bulunamadı. Kuponlar oluşturulduktan sonra burada maç sonuçları listelenir.</p></div>";
+ let html="<div class='panel'><b>🎟️ KUPON GEÇMİŞİ · MAÇ SONUÇLARI</b><p class='small'>Arşivlenen kuponlar ve maç bazında sonuçları.</p>";
+ for(const group of groups){
+  const results=group.items.map(x=>cResult(x)),done=results.filter(x=>x!==null).length,won=results.filter(x=>x===true).length,lost=results.filter(x=>x===false).length;
+  const state=done<group.items.length?"BEKLİYOR":lost?"YATTI":"TUTTU",stateClass=state==="TUTTU"?"success-good":state==="YATTI"?"success-bad":"success-pending";
+  html+="<div style='border-top:1px solid var(--line,#444);padding:9px 0'><div style='display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap'><b>"+group.name+" · "+group.date+"</b><b class='"+stateClass+"'>"+state+"</b></div>";
+  group.items.forEach((x,i)=>{const result=results[i],label=result===true?"✓ TUTTU":result===false?"✕ YATTI":"◷ BEKLİYOR",cls=result===true?"success-good":result===false?"success-bad":"success-pending";html+="<div style='padding:6px 0;border-bottom:1px solid var(--line,#333)'><div style='display:flex;justify-content:space-between;gap:8px'><span>"+(i+1)+". "+liveEsc(x.home)+" – "+liveEsc(x.away)+"</span><b class='"+cls+"'>"+label+"</b></div><div class='small'>"+liveEsc(x.date||"")+" · "+liveEsc(x.pick||"EVET / EVET")+"</div></div>"});
+  html+="<div class='small' style='padding-top:5px'>Doğru: "+won+" · Yanlış: "+lost+" · Bekleyen: "+(group.items.length-done)+"</div></div>";
+ }
+ return html+"</div>";
+}
 function successRender(){
+ if(!couponIYMSRows&&!successCouponIYMSLoading){successCouponIYMSLoading=true;cGetIYMS().then(()=>{successCouponIYMSLoading=false;if(activeTabName==="success")successRender()})}
  const area=$("successContent");if(!area)return;
  area.innerHTML="<div class='panel'>Başarı karnesi hazırlanıyor...</div>";
  let iymsResults=successIYMSIndex||new Map();
@@ -699,6 +720,7 @@ function successRender(){
   }
   html+="</div>";
  }
+ html+=successCouponArchiveHtml();
  html+="<div class='small' style='padding:8px'>Kayıtlar yalnızca bu telefondaki tarayıcıda saklanır. Sonuç verisi henüz gelmeyen maçlar başarı yüzdesine dahil edilmez. Eski tahminler geriye dönük uydurulmaz.</div>";
  area.innerHTML=html;
 }

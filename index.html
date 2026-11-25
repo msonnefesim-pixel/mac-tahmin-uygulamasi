@@ -1999,7 +1999,7 @@ let liveFixtureLookup=new Map();
 function rebuildLiveFixtureLookup(){
  const index=new Map(),bucket=v=>v.length>=6?v.slice(0,6):v;
  for(const match of liveFootballMatches||[]){
-  const state=liveState(match);if(state!=="live"&&state!=="finished")continue;
+  const state=liveState(match);if(state!=="live")continue;
   const home=liveNorm(match.home||match.home_team||match.homeTeam||match.home_name||"");
   const away=liveNorm(match.away||match.away_team||match.awayTeam||match.away_name||"");
   const raw=match.start_time||match.time||match.kickoff||match.date||(match.fixture&&match.fixture.date)||"";
@@ -2250,7 +2250,7 @@ async function liveScoresLoad(){
   const widgetList=liveList(feedSources.widget);
   const fixtureLiveList=liveList(feedSources.fixtures);
   // Sampiyonlar Ligi bandi, ana mac listesindeki birlestirme/filtrelerden etkilenmesin.
-  uclTickerSourceMatches=[...widgetList,...fixtureLiveList.map(m=>({...m,__feedStatus:"live"})),...espnLiveList(feedSources.espn),...espnLiveList(feedSources.espn_ucl).map(m=>({...m,competition:"UEFA Champions League"}))];
+  uclTickerSourceMatches=[...widgetList,...fixtureLiveList,...espnLiveList(feedSources.espn),...espnLiveList(feedSources.espn_ucl).map(m=>({...m,competition:"UEFA Champions League"}))];
   const finishedTodayList=liveList(feedSources.finished_today).map(m=>({...m,__feedStatus:"finished"}));
   const finishedYesterdayList=liveList(feedSources.finished_yesterday).map(m=>({...m,__feedStatus:"finished"}));
   const espnList=espnLiveList(feedSources.espn);
@@ -2393,7 +2393,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=195",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=196",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

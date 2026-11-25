@@ -904,13 +904,42 @@ function successRender(){
     const rate=x.played?x.ok/x.played*100:0;
     out+="<tr><td>"+liveEsc(x.name)+"</td><td>"+x.fixtures.size+"</td><td>"+x.played+"</td><td class='success-good'>"+x.ok+"</td><td>"+(x.played?"%"+rate.toFixed(1):"—")+"</td><td class='success-pending'>"+x.pending+"</td></tr>";
    }
-   out+="</tbody></table></div><p class='small'>Başarı oranı yalnızca sonucu belli tahminlerden hesaplanır. Bir maçta birden fazla market tahmini varsa her biri ayrı değerlendirilir.</p>";
+   out+="</tbody></table></div>";
+   const chartList=list.filter(x=>x.played>=3).sort((a,b)=>(b.ok/b.played)-(a.ok/a.played)||b.played-a.played).slice(0,8);
+   if(chartList.length){
+    out+="<div class='success-chart'><div class='success-chart-title'>📊 En az 3 sonuçlanmış tahmini olan ligler · İlk 8</div>";
+    for(const x of chartList){
+     const rate=x.ok/x.played*100;
+     out+="<div class='success-chart-row'><div class='success-chart-label'><span>"+liveEsc(x.name)+"</span><b>%"+rate.toFixed(1)+"</b></div><div class='success-chart-track'><div class='success-chart-fill' style='width:"+Math.max(0,Math.min(100,rate)).toFixed(1)+"%'></div></div><div class='success-chart-count'>"+x.ok+" doğru / "+x.played+" sonuçlanmış tahmin</div></div>";
+    }
+    out+="</div>";
+   }
+   out+="<p class='small'>Başarı oranı yalnızca sonucu belli tahminlerden hesaplanır. Bir maçta birden fazla market tahmini varsa her biri ayrı değerlendirilir.</p>";
   }
   return out+"</div>";
  };
  const pct=graded?(wins/graded*100).toFixed(1):"0.0",losses=graded-wins;
  let html="<div class='success-grid'><div class='success-stat'><b>"+graded+"</b><span>Değerlendirilen tahmin</span></div><div class='success-stat'><b class='success-good'>"+wins+"</b><span>Doğru</span></div><div class='success-stat'><b>%"+pct+"</b><span>Başarı oranı</span></div></div>";
  html+="<div class='success-grid'><div class='success-stat'><b>"+losses+"</b><span>Yanlış</span></div><div class='success-stat'><b class='success-pending'>"+pendingMatches+"</b><span>Sonucu beklenen maç</span></div><div class='success-stat'><b>"+rows.length+"</b><span>Kaydedilen maç</span></div></div>";
+ const dailyStats=new Map();
+ for(const rec of rows){
+  const date=String(rec.date||"").slice(0,10);if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date))continue;
+  for(const market of rec.markets||[]){
+   const outcome=successEvaluate(rec,market,fullResults,iymsResults);if(outcome===null)continue;
+   if(!dailyStats.has(date))dailyStats.set(date,{date,n:0,ok:0});
+   const day=dailyStats.get(date);day.n++;if(outcome)day.ok++;
+  }
+ }
+ const dailyList=[...dailyStats.values()].sort((a,b)=>a.date.localeCompare(b.date)).slice(-7);
+ if(dailyList.length){
+  html+="<div class='success-chart'><div class='success-chart-title'>📅 Günlük başarı grafiği · Son 7 aktif gün</div>";
+  for(const day of dailyList){
+   const rate=day.n?day.ok/day.n*100:0;
+   const label=day.date.slice(8,10)+"."+day.date.slice(5,7);
+   html+="<div class='success-chart-row'><div class='success-chart-label'><span>"+label+"</span><b>%"+rate.toFixed(1)+"</b></div><div class='success-chart-track'><div class='success-chart-fill' style='width:"+Math.max(0,Math.min(100,rate)).toFixed(1)+"%'></div></div><div class='success-chart-count'>"+day.ok+" doğru / "+day.n+" sonuçlanan tahmin</div></div>";
+  }
+  html+="</div>";
+ }
  if(!rows.length)html+="<div class='panel'>Henüz bu dönemde kaydedilmiş tahmin yok. Yeni sürümden sonra Futbol ve İY/MS bölümlerinde üretilen tahminler burada birikmeye başlayacak.</div>";
  for(const [type,title] of [["football","⚽ FUTBOL PAZARLARI"],["iyms","🎯 İY/MS"]]){
   const keys=type==="iyms"?["iyms"]:["result","over25","over35","six","bttsYes","bttsNo","first","second","firstOver15"];
@@ -2586,7 +2615,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=213",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=214",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

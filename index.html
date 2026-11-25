@@ -549,12 +549,12 @@ function matchInsight(m,t){
 function matchCard(m,t,past=false,rank=0,adjusted=null){
  const finalPrediction=!past?(adjusted||iddaaAdjustedPrediction(m,t)):t;
  const candidates=footballPickCandidates(finalPrediction),main=candidates[0],favorite=footballModelFavorite(finalPrediction);
- const resultOptions=[["1 · Ev sahibi",finalPrediction?.one],["X · Beraberlik",finalPrediction?.draw],["2 · Deplasman",finalPrediction?.two]].filter(x=>Number.isFinite(x[1])).sort((a,b)=>b[1]-a[1]);
+ const resultOptions=[["1 · Ev sahibi",finalPrediction?.one],["X · Beraberlik",finalPrediction?.draw],["2 · Deplasman",finalPrediction?.two],["2,5 Üst",finalPrediction?.over25],["3,5 Üst",finalPrediction?.over35],["6+ Gol",finalPrediction?.six],["KG Var",finalPrediction?.btts],["KG Yok",Number.isFinite(finalPrediction?.btts)?1-finalPrediction.btts:null],["İlk Yarı KG",finalPrediction?.first],["İkinci Yarı KG",finalPrediction?.second],["İY 1,5 Üst",finalPrediction?.firstOver15]].filter(x=>Number.isFinite(x[1])&&x[1]>=0&&x[1]<=1).sort((a,b)=>b[1]-a[1]);
  const fallback=resultOptions[0]?{label:resultOptions[0][0],prob:resultOptions[0][1]}:null;
  const fallbackUsed=!main&&!favorite&&!!fallback;
- const mainLabel=main?main.label:(favorite?favorite.label:(fallback?fallback.label:"Tahmin üretilemedi"));
+ const mainLabel=main?main.label:(favorite?favorite.label:(fallback?fallback.label:"Veri bulunamadı"));
  const mainPercent=main?pct(main.prob):(favorite?pct(favorite.prob):(fallback?pct(fallback.prob):""));
- const mainTitle=main?"YAPAYCİN ÖNE ÇIKAN TAHMİN":(favorite?"YAPAYCİN MODEL TERCİHİ":(fallback?"YAPAYCİN EN YÜKSEK OLASILIKLI SONUÇ":"MODEL DEĞERLENDİRMESİ"));
+ const mainTitle=main?"YAPAYCİN ÖNE ÇIKAN TAHMİN":(favorite?"YAPAYCİN MODEL TERCİHİ":(fallback?"YAPAYCİN EN YÜKSEK OLASILIKLI SONUÇ":"VERİ DURUMU"));
  return `<article class="match pro-match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}`}>
  <div class="pro-match-head"><div class="pro-league">${leagueView(m)}</div>${!past?`<span class="rank">${rank?(main?"#"+rank:"Analiz"):"Tahmin"}</span>`:"<span class='pro-past-label'>TAMAMLANDI</span>"}</div>
  <div class="pro-teams"><div class="pro-team pro-home"><span class="pro-team-name">${m.home}</span><span class="pro-team-side">EV SAHİBİ</span></div><div class="pro-vs">VS</div><div class="pro-team pro-away"><span class="pro-team-name">${m.away}</span><span class="pro-team-side">DEPLASMAN</span></div></div>

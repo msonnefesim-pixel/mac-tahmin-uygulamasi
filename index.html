@@ -1724,14 +1724,8 @@ async function iddaaBaslat(force=false){
   status.innerHTML="<span class='good'>Sunucu oran bülteni hazır.</span> · "+events.length+" etkinlik · Oran hareketi karşılaştırılan market: "+movedMarkets+" · Kaynak okuma: "+iddaaUpdated;
   const couponStatus=$("iddaaCouponStatus");if(couponStatus)couponStatus.innerHTML="<span class='good'>İddaa bülteni güncellendi.</span> · "+events.length+" kayıt · Oran hareketi: "+movedMarkets+" · "+iddaaUpdated;
   if($("couponsBolumu")&&!$("couponsBolumu").classList.contains("hidden"))kuponlariGoster();
-  // Oran verisi futbol ekranı açıkken geldiyse kartları ana iş parçacığını kilitlemeden,
-  // tarayıcı boşta kaldığında yenile. İlk ekranın akıcılığı korunur.
-  if(activeTabName==="futbol"){
-   // Oranlar hazır olur olmaz boş kalan maç kartlarını yenile.
-   setTimeout(()=>{if(activeTabName==="futbol")listele()},250);
-  }
-  // Gizli İddaa sekmesinin maç kartlarını ve futbol listesini arka planda yeniden çizme.
-  // İddaa ekranı kullanıcıya kapalı; veriler yalnızca tahmin eşleştirmesinde kullanılır.
+  // İddaa oranları arka planda yüklenir; futbol listesi ikinci kez çizilmez.
+  // Oranlar sonraki manuel yenilemede / liste çiziminde tahminlere yansır.
  }catch(e){
   status.innerHTML="Sunucu oran dosyası okunamadı: "+String(e.message||e)+
    "<br><span class='small'>Sunucu bülteni 15 dakikada bir yenilenir. Önceki oran verileri varsa korunur.</span>";
@@ -2396,7 +2390,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=187",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=188",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

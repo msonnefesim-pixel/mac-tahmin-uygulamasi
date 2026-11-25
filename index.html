@@ -918,6 +918,29 @@ function maclariDevamEttir(){
  }
 }
 function tarihKaydir(n){$("tarih").value=dateAdd($("tarih").value||today(),n);listele()}
+
+// Mobil cihazlarda büyük geçmiş verisini parçalara bölerek hazırla.
+const footballYield=()=>new Promise(resolve=>setTimeout(resolve,0));
+async function makeDateIndexAsync(rows){
+ const map=new Map();
+ for(let i=0;i<rows.length;i++){const m=rows[i],d=String(m.date||"");if(!map.has(d))map.set(d,[]);map.get(d).push(m);if(i&&i%600===0)await footballYield()}
+ return map;
+}
+async function buildFixtureResultIndexAsync(){
+ const next=new Set();
+ for(let i=0;i<HISTORY.length;i++){const m=HISTORY[i];if(m.ft_home!==null&&m.ft_home!==undefined&&m.ft_home!==""&&m.ft_away!==null&&m.ft_away!==undefined&&m.ft_away!==""&&Number.isFinite(Number(m.ft_home))&&Number.isFinite(Number(m.ft_away))){const d=String(m.date||"").slice(0,10);if(d)next.add(fixtureHistoryKey(m,d))}if(i&&i%400===0)await footballYield()}
+ fixtureResultIndex=next;
+}
+async function buildIndexesAsync(){
+ teamIndex.clear();teamAllIndex.clear();leagueIndex.clear();leaguePrefix.clear();previousMatchCache.clear();
+ HISTORY.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+ overallHistoryPrefix={count:[0],goals:[0]};
+ for(let i=0;i<HISTORY.length;i++){const m=HISTORY[i],v=num(m.ft_home)&&num(m.ft_away);overallHistoryPrefix.count.push(overallHistoryPrefix.count.at(-1)+(v?1:0));overallHistoryPrefix.goals.push(overallHistoryPrefix.goals.at(-1)+(v?Number(m.ft_home)+Number(m.ft_away):0));if(i&&i%400===0)await footballYield()}
+ for(let i=0;i<HISTORY.length;i++){const m=HISTORY[i],lid=String(m.league_id||"");if(!leagueIndex.has(lid))leagueIndex.set(lid,[]);leagueIndex.get(lid).push(m);for(const team of [m.home,m.away]){const k=lid+"|"+team;if(!teamIndex.has(k))teamIndex.set(k,[]);teamIndex.get(k).push(m);if(!teamAllIndex.has(team))teamAllIndex.set(team,[]);teamAllIndex.get(team).push(m)}if(i&&i%400===0)await footballYield()}
+ let n=0;
+ for(const [lid,arr] of leagueIndex){const count=[0],goals=[0],halfCount=[0],firstGoals=[0],secondGoals=[0];for(let i=0;i<arr.length;i++){const m=arr[i],v=num(m.ft_home)&&num(m.ft_away);count.push(count.at(-1)+(v?1:0));goals.push(goals.at(-1)+(v?Number(m.ft_home)+Number(m.ft_away):0));const h=v&&num(m.ht_home)&&num(m.ht_away)&&Number(m.ft_home)>=Number(m.ht_home)&&Number(m.ft_away)>=Number(m.ht_away);halfCount.push(halfCount.at(-1)+(h?1:0));firstGoals.push(firstGoals.at(-1)+(h?Number(m.ht_home)+Number(m.ht_away):0));secondGoals.push(secondGoals.at(-1)+(h?Number(m.ft_home)+Number(m.ft_away)-Number(m.ht_home)-Number(m.ht_away):0));if(i&&i%600===0)await footballYield()}leaguePrefix.set(lid,{arr,count,goals,halfCount,firstGoals,secondGoals});if(++n%4===0)await footballYield()}
+}
+
 async function baslat(force=false){
  if(footballRefreshBusy)return;
  footballRefreshBusy=true;
@@ -926,25 +949,27 @@ async function baslat(force=false){
   // İlk açılışta da güncel veriyi iste; geçici ağ hatalarında otomatik tekrar dene.
   let data=null,lastError=null;
   for(let attempt=0;attempt<3;attempt++){
+   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),18000);
    try{
-    const r=await fetch("./data.json?v="+Date.now(),{cache:"no-store"});
+    const r=await fetch("./data.json?v="+Date.now(),{cache:"no-store",signal:controller.signal});
     if(!r.ok)throw new Error("data.json yüklenemedi ("+r.status+")");
     const parsed=await r.json();
     if(!parsed||!Array.isArray(parsed.fixtures)||!Array.isArray(parsed.history))throw new Error("Futbol veri dosyasının biçimi geçersiz");
     data=parsed;break;
-   }catch(err){
-    lastError=err;
-    if(attempt<2)await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));
-   }
+   }catch(err){lastError=err.name==="AbortError"?new Error("Veri sunucusu 18 saniyede yanıt vermedi"):err;if(attempt<2)await new Promise(resolve=>setTimeout(resolve,600*(attempt+1)))}
+   finally{clearTimeout(timeout)}
   }
   if(!data)throw lastError||new Error("Futbol verileri alınamadı");
   FIXTURES=data.fixtures;HISTORY=data.history;couponResultIndex=null;couponHistoryByHome=null;
-  buildFixtureResultIndex();
-  predictionCache.clear();
-  fixtureDateIndex=makeDateIndex(FIXTURES);historyDateIndex=makeDateIndex(HISTORY);
-  buildIndexes();
+  $("durum").textContent="Maç verileri alındı, geçmiş kayıtlar hazırlanıyor...";await footballYield();
+  await buildFixtureResultIndexAsync();predictionCache.clear();
+  $("durum").textContent="Maç takvimi hazırlanıyor...";await footballYield();
+  fixtureDateIndex=await makeDateIndexAsync(FIXTURES);historyDateIndex=await makeDateIndexAsync(HISTORY);
+  $("durum").textContent="Takım ve lig analizleri hazırlanıyor...";await footballYield();
+  await buildIndexesAsync();
   if(activeTabName==="sporToto"&&sporTotoData)sporTotoRender();
   try{hiddenLeagues=new Set(JSON.parse(localStorage.getItem("yapaycinHiddenLeagues")||"[]"))}catch(e){hiddenLeagues=new Set()}
+  $("durum").textContent="Ligler hazırlanıyor...";await footballYield();
   fillLeagues();if(!$("couponsBolumu").classList.contains("hidden"))kuponlariGoster();$("durum").innerHTML="<span class='good'>Futbol verileri yüklendi</span>";
   $("sayilar").textContent="Gelecek maç: "+FIXTURES.length+" · Geçmiş maç: "+HISTORY.length+" · Güncelleme: "+(data.updated||"bilinmiyor");
   fetch("./sw.js",{cache:"no-store"}).then(r=>r.text()).then(t=>{const m=t.match(/yapaycin-mac-analiz-v([0-9]+)/);$("sayilar").textContent+=" · S.v"+(m?m[1]:"?")}).catch(()=>{$("sayilar").textContent+=" · S.v?"});

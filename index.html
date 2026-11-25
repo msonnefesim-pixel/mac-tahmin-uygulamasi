@@ -477,7 +477,8 @@ function footballModelFavorite(t){
  if(!t||!Number.isFinite(t.one)||!Number.isFinite(t.two))return null;
  const side=t.one>=t.two?{label:"1 · Ev sahibi",prob:t.one}:{label:"2 · Deplasman",prob:t.two};
  return side.prob>=(Number.isFinite(t.draw)?t.draw:0)?side:null;
-}\nfunction footballPickCandidates(t){
+}
+function footballPickCandidates(t){
  if(!t||t.marketOnly)return [];
  const picks=[];
  const add=(label,prob,key)=>{if(Number.isFinite(prob)&&prob>=FOOTBALL_PICK_LIMITS[key])picks.push({label,prob,key})};

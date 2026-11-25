@@ -1320,45 +1320,59 @@ function sporTotoTahmin(m){
  const samples=Math.min(home.length,away.length);
  return {one:p.one,draw:p.draw,two:p.two,expectedHome:lh,expectedAway:la,scoreline:scorelineMostLikely(lh,la),homeSamples:home.length,awaySamples:away.length,quality:samples>=8?"İyi":samples>=5?"Sınırlı":"Düşük",fallback: samples<5};
 }
-let sporTotoMixedCoupon=null;
+let sporTotoMixedCoupons=[];
 function sporTotoKarIsikKuponOlustur(){
+ const target=$("sporTotoKarIsikSonuc");
  if(sporTotoIlkMacBasladi(sporTotoData)){
-  $("sporTotoKarIsikSonuc").textContent="Bu haftanın ilk maçı başladı. Yeni bülten yayınlanınca kupon oluşturulabilir.";return;
+  target.textContent="Bu haftanın ilk maçı başladı. Yeni bülten yayınlanınca 4 kupon hazırlanabilir.";return;
  }
  if(!sporTotoData||!Array.isArray(sporTotoData.matches)||sporTotoData.matches.length!==15){
-  $("sporTotoKarIsikSonuc").textContent="Önce 15 maçlık bülten yüklensin.";return;
+  target.textContent="Önce 15 maçlık bülten yüklensin.";return;
  }
  const rankedMatches=sporTotoData.matches.map(m=>{
   const p=sporTotoTahminCached(m);
-  if(!p)return {number:m.number,home:m.home,away:m.away,picks:[],kind:"VERİ YETERSİZ",confidence:"Güvenilir tahmin üretilemedi",gap:Infinity,top:null};
+  if(!p)return {number:m.number,home:m.home,away:m.away,picks:[],kind:"VERİ YETERSİZ",confidence:"Tahmin üretilemedi",gap:Infinity,top:null,second:null};
   const ranked=[["1",p.one],["X",p.draw],["2",p.two]].sort((a,b)=>b[1]-a[1]);
   const top=ranked[0],second=ranked[1],gap=top[1]-second[1];
-  return {number:m.number,home:m.home,away:m.away,picks:[top[0]],kind:"BANKO",confidence:(p.fallback?"Genel ortalama · ":"")+"En yüksek olasılık %"+(top[1]*100).toFixed(0),gap,top,second,fallback:!!p.fallback};
+  return {number:m.number,home:m.home,away:m.away,picks:[top[0]],kind:"BANKO ADAYI",confidence:(p.fallback?"Genel ortalama · düşük güven · ":"")+"En yüksek olasılık %"+(top[1]*100).toFixed(0),gap,top,second,fallback:!!p.fallback};
  });
- const doubles=rankedMatches
-  .filter(m=>m.top&&!( !m.fallback && m.top[1]>=.52 && m.gap>=.14))
-  .sort((a,b)=>a.gap-b.gap)
-  .slice(0,4);
- const doubleNumbers=new Set(doubles.map(m=>String(m.number)));
- const coupon=rankedMatches.map(m=>{
-  if(!m.top)return m;
-  if(doubleNumbers.has(String(m.number))){
-   return {...m,picks:[m.top[0],m.second[0]],kind:"SÜRPRİZ KORUMALI",confidence:"İlk iki olasılık %"+(m.top[1]*100).toFixed(0)+" / %"+(m.second[1]*100).toFixed(0)};
-  }
-  return m;
+ const uncertain=rankedMatches.filter(m=>m.top&&!m.fallback).sort((a,b)=>a.gap-b.gap);
+ const styles=[
+  {name:"BANKO KUPONU",desc:"En güçlü sonuçlar · en az çift",doubleCount:1,mode:"front"},
+  {name:"DENGELİ KUPON",desc:"Banko ve korumalı seçim dengesi",doubleCount:3,mode:"front"},
+  {name:"SÜRPRİZ KORUMALI KUPON",desc:"Belirsiz maçlarda daha fazla çift ihtimal",doubleCount:5,mode:"front"},
+  {name:"KARIŞIK KUPON",desc:"Farklı maçlara dağıtılmış çift ihtimaller",doubleCount:4,mode:"spread"}
+ ];
+ sporTotoMixedCoupons=styles.map(style=>{
+  let chosen=[];
+  if(style.mode==="spread"&&uncertain.length>style.doubleCount){
+   const step=(uncertain.length-1)/(style.doubleCount-1);
+   chosen=Array.from({length:style.doubleCount},(_,i)=>uncertain[Math.round(i*step)]);
+  }else chosen=uncertain.slice(0,style.doubleCount);
+  const doubleNumbers=new Set(chosen.map(m=>String(m.number)));
+  const matches=rankedMatches.map(m=>{
+   if(!m.top)return m;
+   if(doubleNumbers.has(String(m.number))){
+    return {...m,picks:[m.top[0],m.second[0]],kind:"ÇİFT KORUMA",confidence:"Olasılıklar %"+(m.top[1]*100).toFixed(0)+" / %"+(m.second[1]*100).toFixed(0)};
+   }
+   return m;
+  });
+  return {...style,matches};
  });
- sporTotoMixedCoupon=coupon;
  sporTotoKarIsikKuponRender();
 }
 function sporTotoKarIsikKuponRender(){
- const target=$("sporTotoKarIsikSonuc");if(!target||!sporTotoMixedCoupon)return;
- let columns=1,bankos=0,doubles=0,noData=0;
- const rows=sporTotoMixedCoupon.map(m=>{
-  if(m.picks.length)columns*=m.picks.length;
-  if(m.picks.length===1)bankos++;else if(m.picks.length===2)doubles++;else noData++;
-  return '<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid #49412a"><span style="min-width:0"><b>'+m.number+'. '+sporTotoEsc(m.home)+' – '+sporTotoEsc(m.away)+'</b><small style="display:block;color:#c9bd91">'+m.kind+' · '+m.confidence+'</small></span><b style="color:#ffe45c;white-space:nowrap">'+(m.picks.length?m.picks.join(" / "):"—")+'</b></div>';
+ const target=$("sporTotoKarIsikSonuc");if(!target||!sporTotoMixedCoupons.length)return;
+ const cards=sporTotoMixedCoupons.map((coupon,index)=>{
+  let columns=1,bankos=0,doubles=0,noData=0;
+  const rows=coupon.matches.map(m=>{
+   if(m.picks.length)columns*=m.picks.length;
+   if(m.picks.length===1)bankos++;else if(m.picks.length===2)doubles++;else noData++;
+   return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #49412a"><span style="min-width:0"><b>'+m.number+'. '+sporTotoEsc(m.home)+' – '+sporTotoEsc(m.away)+'</b><small style="display:block;color:#c9bd91">'+m.kind+' · '+m.confidence+'</small></span><b style="color:#ffe45c;white-space:nowrap">'+(m.picks.length?m.picks.join(" / "):"—")+'</b></div>';
+  }).join("");
+  return '<details '+(index===0?'open':'')+' style="margin:9px 0;padding:9px;border:1px solid #6d5920;border-radius:10px;background:#19170f"><summary style="cursor:pointer;color:#ffe45c;font-weight:800">'+(index+1)+'. '+coupon.name+'<small style="display:block;color:#c9bd91;font-weight:400;margin-top:3px">'+coupon.desc+'</small></summary><div style="margin-top:8px"><b>'+bankos+' banko · '+doubles+' çift · '+noData+' verisiz</b><br><b>Toplam kolon: '+columns.toLocaleString("tr-TR")+'</b>'+rows+'</div></details>';
  }).join("");
- target.innerHTML='<b style="color:#ffe45c">KARIŞIK KUPON HAZIR</b><br>'+bankos+' banko · '+doubles+' çift · '+noData+' tahmin yok<br><b>Toplam kolon: '+columns.toLocaleString("tr-TR")+'</b><small style="display:block;color:#ffe45c;margin:5px 0">Çift ihtimal en fazla 4 maçla sınırlandırıldı. Üçlü ihtimal kullanılmaz.</small>'+rows+'<small style="display:block;margin-top:8px;color:#aaa">Kupon analiz olasılıklarına göre hazırlanır; kesin sonuç veya kazanç garantisi değildir. Veri yetersiz maçlar kolona eklenmez.</small>';
+ target.innerHTML='<b style="color:#ffe45c">4 FARKLI KUPON HAZIR</b><small style="display:block;color:#aaa;margin:4px 0 8px">Her kupon ayrı analiz düzeniyle hazırlandı. Açmak için kupon başlığına dokun.</small>'+cards+'<small style="display:block;margin-top:8px;color:#aaa">Seçimler geçmiş maç verilerindeki olasılıklara dayanır; kesin sonuç veya kazanç garantisi değildir. Verisi yetersiz maçlar otomatik seçilmez.</small>';
 }
 function sporTotoPredictionKey(m){return [m.number,m.home,m.away,m.date].join("|")}
 const sporTotoPredictionCache={};

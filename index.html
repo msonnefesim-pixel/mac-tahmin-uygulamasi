@@ -2133,13 +2133,13 @@ function liveFilterSet(mode){
  $("finishedOnlyButton").textContent=(mode==="finished"?"✓ ":"") +"Biten maçlar";
  renderLiveResults();
 }
-let uclTickerGoalTimer=null,uclTickerGoalQueue=[],uclTickerScores={};
-function uclTickerMatches(){const today=liveLocalDate(),yesterday=dateAdd(today,-1),tomorrow=dateAdd(today,1);return (liveFootballMatches||[]).filter(m=>{const rawDate=m.start_time||m.time||m.kickoff||m.date||(m.fixture&&m.fixture.date)||"";const matchDate=String(rawDate).slice(0,10);if(matchDate&&![today,yesterday,tomorrow].includes(matchDate))return false;const raw=m.competition||m.league||m.tournament||m.competition_name||m.league_name||m.leagueName||"";const name=typeof raw==="object"?(raw.name||raw.title||raw.short_name||raw.code||""):raw;const l=liveNorm(name);return /(champions league|uefa cl|(^| )ucl( |$))/.test(l)&&!/(women|woman|ladies|female|youth|u\s?\d+)/.test(l)&&(liveState(m)==="live"||liveState(m)==="finished")})}
+let uclTickerGoalTimer=null,uclTickerGoalQueue=[],uclTickerScores={},uclTickerSourceMatches=[];
+function uclTickerMatches(){const today=liveLocalDate(),yesterday=dateAdd(today,-1),tomorrow=dateAdd(today,1);const source=uclTickerSourceMatches.length?uclTickerSourceMatches:(liveFootballMatches||[]);return source.filter(m=>{const rawDate=m.start_time||m.time||m.kickoff||m.date||(m.fixture&&m.fixture.date)||"";const matchDate=String(rawDate).slice(0,10);if(matchDate&&![today,yesterday,tomorrow].includes(matchDate))return false;const raw=m.competition||m.league||m.tournament||m.competition_name||m.league_name||m.leagueName||"";const name=typeof raw==="object"?(raw.name||raw.title||raw.short_name||raw.code||""):raw;const l=liveNorm(name);return /(champions league|uefa cl|(^| )ucl( |$))/.test(l)&&!/(women|woman|ladies|female|youth|u\s?\d+)/.test(l)&&(liveState(m)==="live"||liveState(m)==="finished")})}
 function uclTickerKey(m){return String(m.id||m.slug||[m.home,m.away,m.start_time].join("|"))}
 function uclTickerScore(m){const ah=liveScoreValue(m,true),aa=liveScoreValue(m,false),a=ah===null?"–":ah,b=aa===null?"–":aa;return {home:ah,away:aa,text:String(a)+"-"+String(b)}}
 function uclTickerCheckGoals(matches){let changed=false;for(const m of matches){const k=uclTickerKey(m),s=uclTickerScore(m),o=uclTickerScores[k];if(o&&Number.isFinite(s.home)&&Number.isFinite(s.away)&&((Number.isFinite(o.home)&&s.home>o.home)||(Number.isFinite(o.away)&&s.away>o.away))){const home=m.home||m.home_team||"Ev sahibi",away=m.away||m.away_team||"Deplasman";uclTickerGoalQueue.push("⚽ GOL! "+(s.home>o.home?home:away)+" · "+home+" "+s.text+" "+away);changed=true}uclTickerScores[k]={home:s.home,away:s.away}}try{localStorage.setItem("yapaycin_ucl_scores_v1",JSON.stringify(uclTickerScores))}catch(e){}if(changed)uclTickerShowGoal()}
 function uclTickerShowGoal(){const el=$("uclTicker"),track=$("uclTickerTrack");if(!el||!track||uclTickerGoalTimer)return;const msg=uclTickerGoalQueue.shift();if(!msg)return;el.classList.add("paused");track.innerHTML='<span class="ucl-ticker-goal">'+liveEsc(msg)+'</span>';uclTickerGoalTimer=setTimeout(()=>{uclTickerGoalTimer=null;if(uclTickerGoalQueue.length){uclTickerShowGoal();return}el.classList.remove("paused");uclTickerRender(false)},4500)}
-function uclTickerRender(checkGoals=true){const el=$("uclTicker"),track=$("uclTickerTrack");if(!el||!track)return;try{const saved=JSON.parse(localStorage.getItem("yapaycin_ucl_scores_v1")||"{}");if(saved&&typeof saved==="object")uclTickerScores={...saved,...uclTickerScores}}catch(e){}const matches=uclTickerMatches();if(checkGoals)uclTickerCheckGoals(matches);if(uclTickerGoalTimer)return;if(!matches.length){track.innerHTML='<span>CANLI SKORLAR</span>';return}const entries=matches.map(m=>{const home=m.home||m.home_team||m.homeTeam||"Ev sahibi",away=m.away||m.away_team||m.awayTeam||"Deplasman",s=uclTickerScore(m),state=liveState(m);return '<span>'+liveEsc(home)+' <b>'+liveEsc(s.text)+'</b> '+liveEsc(away)+(state==="live"?" · "+liveEsc(liveMinuteLabel(m)):" · MS")+'</span>'});const joined=entries.join('<span>　◆　</span>');track.innerHTML=joined+'<span>　◆　</span>'+joined}
+function uclTickerRender(checkGoals=true){const el=$("uclTicker"),track=$("uclTickerTrack");if(!el||!track)return;try{const saved=JSON.parse(localStorage.getItem("yapaycin_ucl_scores_v1")||"{}");if(saved&&typeof saved==="object")uclTickerScores={...saved,...uclTickerScores}}catch(e){}const matches=uclTickerMatches();if(checkGoals)uclTickerCheckGoals(matches);if(uclTickerGoalTimer)return;if(!matches.length){track.innerHTML='<span>CANLI SKORLAR</span>';return}const entries=matches.map(m=>{const home=m.home||m.home_team||m.homeTeam||"Ev sahibi",away=m.away||m.away_team||m.awayTeam||"Deplasman",s=uclTickerScore(m),state=liveState(m);return '<span>'+liveEsc(home)+' <b>'+liveEsc(s.text)+'</b> '+liveEsc(away)+(state==="live"?" · "+liveEsc(liveMinuteLabel(m)):" · MS")+'</span>'});const joined=entries.join('<span>　◆　</span>');track.style.animationDuration=Math.max(5,matches.length*5)+"s";track.innerHTML=joined+'<span>　◆　</span>'+joined}
 function renderLiveResults(){
  const el=$("liveResultsPanel");if(!el)return;
  renderLivePanel("liveResultsPanel",liveFootballMatches,"",liveViewMode);
@@ -2248,6 +2248,8 @@ async function liveScoresLoad(){
   const feedSources=feed&&feed.sources&&typeof feed.sources==="object"?feed.sources:{};
   const widgetList=liveList(feedSources.widget);
   const fixtureLiveList=liveList(feedSources.fixtures);
+  // Sampiyonlar Ligi bandi, ana mac listesindeki birlestirme/filtrelerden etkilenmesin.
+  uclTickerSourceMatches=fixtureLiveList.map(m=>({...m,__feedStatus:"live"})).filter(m=>/champions league|uefa cl|ucl/i.test(String(m.competition||m.league||"")));
   const finishedTodayList=liveList(feedSources.finished_today).map(m=>({...m,__feedStatus:"finished"}));
   const finishedYesterdayList=liveList(feedSources.finished_yesterday).map(m=>({...m,__feedStatus:"finished"}));
   const espnList=espnLiveList(feedSources.espn);
@@ -2390,7 +2392,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=192",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=193",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

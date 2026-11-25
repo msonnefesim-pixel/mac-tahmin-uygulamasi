@@ -131,6 +131,7 @@ th{color:var(--yellow)}
 .pro-match .rank{background:#302600;border:1px solid #806800;border-radius:20px;padding:5px 8px;color:#ffdc42;font-size:10px;font-weight:800;white-space:nowrap}
 @media(max-width:360px){.pro-teams{gap:5px;padding:13px 9px}.pro-team-name{font-size:14px}.pro-prediction-value{font-size:18px}}
 .quick-guide{margin:8px 0 12px;padding:11px 12px;background:#1b1b1b;border:1px solid #4b3c18;border-left:4px solid #f5c400;border-radius:10px}.quick-guide summary{font-weight:900;color:#f5c400;cursor:pointer;padding:3px 0}.quick-guide ol{margin:9px 0 2px;padding-left:20px;color:#eee;font-size:12px;line-height:1.7}.quick-guide li{padding:2px 0}.quick-guide b{color:#ffe16a}
+.featured-section{margin:10px 0 14px;padding:10px;background:#191919;border:1px solid #695512;border-left:4px solid #f5c400;border-radius:11px}.featured-heading{margin:0 0 4px;color:#f5c400;font-size:16px;font-weight:900}.featured-note{margin:0 0 8px;color:#aaa;font-size:11px;line-height:1.4}.featured-list{display:grid;gap:7px}.featured-match{padding:9px 10px;background:linear-gradient(120deg,#302600,#1d1a10);border:1px solid #806800;border-radius:9px}.featured-top{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#d9c77c;font-size:10px;font-weight:800}.featured-number{color:#171000;background:#f5c400;border-radius:12px;padding:3px 7px;white-space:nowrap}.featured-teams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:7px;align-items:center;margin:8px 0;font-size:13px;font-weight:900;color:#fff}.featured-teams span:last-child{text-align:right}.featured-vs{color:#f5c400;font-size:10px}.featured-pick{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;background:#111;border:1px solid #574600;border-radius:7px}.featured-pick small{display:block;color:#b9a85d;font-size:9px;font-weight:800}.featured-pick strong{display:block;color:#ffe16a;font-size:13px}.featured-percent{color:#f5c400;font-size:13px;font-weight:900;white-space:nowrap}@media(max-width:360px){.featured-teams{font-size:12px}.featured-match{padding:8px}}
 </style>
 </head>
 <body>
@@ -189,6 +190,7 @@ th{color:var(--yellow)}
   </select>
   <p>6+ Gol ve KG Var birbirinden bağımsız tahminlerdir. Olasılıklar garanti değildir.</p>
   </div>
+  <section id="featuredSection" class="featured-section hidden" aria-live="polite"><h3 class="featured-heading">⭐ Günün Öne Çıkan Maçları</h3><p class="featured-note">En yüksek olasılıklı tahminler burada. Diğer bütün maçlar aşağıda aynen listelenir.</p><div id="featuredMatches" class="featured-list"></div></section>
   <div id="macOzet" class="summary"></div>
   <div id="maclar">Maçlar hazırlanıyor...</div>
  </div>
@@ -558,6 +560,10 @@ function matchCard(m,t,past=false,rank=0,adjusted=null){
  <details class="all-predictions"><summary>📊 TÜM TAHMİNLERİ VE OLASILIKLARI GÖSTER</summary><div class="predictions">${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}${predictionBox("2,5 Üst",finalPrediction?.over25)}${predictionBox("3,5 Üst",finalPrediction?.over35)}${predictionBox("İY 1,5 Üst",finalPrediction?.firstOver15)}${predictionBox("6+ Gol",finalPrediction?.six)}${predictionBox("KG Var",finalPrediction?.btts)}${predictionBox("KG Yok",finalPrediction?.btts==null?null:1-finalPrediction.btts)}</div></details>${matchInsight(m,finalPrediction)}`}
  </article>`;
 }
+function featuredMatchCard(x,index){
+  const m=x.m,p=x.featuredPick;
+  return `<article class="featured-match" data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}"><div class="featured-top"><span>${liveEsc(leagueView(m))}</span><span class="featured-number">⭐ ${index+1}. ÖNE ÇIKAN</span></div><div class="featured-teams"><span>${liveEsc(m.home||"Ev sahibi")}</span><span class="featured-vs">VS</span><span>${liveEsc(m.away||"Deplasman")}</span></div><div class="featured-pick"><div><small>YAPAYCİN TAHMİNİ</small><strong>${liveEsc(p.label)}</strong></div><span class="featured-percent">%${(p.prob*100).toFixed(1)}</span></div><div class="featured-top" style="margin-top:6px"><span>🕒 ${liveEsc(m.time||"")}</span><span>Maç takviminde de listelenir</span></div></article>`;
+ }
 function filterMatch(t,f){
  if(f==="all")return true;if(!t)return false;
  const picks=footballPickCandidates(t),has=k=>picks.some(x=>x.key===k);
@@ -844,6 +850,9 @@ function macBasladiMi(m){
 function saatiGecenMaclariKaldir(){
  if(($("tarih").value||today())!==today())return;
  const alan=$("maclar");if(!alan)return;
+ const featuredCards=document.querySelectorAll('.featured-match[data-auto-hide="1"]');
+ featuredCards.forEach(card=>{const date=card.dataset.matchDate||"";let home="",away="";try{home=decodeURIComponent(card.dataset.matchHome||"");away=decodeURIComponent(card.dataset.matchAway||"")}catch(e){}if(macBasladiMi({date,time:card.dataset.matchTime,home,away}))card.remove()});
+ const featuredSection=$("featuredSection");if(featuredSection&&!featuredSection.querySelector(".featured-match"))featuredSection.classList.add("hidden");
  const cards=alan.querySelectorAll('.match[data-auto-hide="1"]');
  let removed=0;
  cards.forEach(card=>{
@@ -868,7 +877,8 @@ function listele(){
  const date=$("tarih").value||today(),past=date<today();
  const source=past?(historyDateIndex.get(date)||[]):(fixtureDateIndex.get(date)||[]);
  const query=($("arama").value||"").toLocaleLowerCase("tr"),filter=$("filtre").value,league=$("ligSec").value;
- const macAlan=$("maclar"),ozetAlan=$("macOzet");
+ const macAlan=$("maclar"),ozetAlan=$("macOzet"),featuredSection=$("featuredSection"),featuredArea=$("featuredMatches");
+ if(featuredSection)featuredSection.classList.add("hidden");if(featuredArea)featuredArea.innerHTML="";
  if(!source.length){macAlan.textContent="Bu tarihte "+(past?"kayıtlı geçmiş maç":"gösterilecek maç")+" bulunamadı.";ozetAlan.innerHTML="";return}
  const list=[];
  let i=0;
@@ -927,6 +937,10 @@ function listele(){
   }
   if(token!==listRenderToken)return;
   list.sort((a,b)=>String(a.m.time||"").localeCompare(String(b.m.time||""))||String(a.m.home||"").localeCompare(String(b.m.home||""),"tr"));
+  if(!past&&featuredSection&&featuredArea){
+   const featured=list.map(x=>{const picks=footballPickCandidates(x.displayT);return {...x,featuredPick:picks[0]||null}}).filter(x=>x.featuredPick).sort((a,b)=>b.featuredPick.prob-a.featuredPick.prob||String(a.m.time||"").localeCompare(String(b.m.time||""))).slice(0,5);
+   if(featured.length){featuredArea.innerHTML=featured.map(featuredMatchCard).join("");featuredSection.classList.remove("hidden")}
+  }
   const count=list.filter(x=>x.rank>=0).length;
   ozetAlan.innerHTML=past?"":`<div class="summary-item"><span class="summary-number">${list.length}</span><span class="summary-label">Toplam maç</span></div><div class="summary-item"><span class="summary-number">${count}</span><span class="summary-label">Tahmin üretilen</span></div><div class="summary-item"><span class="summary-number">${list.length-count}</span><span class="summary-label">Tahmin bulunmayan</span></div>`;
   if(!list.length){macAlan.textContent=past?"Bu tarihte kayıtlı geçmiş maç bulunamadı.":"Bu tarihte gösterilecek maç bulunamadı.";return}
@@ -2374,7 +2388,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=200",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=201",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

@@ -1733,8 +1733,8 @@ async function iddaaBaslat(force=false){
   status.innerHTML="<span class='good'>Sunucu oran bülteni hazır.</span> · "+events.length+" etkinlik · Oran hareketi karşılaştırılan market: "+movedMarkets+" · Kaynak okuma: "+iddaaUpdated;
   const couponStatus=$("iddaaCouponStatus");if(couponStatus)couponStatus.innerHTML="<span class='good'>İddaa bülteni güncellendi.</span> · "+events.length+" kayıt · Oran hareketi: "+movedMarkets+" · "+iddaaUpdated;
   if($("couponsBolumu")&&!$("couponsBolumu").classList.contains("hidden"))kuponlariGoster();
-  // İddaa oranları arka planda yüklenir; futbol listesi ikinci kez çizilmez.
-  // Oranlar sonraki manuel yenilemede / liste çiziminde tahminlere yansır.
+  // Oranlar yüklendiğinde mevcut futbol listesini yeniden çiz; kartlar piyasa verisini de kullansın.
+  if(FIXTURES.length){try{listele()}catch(renderError){console.warn("İddaa sonrası futbol listesi yenilenemedi:",renderError)}}
  }catch(e){
   status.innerHTML="Sunucu oran dosyası okunamadı: "+String(e.message||e)+
    "<br><span class='small'>Sunucu bülteni 15 dakikada bir yenilenir. Önceki oran verileri varsa korunur.</span>";

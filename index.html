@@ -53,7 +53,7 @@ button.secondary,.tab-button{background:#292929;color:#fff;border:1px solid #555
 .ucl-ticker{display:flex;align-items:center;gap:8px;min-height:39px;margin:0 0 8px;padding:0 9px;overflow:hidden;background:#310b12;border:1px solid #c8102e;border-left:5px solid #ff263f;border-radius:8px;box-shadow:0 2px 9px #0008}
 .ucl-ticker-label{flex:0 0 auto;color:#fff;font-size:10px;font-weight:900;letter-spacing:.4px;white-space:nowrap}
 .ucl-ticker-window{min-width:0;flex:1;overflow:hidden;white-space:nowrap}
-.ucl-ticker-track{display:inline-flex;align-items:center;gap:34px;min-width:max-content;animation:uclTickerMove 9s linear infinite;color:#fff;font-size:12px;font-weight:800}
+.ucl-ticker-track{display:inline-flex;align-items:center;gap:34px;min-width:max-content;animation:uclTickerMove 5s linear infinite;color:#fff;font-size:12px;font-weight:800}
 .ucl-ticker-track span{white-space:nowrap}.ucl-ticker.paused .ucl-ticker-track{animation-play-state:paused}
 .ucl-ticker-goal{color:#fff!important;font-size:14px!important;font-weight:1000!important;letter-spacing:1px;text-align:center;animation:uclGoalPulse .55s ease-in-out infinite alternate}
 @keyframes uclTickerMove{from{transform:translateX(0)}to{transform:translateX(-50%)}}
@@ -2134,7 +2134,7 @@ function liveFilterSet(mode){
  renderLiveResults();
 }
 let uclTickerGoalTimer=null,uclTickerGoalQueue=[],uclTickerScores={};
-function uclTickerMatches(){const today=liveLocalDate();return (liveFootballMatches||[]).filter(m=>{const rawDate=m.start_time||m.time||m.kickoff||m.date||(m.fixture&&m.fixture.date)||"";if(String(rawDate).slice(0,10)!==today)return false;const raw=m.competition||m.league||m.tournament||m.competition_name||m.league_name||"";const name=typeof raw==="object"?(raw.name||raw.title||raw.short_name||raw.code||""):raw;const l=liveNorm(name);return /uefa champions league/.test(l)&&!/(women|woman|ladies|female|youth|u\s?\d+)/.test(l)&&(liveState(m)==="live"||liveState(m)==="finished")})}
+function uclTickerMatches(){const today=liveLocalDate(),yesterday=dateAdd(today,-1),tomorrow=dateAdd(today,1);return (liveFootballMatches||[]).filter(m=>{const rawDate=m.start_time||m.time||m.kickoff||m.date||(m.fixture&&m.fixture.date)||"";const matchDate=String(rawDate).slice(0,10);if(matchDate&&![today,yesterday,tomorrow].includes(matchDate))return false;const raw=m.competition||m.league||m.tournament||m.competition_name||m.league_name||m.leagueName||"";const name=typeof raw==="object"?(raw.name||raw.title||raw.short_name||raw.code||""):raw;const l=liveNorm(name);return /(champions league|uefa cl|(^| )ucl( |$))/.test(l)&&!/(women|woman|ladies|female|youth|u\s?\d+)/.test(l)&&(liveState(m)==="live"||liveState(m)==="finished")})}
 function uclTickerKey(m){return String(m.id||m.slug||[m.home,m.away,m.start_time].join("|"))}
 function uclTickerScore(m){const ah=liveScoreValue(m,true),aa=liveScoreValue(m,false),a=ah===null?"–":ah,b=aa===null?"–":aa;return {home:ah,away:aa,text:String(a)+"-"+String(b)}}
 function uclTickerCheckGoals(matches){let changed=false;for(const m of matches){const k=uclTickerKey(m),s=uclTickerScore(m),o=uclTickerScores[k];if(o&&Number.isFinite(s.home)&&Number.isFinite(s.away)&&((Number.isFinite(o.home)&&s.home>o.home)||(Number.isFinite(o.away)&&s.away>o.away))){const home=m.home||m.home_team||"Ev sahibi",away=m.away||m.away_team||"Deplasman";uclTickerGoalQueue.push("⚽ GOL! "+(s.home>o.home?home:away)+" · "+home+" "+s.text+" "+away);changed=true}uclTickerScores[k]={home:s.home,away:s.away}}try{localStorage.setItem("yapaycin_ucl_scores_v1",JSON.stringify(uclTickerScores))}catch(e){}if(changed)uclTickerShowGoal()}
@@ -2390,7 +2390,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=191",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=192",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

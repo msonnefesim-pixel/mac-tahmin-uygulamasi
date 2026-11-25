@@ -94,6 +94,27 @@ th{color:var(--yellow)}
 
 
 .success-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}.success-stat{background:#202020;border:1px solid #393939;border-radius:9px;padding:10px;text-align:center}.success-stat b{display:block;font-size:20px;color:#f5c400}.success-stat span{font-size:11px;color:#bbb}.success-table{width:100%;border-collapse:collapse;font-size:12px}.success-table th,.success-table td{padding:9px 6px;border-bottom:1px solid #383838;text-align:left}.success-table th{color:#f5c400}.success-good{color:#83d49a}.success-pending{color:#f5c400}@media(max-width:430px){.success-grid{gap:5px}.success-stat{padding:8px 4px}.success-stat b{font-size:17px}.success-table{font-size:11px}.success-table th,.success-table td{padding:8px 4px}}
+
+/* V185 - profesyonel futbol maç kartları */
+.match{
+ background:linear-gradient(145deg,#202020 0%,#151515 100%);
+ border:1px solid #40343a;border-left:4px solid var(--red);
+ border-radius:13px;padding:12px;margin:11px 0;
+ box-shadow:0 5px 16px rgba(0,0,0,.22)
+}
+.match-top{align-items:flex-start;gap:9px}
+.teams{color:#f4f1ed!important;font-size:16px;font-weight:800;letter-spacing:.1px;line-height:1.4}
+.rank{flex-shrink:0;background:#302600;border:1px solid #806800;border-radius:20px;padding:5px 8px;color:#ffdc42;font-size:10px;font-weight:800}
+.meta-row{margin-top:9px;padding:7px 9px;background:#111;border:1px solid #303030;border-radius:8px}
+.meta{margin:0;color:#b9b4b1;font-size:11px}
+.kickoff{background:#8f1024;border:1px solid #c8102e;padding:5px 9px;border-radius:6px;font-weight:800}
+.main-pick{margin-top:10px;padding:11px 12px;background:linear-gradient(110deg,#3a2d00,#211b08);border:1px solid #a48613;border-left:3px solid #f5c400;border-radius:9px;color:#ffe16a;font-size:13px;line-height:1.5}
+.main-pick b{color:#fff;font-size:14px}
+.pred{background:#202020;border:1px solid #48413a;border-radius:8px;padding:8px 5px}
+.analysis-box{background:#141414;border:1px solid #3c3034;border-left:3px solid #8f1024;border-radius:9px;padding:10px 11px;margin-top:10px;color:#e4dfdc;font-size:12px;line-height:1.55}
+.analysis-box> b:first-child{color:#f5c400;font-size:13px}
+.all-predictions{background:#151515;border-color:#554714}
+@media(max-width:380px){.teams{font-size:14px}.match{padding:10px}.rank{font-size:9px;padding:4px 6px}.main-pick{padding:9px;font-size:12px}}
 </style>
 </head>
 <body>
@@ -2339,7 +2360,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=184",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=185",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

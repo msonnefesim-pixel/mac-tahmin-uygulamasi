@@ -171,7 +171,7 @@ th{color:var(--yellow)}
  <div class="panel">
   <div id="halfBothStatus">Önümüzdeki 7 günün maçları taranacak.</div>
   <button type="button" onclick="halfBothBuild(true)">↻ Kuponları Yeniden Oluştur</button>
-  <p>Her kupon kendi seçeneğinde en yüksek ortak olasılığa sahip 5 maçtan oluşur. Maçlar farklı günlerden seçilebilir. Yalnızca Türkiye İddaa bülteninde bulunan, ilk yarı ve ikinci yarı KG marketlerinde seçilen iki sonucun oranı 1.00 üzerinde olan maçlar kullanılır. Bülten pazartesi/perşembe geceleri güncellendiğinde kuponlar yeni bülten verisine göre yenilenir.</p>
+  <p>Maçlar farklı günlerden seçilebilir. Evet/Evet için iki yarının da KG Var olasılığı en az %58, ortak olasılık en az %34 ve veri kalitesi Orta/İyi olmalıdır. Eşik altında kalan maçlarla 5'li kupon tamamlanmaz. Yalnızca Türkiye İddaa bülteninde iki marketi de açık ve oranı 1.00 üzerinde olan maçlar kullanılır.</p>
  </div>
  <div id="halfBothCards"></div>
 </section>
@@ -1764,7 +1764,7 @@ async function halfBothBuild(force){
    $("halfBothStatus").textContent="Türkiye İddaa bülteni okunamadı. Bülten verisi gelmeden kupon oluşturulmadı; biraz sonra yeniden deneyebilirsin.";
    halfBothRender();return;
   }
-  if(!force&&saved&&saved.exclusiveVersion===3&&saved.start===start&&saved.end===end&&saved.pools&&saved.iddaaFiltered===true&&saved.iddaaUpdatedAt===iddaaSourceUpdatedAt){
+  if(!force&&saved&&saved.exclusiveVersion===4&&saved.start===start&&saved.end===end&&saved.pools&&saved.iddaaFiltered===true&&saved.iddaaUpdatedAt===iddaaSourceUpdatedAt){
    halfBothRender();$("halfBothStatus").textContent="Hazır · "+start+" – "+end+" · "+(saved.scanned||0)+" maç tarandı · Her maç tek kategoride · İddaa bülteni güncel.";
    return;
   }
@@ -1792,8 +1792,12 @@ async function halfBothBuild(force){
      options.sort((a,b)=>b.prob-a.prob);
      const best=options[0];
      if(best){
-      pools[best.id].push({...base,combo:best.id,pick:best.firstPick+"/"+best.secondPick,firstPick:best.firstPick,secondPick:best.secondPick,firstOdd:best.firstOdd,secondOdd:best.secondOdd,prob:best.prob});
-      qualifiedSelections++;
+      // Evet/Evet havuzuna yalnızca iki yarısı da güçlü, ortak olasılığı yeterli ve veri kalitesi sınırlı olmayan maçlar girer.
+      const strongYesYes=best.id!=="yes_yes"||(first>=.58&&second>=.58&&best.prob>=.34&&t.quality!=="Sınırlı");
+      if(strongYesYes){
+       pools[best.id].push({...base,combo:best.id,pick:best.firstPick+"/"+best.secondPick,firstPick:best.firstPick,secondPick:best.secondPick,firstOdd:best.firstOdd,secondOdd:best.secondOdd,prob:best.prob});
+       qualifiedSelections++;
+      }
      }
     }
    }
@@ -1801,7 +1805,7 @@ async function halfBothBuild(force){
   }
   Object.keys(pools).forEach(k=>pools[k].sort((a,b)=>b.prob-a.prob));
   const chosen={};for(const k of Object.keys(pools))chosen[k]=pools[k].slice(0,5);
-  const archive={exclusiveVersion:3,start,end,scanned,bulletinMatches,qualifiedSelections,iddaaFiltered:true,iddaaUpdatedAt:iddaaSourceUpdatedAt,generatedAt:new Date().toISOString(),pools:chosen};
+  const archive={exclusiveVersion:4,start,end,scanned,bulletinMatches,qualifiedSelections,iddaaFiltered:true,iddaaUpdatedAt:iddaaSourceUpdatedAt,generatedAt:new Date().toISOString(),pools:chosen};
   halfBothSave(archive);halfBothRender();
   $("halfBothStatus").textContent="Hazır · "+start+" – "+end+" · "+scanned+" maç tarandı · "+bulletinMatches+" maç bültende bulundu · "+qualifiedSelections+" oynanabilir seçim bulundu.";
  }catch(e){$("halfBothStatus").textContent="Kupon oluşturma hatası: "+e.message}

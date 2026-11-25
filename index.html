@@ -50,15 +50,6 @@ button.secondary,.tab-button{background:#292929;color:#fff;border:1px solid #555
 .live-now{color:#ff6b6b;font-weight:bold;display:inline-flex;align-items:center;gap:5px}.live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff3030;animation:liveFade 1.4s ease-in-out infinite}@keyframes liveFade{50%{opacity:.4}}
 .live-finished{color:#80d99a;font-weight:bold}
 .live-source{font-size:10px;color:#aaa;margin-top:8px}
-.ucl-ticker{display:flex;align-items:center;gap:8px;min-height:39px;margin:0 0 8px;padding:0 9px;overflow:hidden;background:#310b12;border:1px solid #c8102e;border-left:5px solid #ff263f;border-radius:8px;box-shadow:0 2px 9px #0008}
-.ucl-ticker-label{flex:0 0 auto;color:#fff;font-size:10px;font-weight:900;letter-spacing:.4px;white-space:nowrap}
-.ucl-ticker-window{min-width:0;flex:1;overflow:hidden;white-space:nowrap}
-.ucl-ticker-track{display:inline-flex;align-items:center;gap:34px;min-width:max-content;animation:uclTickerMove 5s linear infinite;color:#fff;font-size:12px;font-weight:800}
-.ucl-ticker-track span{white-space:nowrap}.ucl-ticker.paused .ucl-ticker-track{animation-play-state:paused}
-.ucl-ticker-goal{color:#fff!important;font-size:14px!important;font-weight:1000!important;letter-spacing:1px;text-align:center;animation:uclGoalPulse .55s ease-in-out infinite alternate}
-@keyframes uclTickerMove{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-@keyframes uclGoalPulse{to{color:#f5c400!important;transform:scale(1.04)}}
-@media(prefers-reduced-motion:reduce){.ucl-ticker-track{animation:none}}
 .good{color:#7ee081;font-weight:bold}
 .analysis-box{overflow-x:auto;background:#181818;border:1px solid #383838;border-radius:8px;padding:8px;margin-top:8px}
 table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}
@@ -149,7 +140,6 @@ th{color:var(--yellow)}
  <div class="brand-tagline">Bağımsız maç tahmin ve analiz sistemi</div>
 </header>
 
-<div id="uclTicker" class="ucl-ticker" role="status" aria-live="polite"><span class="ucl-ticker-label">🔴 CANLI</span><div class="ucl-ticker-window"><div id="uclTickerTrack" class="ucl-ticker-track"><span>CANLI SKORLAR</span></div></div></div>
 <div class="tabbar">
  <button id="futbolButon" class="tab-button active" onclick="sekmeAc('futbol')">⚽ FUTBOL</button>
  <button id="iymsButon" class="tab-button" onclick="sekmeAc('iyms')">🎯 İY/MS</button>
@@ -1938,7 +1928,6 @@ function kuponlariGoster(){
   if(items.length){if(!iddaaYuklendi)html+="<div class=\"coupon-total\">Toplam oran: İddaa bülteni bekleniyor...</div>";else if(oddsList.length&&oddsList.every(x=>!x.missing))html+="<div class=\"coupon-total\">TOPLAM İDDAA ORANI: "+oddsList.reduce((n,v)=>n*v.odd,1).toFixed(2)+"</div>";else html+="<div class=\"coupon-total\">Toplam oran hesaplanamadı: tüm seçimlerde eşleşen oran bulunamadı.</div>"}html+="</div></div>"});
  $("couponCards").innerHTML=html;$("couponStats").innerHTML="Toplam seçim: <b>"+total+"</b> · Sonuçlanan: <b>"+done+"</b> · Tutan: <b>"+hits+"</b> · Başarı: <b>"+(done?(hits/done*100).toFixed(1):"0.0")+"%</b>";
 }
-/* CANLI SKORLAR - SportScore ücretsiz API */
 function liveEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function liveState(m){
  if(!m||typeof m!=="object")return "other";
@@ -2133,14 +2122,6 @@ function liveFilterSet(mode){
  $("finishedOnlyButton").textContent=(mode==="finished"?"✓ ":"") +"Biten maçlar";
  renderLiveResults();
 }
-let uclTickerGoalTimer=null,uclTickerGoalQueue=[],uclTickerScores={},uclTickerSourceMatches=[];
-function uclTickerMatches(){const source=[...(uclTickerSourceMatches||[]),...(liveFootballMatches||[])],unique=new Map();for(const m of source){const raw=m.competition||m.league||m.tournament||m.competition_name||m.league_name||m.leagueName||"";const name=typeof raw==="object"?(raw.name||raw.title||raw.short_name||raw.code||""):raw;const l=liveNorm(name);if(!(l.includes("uefa champions league")||l==="uefa cl"||l==="ucl")||/(women|woman|ladies|female|youth|u\s?\d+)/.test(l))continue;if(liveState(m)!=="live")continue;const key=uclTickerKey(m),old=unique.get(key);if(!old||uclTickerQuality(m)>uclTickerQuality(old))unique.set(key,m)}return [...unique.values()]}
-function uclTickerTeamName(m,home){const v=m[home?"home":"away"]||m[home?"home_team":"away_team"]||m[home?"homeTeam":"awayTeam"]||m[home?"home_name":"away_name"]||"";return typeof v==="object"?(v.name||v.displayName||v.display_name||v.team_name||"") : String(v)}
-function uclTickerKey(m){const norm=v=>liveNorm(v).replace(/[^a-z0-9]+/g,"");const h=norm(uclTickerTeamName(m,true)),a=norm(uclTickerTeamName(m,false));return h+"|"+a}function uclTickerQuality(m){const minute=Number(m.minute??m.elapsed??m.elapsed_time??m.time_elapsed??m.status?.elapsed??m.fixture?.status?.elapsed);const score=(liveScoreValue(m,true)!==null?2:0)+(liveScoreValue(m,false)!==null?2:0)+(Number.isFinite(minute)?8:0)+(m.status_text||m.statusText||m.period?1:0)+(uclTickerTeamName(m,true)?1:0)+(uclTickerTeamName(m,false)?1:0);return score}
-function uclTickerScore(m){const ah=liveScoreValue(m,true),aa=liveScoreValue(m,false),a=ah===null?"–":ah,b=aa===null?"–":aa;return {home:ah,away:aa,text:String(a)+"-"+String(b)}}
-function uclTickerCheckGoals(matches){let changed=false;for(const m of matches){const k=uclTickerKey(m),s=uclTickerScore(m),o=uclTickerScores[k];if(o&&Number.isFinite(s.home)&&Number.isFinite(s.away)&&((Number.isFinite(o.home)&&s.home>o.home)||(Number.isFinite(o.away)&&s.away>o.away))){const home=m.home||m.home_team||"Ev sahibi",away=m.away||m.away_team||"Deplasman";uclTickerGoalQueue.push("⚽ GOL! "+(s.home>o.home?home:away)+" · "+home+" "+s.text+" "+away);changed=true}uclTickerScores[k]={home:s.home,away:s.away}}try{localStorage.setItem("yapaycin_ucl_scores_v1",JSON.stringify(uclTickerScores))}catch(e){}if(changed)uclTickerShowGoal()}
-function uclTickerShowGoal(){const el=$("uclTicker"),track=$("uclTickerTrack");if(!el||!track||uclTickerGoalTimer)return;const msg=uclTickerGoalQueue.shift();if(!msg)return;el.classList.add("paused");track.innerHTML='<span class="ucl-ticker-goal">'+liveEsc(msg)+'</span>';uclTickerGoalTimer=setTimeout(()=>{uclTickerGoalTimer=null;if(uclTickerGoalQueue.length){uclTickerShowGoal();return}el.classList.remove("paused");uclTickerRender(false)},4500)}
-function uclTickerRender(checkGoals=true){const el=$("uclTicker"),track=$("uclTickerTrack");if(!el||!track)return;try{const saved=JSON.parse(localStorage.getItem("yapaycin_ucl_scores_v1")||"{}");if(saved&&typeof saved==="object")uclTickerScores={...saved,...uclTickerScores}}catch(e){}const matches=uclTickerMatches();if(checkGoals)uclTickerCheckGoals(matches);if(uclTickerGoalTimer)return;if(!matches.length){track.innerHTML='<span>CANLI SKORLAR</span>';return}const entries=matches.map(m=>{const home=uclTickerTeamName(m,true)||"Ev sahibi",away=uclTickerTeamName(m,false)||"Deplasman",s=uclTickerScore(m),state=liveState(m);return '<span>'+liveEsc(home)+' <b>'+liveEsc(s.text)+'</b> '+liveEsc(away)+(state==="live"?" · "+liveEsc(liveMinuteLabel(m)):" · MS")+'</span>'});const joined=entries.join('<span>　◆　</span>');track.style.animationDuration=Math.max(5,matches.length*5)+"s";track.innerHTML=joined+'<span>　◆　</span>'+joined}
 function renderLiveResults(){
  const el=$("liveResultsPanel");if(!el)return;
  renderLivePanel("liveResultsPanel",liveFootballMatches,"",liveViewMode);
@@ -2250,7 +2231,6 @@ async function liveScoresLoad(){
   const widgetList=liveList(feedSources.widget);
   const fixtureLiveList=liveList(feedSources.fixtures);
   // Sampiyonlar Ligi bandi, ana mac listesindeki birlestirme/filtrelerden etkilenmesin.
-  uclTickerSourceMatches=[...widgetList,...fixtureLiveList,...espnLiveList(feedSources.espn),...espnLiveList(feedSources.espn_ucl).map(m=>({...m,competition:"UEFA Champions League"}))];
   const finishedTodayList=liveList(feedSources.finished_today).map(m=>({...m,__feedStatus:"finished"}));
   const finishedYesterdayList=liveList(feedSources.finished_yesterday).map(m=>({...m,__feedStatus:"finished"}));
   const espnList=espnLiveList(feedSources.espn);
@@ -2312,7 +2292,6 @@ async function liveScoresLoad(){
   saatiGecenMaclariKaldir();
   liveScoresDate=day;liveScoresLastFetch=Date.now();
   renderLiveResults();
-  uclTickerRender(true);
   if(activeTabName==="nba")renderLiveScores();
   if(activeTabName==="coupons"&&typeof kuponlariGoster==="function")kuponlariGoster();
   // NBA bölümü şimdilik gizli; gereksiz basketbol API isteği yapılmıyor.
@@ -2393,7 +2372,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=198",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=199",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

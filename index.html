@@ -491,9 +491,33 @@ function halfPrediction(home,away,match,period){
 function weightedTeamGoals(matches,team,scored){
  let total=0,weight=0;for(let i=0;i<matches.length;i++){const m=matches[i],home=m.home===team,own=Number(home?m.ft_home:m.ft_away),opp=Number(home?m.ft_away:m.ft_home),w=Math.pow(.88,matches.length-1-i);total+=(scored?own:opp)*w;weight+=w}return weight?total/weight:0;
 }
+function predictFootballFallback(m,home,away,league){
+ // Beş maç eşiği dolmadığında mevcut az sayıdaki geçmiş maçı lig ortalamasıyla dengeler.
+ // Hiç takım geçmişi olmasa bile lig geçmişi varsa temkinli bir temel tahmin üretir.
+ if(!league){
+  const n=lowerDate(HISTORY,m.date),count=overallHistoryPrefix.count[n]||0,goals=overallHistoryPrefix.goals[n]||0;
+  league=count?goals/count/2:0;
+ }
+ if(!Number.isFinite(league)||league<=0)return null;
+ const smoothed=(matches,team,scored)=>{
+  if(!matches.length)return league;
+  const total=matches.reduce((sum,x)=>{
+   const isHome=x.home===team;
+   return sum+Number(scored?(isHome?x.ft_home:x.ft_away):(isHome?x.ft_away:x.ft_home));
+  },0);
+  return (total+league*4)/(matches.length+4);
+ };
+ const homeAttack=smoothed(home,m.home,true),homeDefence=smoothed(home,m.home,false);
+ const awayAttack=smoothed(away,m.away,true),awayDefence=smoothed(away,m.away,false);
+ const lh=Math.max(.15,Math.min(3.5,homeAttack*awayDefence/league*1.08));
+ const la=Math.max(.15,Math.min(3.5,awayAttack*homeDefence/league/1.08));
+ const r=poissonResult(lh,la);
+ return {one:r.one,draw:r.draw,two:r.two,over25:totalOver25(lh,la),over35:totalOver35(lh,la),six:sixPlus(lh,la),btts:btts(lh,la),first:null,second:null,firstOver15:null,expectedHome:lh,expectedAway:la,scoreline:scorelineMostLikely(lh,la),homeSamples:home.length,awaySamples:away.length,leagueSamples:0,methodAgreement:.35,marketAgreement:.35,quality:"Sınırlı",modelMethods:["Eksik veride lig ortalaması destekli Poisson"],fallbackModel:true};
+}
 function predictFootball(m){
- const home=previousMatches(m.home,m.league_id,m.date,10),away=previousMatches(m.away,m.league_id,m.date,10);if(home.length<5||away.length<5)return null;
- const league=leagueAverage(m.league_id,m.date);if(!league)return null;
+ const home=previousMatches(m.home,m.league_id,m.date,10),away=previousMatches(m.away,m.league_id,m.date,10);
+ const league=leagueAverage(m.league_id,m.date);
+ if(home.length<5||away.length<5||!league)return predictFootballFallback(m,home,away,league);
  const rawH=teamGoals(home,m.home,true)*teamGoals(away,m.away,false)/league,rawA=teamGoals(away,m.away,true)*teamGoals(home,m.home,false)/league;
  const recentH=weightedTeamGoals(home,m.home,true)*weightedTeamGoals(away,m.away,false)/league,recentA=weightedTeamGoals(away,m.away,true)*weightedTeamGoals(home,m.home,false)/league;
  const reliability=Math.min(1,Math.min(home.length,away.length)/10),lh=Math.max(.12,(rawH*.65+recentH*.35)*reliability+league*(1-reliability)),la=Math.max(.12,(rawA*.65+recentA*.35)*reliability+league*(1-reliability));

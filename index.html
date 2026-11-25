@@ -923,7 +923,7 @@ function successRender(){
  html+="<div class='success-grid'><div class='success-stat'><b>"+losses+"</b><span>Yanlış</span></div><div class='success-stat'><b class='success-pending'>"+pendingMatches+"</b><span>Sonucu beklenen maç</span></div><div class='success-stat'><b>"+rows.length+"</b><span>Kaydedilen maç</span></div></div>";
  const dailyStats=new Map();
  for(const rec of rows){
-  const date=String(rec.date||"").slice(0,10);if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date))continue;
+  const date=String(rec.date||"").slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(date))continue;
   for(const market of rec.markets||[]){
    const outcome=successEvaluate(rec,market,fullResults,iymsResults);if(outcome===null)continue;
    if(!dailyStats.has(date))dailyStats.set(date,{date,n:0,ok:0});

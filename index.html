@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#c8102e">
-<link rel="manifest" href="./manifest.json?v=155">
-<link rel="icon" href="./icon-192-pal.png?v=155" type="image/png" sizes="192x192">
+<link rel="manifest" href="./manifest.json?v=215">
+<link rel="icon" href="./icon-192-pal.png?v=215" type="image/png" sizes="192x192">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
 :root{--red:#c8102e;--yellow:#f5c400;--bg:#101010;--panel:#1b1b1b;--line:#383838;--muted:#bbb}
@@ -295,15 +295,7 @@ th{color:var(--yellow)}
  </div>
 </section>
 
-<section id="nbaBolumu" class="hidden">
- <h2>🏀 NBA Maç Analizi</h2>
- <div id="nbaCanliPanel" class="panel hidden"></div>
- <div class="panel">
-  <div id="nbaDurum">NBA verileri yüklenmeye hazır.</div>
-  <div id="nbaMaclar"></div>
-  <button onclick="nbaBaslat(true)">NBA Verilerini Yenile</button>
- </div>
-</section>
+
 
 <section id="successBolumu" class="hidden">
  <h2>📊 YAPAYCİN · BAŞARI KARNESİ</h2>
@@ -337,9 +329,9 @@ let matchRenderObserver=null;
 function makeDateIndex(rows){const map=new Map();for(const m of rows){const d=String(m.date||"");if(!map.has(d))map.set(d,[]);map.get(d).push(m)}return map;}
 let teamIndex=new Map(), teamAllIndex=new Map(), leagueIndex=new Map(), leaguePrefix=new Map(), previousMatchCache=new Map(), overallHistoryPrefix={count:[0],goals:[0]};
 let hiddenLeagues=new Set();
-let iymsYuklendi=false, iymsLoading=false, nbaYuklendi=false, nbaLoading=false, couponBuildBusy=false, activeTabName="futbol", iddaaYuklendi=false, iddaaLoading=false, analysisRunning=false;
+let iymsYuklendi=false, iymsLoading=false, couponBuildBusy=false, activeTabName="futbol", iddaaYuklendi=false, iddaaLoading=false, analysisRunning=false;
 let couponOpenCards=new Set(), halfBothOpenCards=new Set(), halfBothBuilding=false, halfBothForcePending=false;
-let NBA_GAMES_CACHE=[], liveFootballMatches=[], liveBasketballMatches=[], liveScoresBusy=false, liveScoresTimer=null, liveScoresLastFetch=0, liveScoresDate="";
+let liveFootballMatches=[], liveScoresBusy=false, liveScoresTimer=null, liveScoresLastFetch=0, liveScoresDate="";
 let liveViewMode="live";
 let IDDAA_EVENTS=[], IDDAA_COMPETITIONS=new Map(), IDDAA_INDEX=new Map(), IDDAA_BY_DATE=new Map(), IDDAA_MATCH_CACHE=new Map(), IDDAA_MOVEMENTS=new Map(), iddaaUpdated="", iddaaSourceUpdatedAt="", iddaaShown=20;
 const $=id=>document.getElementById(id);
@@ -1215,17 +1207,14 @@ async function baslat(force=false){
   // İlk maç listesi çizildikten hemen sonra oran bültenini arka planda başlat.
   // Gecikmeli idle kuyruğu, geçmişi az olan maçların tahminini gereksiz yere bekletiyordu.
   setTimeout(()=>{if(!iddaaYuklendi&&!iddaaLoading)iddaaBaslat()},500);
-  // Canlı skorları ilk ekran çizildikten sonra al; tahmin listesini yeniden hesaplatmaz.
-  setTimeout(startLiveScores,2500);
  }catch(e){$("durum").textContent="Futbol veri hatası: "+e.message}
  finally{footballRefreshBusy=false}
 }
 function sekmeAc(name){
- if(name==="nba")return; // NBA sekmesi geçici olarak gizli.
- const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",nba:"nbaBolumu",coupons:"couponsBolumu",halfBoth:"halfBothBolumu",sporToto:"sporTotoBolumu",success:"successBolumu",iddaa:"iddaaBolumu"};
+ const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",coupons:"couponsBolumu",halfBoth:"halfBothBolumu",sporToto:"sporTotoBolumu",success:"successBolumu",iddaa:"iddaaBolumu"};
  activeTabName=name;
  Object.keys(ids).forEach(k=>$(ids[k]).classList.toggle("hidden",k!==name));
- $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");const nbaButton=$("nbaButon");if(nbaButton)nbaButton.classList.toggle("active",name==="nba");$("couponButon").classList.toggle("active",name==="coupons");$("halfBothButon").classList.toggle("active",name==="halfBoth");$("sporTotoButon").classList.toggle("active",name==="sporToto");$("successButon").classList.toggle("active",name==="success");
+ $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");$("couponButon").classList.toggle("active",name==="coupons");$("halfBothButon").classList.toggle("active",name==="halfBoth");$("sporTotoButon").classList.toggle("active",name==="sporToto");$("successButon").classList.toggle("active",name==="success");
  // Önce görünür sekmeyi değiştir; içerik çizimini ilk ekrandan sonraya bırak.
  requestAnimationFrame(()=>{
  setTimeout(()=>{
@@ -2552,61 +2541,6 @@ function startLiveScores(){
  liveScoresLoad();liveScoresTimer=setInterval(liveScoresLoad,60000);
 }
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-liveScoresLastFetch>60000)liveScoresLoad()});
-
-/* NBA */
-function nbaDone(g){return g.completed===true||String(g.completed).toLowerCase()==="true"}
-function nbaDate(g){return new Date(g.start_time||g.game_date||0)}
-function nbaKey(g,home){return String(home?(g.home_team_id||g.home_team_abbr||g.home_team_name):(g.away_team_id||g.away_team_abbr||g.away_team_name))}
-function nbaName(g,home){return g[home?"home_team_name":"away_team_name"]||g[home?"home_team_abbr":"away_team_abbr"]||(home?"Ev sahibi":"Deplasman")}
-function nbaForm(key,date,games,homeSide){
- const previous=games.filter(g=>nbaDone(g)&&nbaDate(g)<date&&(nbaKey(g,true)===key||nbaKey(g,false)===key)).sort((a,b)=>nbaDate(b)-nbaDate(a)).slice(0,10);
- const homeGames=previous.filter(g=>homeSide?nbaKey(g,true)===key:nbaKey(g,false)===key);
- const scores=previous.map(g=>nbaKey(g,true)===key?Number(g.home_score):Number(g.away_score));
- const conceded=previous.map(g=>nbaKey(g,true)===key?Number(g.away_score):Number(g.home_score));
- return {n:previous.length,scored:avg(scores),conceded:avg(conceded),homeN:homeGames.length,
-  homeScored:avg(homeGames.map(g=>nbaKey(g,true)===key?Number(g.home_score):Number(g.away_score))),
-  homeConceded:avg(homeGames.map(g=>nbaKey(g,true)===key?Number(g.away_score):Number(g.home_score)))};
-}
-function nbaPredict(g,games){
- const date=nbaDate(g),home=nbaForm(nbaKey(g,true),date,games,true),away=nbaForm(nbaKey(g,false),date,games,false);
- const scores=games.filter(x=>nbaDone(x)&&nbaDate(x)<date).flatMap(x=>[Number(x.home_score),Number(x.away_score)]).filter(Number.isFinite);
- const league=avg(scores)||112;
- let hs=((home.n?home.scored:league)+(away.n?away.conceded:league))/2;
- let as=((away.n?away.scored:league)+(home.n?home.conceded:league))/2;
- if(home.homeN>=3)hs=hs*.65+((home.homeScored+home.homeConceded)/2)*.35;
- if(away.homeN>=3)as=as*.65+((away.homeScored+away.homeConceded)/2)*.35;
- hs=Math.round(hs);as=Math.round(as);const diff=hs-as,total=hs+as;
- const favorite=diff>0?nbaName(g,true):diff<0?nbaName(g,false):"Belirgin favori yok";
- const ou=line=>({pick:total>=line?"ÜST":"ALT",confidence:Math.max(50,Math.min(85,Math.round(50+Math.abs(total-line)*1.1)))});
- return {hs,as,diff,total,favorite,confidence:Math.max(50,Math.min(78,Math.round(50+Math.min(20,Math.abs(diff)*1.15)+Math.min(8,Math.min(home.n,away.n)*.8)))),ou200:ou(200.5),ou220:ou(220.5),ou240:ou(240.5)};
-}
-async function nbaBaslat(force=false){
- if(nbaLoading||(!force&&nbaYuklendi))return;nbaLoading=true;
- $("nbaDurum").textContent="NBA verileri yükleniyor...";$("nbaMaclar").innerHTML="";
- try{
-  const r=await fetch("./nba.json"+(force?"?v="+Date.now():""),{cache:force?"no-store":"default"});if(!r.ok)throw new Error("nba.json bulunamadı");
-  const data=await r.json(),games=Array.isArray(data.games)?data.games:[];
-  NBA_GAMES_CACHE=games;renderLiveScores();
-  const now=new Date(),future=games.filter(g=>!nbaDone(g)&&nbaDate(g)>=now).sort((a,b)=>nbaDate(a)-nbaDate(b));
-  const finished=games.filter(nbaDone).sort((a,b)=>nbaDate(b)-nbaDate(a));
-  let correct=0,tested=0;
-  for(let i=0;i<finished.length;i++){const g=finished[i],p=nbaPredict(g,games);if(p.diff){tested++;if((Number(g.home_score)>Number(g.away_score))===(p.diff>0))correct++}if(i%25===24)await new Promise(resolve=>setTimeout(resolve,0));}
-  let html=`<div class="nba-card"><b>📊 Geçmiş kazanan testi:</b> ${tested?"%"+(correct/tested*100).toFixed(1):"Yeterli veri yok"} (${correct}/${tested})</div>`;
-  if(future.length){
-   html+="<h3>🏀 Yaklaşan NBA maçları</h3>";
-   future.slice(0,30).forEach(g=>{const p=nbaPredict(g,games),date=nbaDate(g).toLocaleString("tr-TR",{timeZone:"Europe/Istanbul",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
-    html+=`<div class="nba-card"><small>${date}</small><h3>${nbaName(g,true)} - ${nbaName(g,false)}</h3><div style="font-size:22px;text-align:center">${p.hs} - ${p.as}</div><p>Kazanan tahmini: <b>${p.favorite}</b><br>Model göstergesi: <b>%${p.confidence}</b><br>Toplam sayı: <b>${p.total}</b><br>200.5: ${p.ou200.pick} (%${p.ou200.confidence})<br>220.5: ${p.ou220.pick} (%${p.ou220.confidence})<br>240.5: ${p.ou240.pick} (%${p.ou240.confidence})</p></div>`;
-   });
-  }else html+="<div class='nba-card'>Şu anda listelenecek yaklaşan NBA maçı bulunamadı.</div>";
-  html+="<h3>Son tamamlanan maçlar</h3>";
-  finished.slice(0,10).forEach(g=>html+=`<div class="nba-card"><small>${nbaDate(g).toLocaleDateString("tr-TR")}</small><br><b>${nbaName(g,true)}</b><div style="text-align:center;font-size:20px">${g.home_score} - ${g.away_score}</div><b>${nbaName(g,false)}</b></div>`);
-  $("nbaDurum").textContent="NBA verileri yüklendi · Toplam kayıt: "+games.length+" · Yaklaşan maç: "+future.length+" · Kaynak: "+(data.source||"Belirtilmemiş");
-  $("nbaMaclar").innerHTML=html;nbaYuklendi=true;
- }catch(e){$("nbaDurum").textContent="NBA veri hatası: "+e.message}
- finally{nbaLoading=false}
-}
-
-
 
 /* AÇILIŞ */
 $("tarih").value=today();

@@ -107,6 +107,26 @@ th{color:var(--yellow)}
 .all-predictions{background:#151515;border-color:#554714}
 @media(max-width:380px){.teams{font-size:14px}.match{padding:10px}.rank{font-size:9px;padding:4px 6px}.main-pick{padding:9px;font-size:12px}}
 
+/* V207 - maç kartlarında son form ve gol ortalamaları */
+.recent-form{margin:10px 11px 0;background:#121212;border:1px solid #493b20;border-radius:9px;overflow:hidden}
+.recent-form summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 10px;color:#f5c400;font-size:11px;font-weight:900;cursor:pointer}
+.recent-form summary::-webkit-details-marker{display:none}
+.recent-form summary span{color:#aaa;font-size:10px;font-weight:700;white-space:nowrap}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 8px 8px}
+.form-team{min-width:0;padding:9px;background:#1d1d1d;border:1px solid #383838;border-radius:8px}
+.form-team>b{display:block;color:#fff;font-size:12px;line-height:1.35;overflow-wrap:anywhere;margin-bottom:7px}
+.form-results{display:flex;gap:4px;flex-wrap:wrap}
+.form-result{display:grid;place-items:center;width:22px;height:22px;border-radius:5px;font-size:10px;font-weight:900}
+.form-result.win{background:#173c25;color:#85e5a1;border:1px solid #34764a}
+.form-result.draw{background:#3a3216;color:#ffe16a;border:1px solid #806b24}
+.form-result.loss{background:#421b20;color:#ff9696;border:1px solid #80323c}
+.form-stats{display:flex;justify-content:space-between;gap:4px;margin-top:8px;color:#aaa;font-size:9px}
+.form-stats strong{color:#eee;font-size:10px;white-space:nowrap}
+.form-goals{display:flex;justify-content:space-between;gap:4px;margin-top:7px;padding-top:6px;border-top:1px solid #383838;color:#aaa;font-size:10px}
+.form-goals b{color:#f5c400}
+.form-empty{display:block;color:#999;font-size:10px;line-height:1.4}
+.form-note{padding:0 9px 9px;color:#888;font-size:9px}
+@media(max-width:350px){.form-grid{gap:5px;padding:0 5px 7px}.form-team{padding:7px}.form-team>b{font-size:11px}}
 /* V186 - maç kartı yerleşimi: profesyonel analiz */
 .pro-match{padding:0!important;overflow:hidden;border:1px solid #493a3e!important;border-left:4px solid #c8102e!important;border-radius:14px!important;background:#171717!important;box-shadow:0 5px 18px #0008!important}
 .pro-match-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;background:linear-gradient(90deg,#2a171b,#202020);border-bottom:1px solid #3b3032}
@@ -570,6 +590,24 @@ function matchInsight(m,t){
  const why="Ev sahibi gol beklentisi "+t.expectedHome.toFixed(2)+", deplasman gol beklentisi "+t.expectedAway.toFixed(2)+".";
  return "<div class='analysis-box'><b>🧠 Model değerlendirmesi</b><br>"+(best?"Öne çıkan seçenek: <b>"+best.label+" (%"+(best.prob*100).toFixed(1)+")</b> · Seviye: <b>"+level+"</b>":"<b>Güçlü seçim eşiği aşılmadı.</b>"+(favorite?" <span style='display:inline-block;margin-top:5px;padding:6px 10px;background:#f5c400;color:#171000;border:2px solid #ffe36a;border-radius:7px;font-weight:900;font-size:14px;box-shadow:0 0 0 2px #f5c40035'>⭐ YAPAYCİN TAHMİN: "+favorite.label+" (%"+(favorite.prob*100).toFixed(1)+")</span>.":" Model belirgin bir tarafı önde görmüyor."))+"<br><small>Olası skor: <b>"+score+"</b> · "+scenario+"</small><br><small>Veri kalitesi: "+quality+" · Ev/dep. geçmişi: "+t.homeSamples+"/"+t.awaySamples+" maç · Model uyumu: %"+(agreement*100).toFixed(0)+"</small><br><small>"+why+" Tahminler olasılıktır, garanti değildir.</small>"+(picks.length>1?"<br><small>Diğer güçlü adaylar: "+picks.slice(1,4).map(x=>x.label+" %"+(x.prob*100).toFixed(1)).join(" · ")+"</small>":"")+(upset?"<br><span style='color:#ff9b6b;font-weight:bold'>⚠️ Sürpriz alarmı: Favori olmayan "+(favoriteSide==="Ev sahibi"?"deplasman":"ev sahibi")+" galibiyeti ihtimali %"+(underdog*100).toFixed(1)+".</span>":"")+(drawRisk?"<br><span style='color:#ffcf5a;font-weight:bold'>⚠️ Beraberlik riski: X olasılığı %"+(t.draw*100).toFixed(1)+"</span>":"")+"</div>";
 }
+function recentTeamPanel(team,league,date){
+ const rows=previousMatches(team,league,date,5);
+ if(!rows.length)return {html:"<div class='form-team'><b>"+liveEsc(team)+"</b><span class='form-empty'>Geçmiş maç verisi bulunamadı</span></div>",count:0};
+ let scored=0,conceded=0,wins=0,draws=0,losses=0;
+ const items=rows.map(m=>{
+  const home=m.home===team,own=Number(home?m.ft_home:m.ft_away),opp=Number(home?m.ft_away:m.ft_home);
+  scored+=own;conceded+=opp;
+  const result=own>opp?"G":own===opp?"B":"M";
+  if(result==="G")wins++;else if(result==="B")draws++;else losses++;
+  return "<span class='form-result "+(result==="G"?"win":result==="B"?"draw":"loss")+"' title='"+String(m.date||"")+" "+own+"-"+opp+"'>"+result+"</span>";
+ });
+ return {count:rows.length,html:"<div class='form-team'><b>"+liveEsc(team)+"</b><div class='form-results'>"+items.join("")+"</div><div class='form-stats'><span>Son "+rows.length+" maç</span><strong>"+wins+"G · "+draws+"B · "+losses+"M</strong></div><div class='form-goals'><span>Attığı <b>"+(scored/rows.length).toFixed(1)+"</b></span><span>Yediği <b>"+(conceded/rows.length).toFixed(1)+"</b></span></div></div>"};
+}
+function matchRecentForm(m){
+ const home=recentTeamPanel(m.home,m.league_id,m.date),away=recentTeamPanel(m.away,m.league_id,m.date);
+ if(!home.count&&!away.count)return "";
+ return "<details class='recent-form'><summary>📈 TAKIMLARIN SON FORMU <span>Son 5 maç</span></summary><div class='form-grid'>"+home.html+away.html+"</div><div class='form-note'>G: Galibiyet · B: Beraberlik · M: Mağlubiyet. Ortalamalar maç başınadır.</div></details>";
+}
 function matchCard(m,t,past=false,rank=0,adjusted=null){
  const finalPrediction=!past?(adjusted||iddaaAdjustedPrediction(m,t)):t;
  const candidates=footballPickCandidates(finalPrediction),main=candidates[0],favorite=footballModelFavorite(finalPrediction);
@@ -583,6 +621,7 @@ function matchCard(m,t,past=false,rank=0,adjusted=null){
  <div class="pro-match-head"><div class="pro-league">${leagueView(m)}</div>${!past?`<span class="rank">${rank?(main?"#"+rank:"Analiz"):"Tahmin"}</span>`:"<span class='pro-past-label'>TAMAMLANDI</span>"}</div>
  <div class="pro-teams"><div class="pro-team pro-home"><span class="pro-team-name">${m.home}</span><span class="pro-team-side">EV SAHİBİ</span></div><div class="pro-vs">VS</div><div class="pro-team pro-away"><span class="pro-team-name">${m.away}</span><span class="pro-team-side">DEPLASMAN</span></div></div>
  <div class="pro-match-foot"><span class="pro-kickoff">🕒 ${m.time||"Saat açıklanmadı"}</span>${past?`<span class="pro-result">SONUÇ ${m.ft_home}-${m.ft_away}</span>`:""}</div>
+ ${past?"":matchRecentForm(m)}
  ${past?"":`<div class="pro-prediction"><div class="pro-prediction-title">⭐ ${mainTitle}</div><div class="pro-prediction-value">${mainLabel}</div>${mainPercent?`<div class="pro-prediction-percent">${mainPercent} olasılık</div>`:"<div class='pro-prediction-percent'>Belirgin favori yok</div>"}${fallbackUsed?"<small>Güçlü seçim eşiği aşılmadı; 1-X-2 arasındaki en yüksek olasılıklı sonuç gösteriliyor. Kesin tahmin değildir.</small>":(!main&&favorite?"<small>Güçlü seçim eşiği aşılmadı; bu gösterim kesin tahmin değildir.</small>":"")}</div>
  <details class="all-predictions"><summary>📊 TÜM TAHMİNLERİ VE OLASILIKLARI GÖSTER</summary><div class="predictions">${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}${predictionBox("2,5 Üst",finalPrediction?.over25)}${predictionBox("3,5 Üst",finalPrediction?.over35)}${predictionBox("İY 1,5 Üst",finalPrediction?.firstOver15)}${predictionBox("6+ Gol",finalPrediction?.six)}${predictionBox("KG Var",finalPrediction?.btts)}${predictionBox("KG Yok",finalPrediction?.btts==null?null:1-finalPrediction.btts)}</div></details>${matchInsight(m,finalPrediction)}`}
  </article>`;

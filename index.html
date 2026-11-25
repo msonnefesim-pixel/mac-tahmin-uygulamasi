@@ -257,13 +257,13 @@ th{color:var(--yellow)}
  <div class="panel">
   <div class="toto-status"><div id="sporTotoDurum">Spor Toto bülteni yüklenmeye hazır.</div><button type="button" class="secondary" onclick="sporTotoYukle(true)">↻ Listeyi Yenile</button></div>
   <div class="toto-summary" id="sporTotoOzet">Her maç için 1, X ve 2 seçeneklerinden bir veya birkaçını işaretle.</div>
-  <div class="panel" style="margin:10px 0;border:1px solid #8c6d00;background:#211d0b"><b>🎯 BANKO + SÜRPRİZ KARIŞIK KUPON</b><p class="small">Güçlü olasılıklara tek seçim, dengeli ve sürprize açık maçlara çift seçim yapar.</p><button type="button" onclick="sporTotoKarIsikKuponOlustur()">⚡ Karışık Kupon Oluştur</button><div id="sporTotoKarIsikSonuc" class="small" style="margin-top:8px">Kuponunu oluşturmak için dokun.</div></div>
+  <div class="panel" style="margin:10px 0;border:1px solid #8c6d00;background:#211d0b"><b>🎯 BANKO + SÜRPRİZ KARIŞIK KUPON</b><p class="small">Güçlü olasılıklara tek seçim, dengeli ve sürprize açık maçlara çift seçim yapar.</p><button id="sporTotoKarIsikBtn" type="button" onclick="sporTotoKarIsikKuponOlustur()">⚡ Karışık Kupon Oluştur</button><div id="sporTotoKarIsikSonuc" class="small" style="margin-top:8px">Kuponunu oluşturmak için dokun.</div></div>
   <div class="toto-row" style="border-bottom:1px solid #555">
    <div class="toto-head" style="text-align:left">MAÇ</div><div class="toto-head">1</div><div class="toto-head">X</div><div class="toto-head">2</div>
   </div>
   <div id="sporTotoMaclar">Bülten bekleniyor...</div>
   <button type="button" class="secondary" onclick="sporTotoTemizle()">Seçimleri Temizle</button>
-  <p class="small">Liste yayınlanan Spor Toto haftalık programından alınır ve yaklaşık 6 saatte bir kontrol edilir. Seçimlerin bu cihazda saklanır. Tahmin veya kazanç garantisi değildir.</p>
+  <p class="small">Bülten yaklaşık 2 saatte bir kontrol edilir. İlk maç başladığında eski hafta otomatik kapatılır; yeni haftada eski seçimler taşınmaz. <a href="https://www.bilyoner.com/spor-toto" target="_blank" rel="noopener" style="color:#f5c400">Bilyoner Spor Toto'yu kontrol et</a>. Tahmin veya kazanç garantisi değildir.</p>
  </div>
 </section>
 
@@ -1213,10 +1213,42 @@ let sporTotoRenderedData=null;
 let sporTotoPicks={};
 let sporTotoLoading=false;
 function sporTotoEsc(value){return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]))}
-function sporTotoSecimleriOku(){
- try{const raw=JSON.parse(localStorage.getItem("yapaycin_spor_toto_picks_v1")||"{}");sporTotoPicks=raw&&typeof raw==="object"?raw:{}}catch(e){sporTotoPicks={}}
+function sporTotoIlkMacBasladi(data){
+ const matches=Array.isArray(data?.matches)?data.matches.slice():[];
+ if(!matches.length)return false;
+ matches.sort((a,b)=>String(a.date||"").localeCompare(String(b.date||""))||String(a.time||"").localeCompare(String(b.time||"")));
+ const first=matches[0],date=String(first.date||"").slice(0,10),time=/^\d{1,2}:\d{2}$/.test(String(first.time||""))?String(first.time):"23:59";
+ const kickoff=new Date(date+"T"+time+":00+03:00").getTime();
+ return Number.isFinite(kickoff)&&Date.now()>=kickoff;
+}
+function sporTotoHaftaAnahtari(data){
+ const first=(data?.matches||[])[0]||{};
+ return [data?.season||"",data?.week||"",first.date||"",first.home||"",first.away||""].join("|");
+}
+function sporTotoDurumMetni(data){
+ return sporTotoIlkMacBasladi(data)
+  ?(data?.week?data.week+". HAFTA · ":"")+"BÜLTEN SÜRESİ DOLDU · Yeni program bekleniyor"
+  :(data?.week?data.week+". HAFTA · ":"")+"15 maçlık bülten aktif";
+}
+function sporTotoSecimleriOku(data){
+ const weekKey=sporTotoHaftaAnahtari(data);
+ try{
+  const savedWeek=localStorage.getItem("yapaycin_spor_toto_week_v1");
+  if(savedWeek!==weekKey){
+   sporTotoPicks={};
+   localStorage.removeItem("yapaycin_spor_toto_picks_v1");
+   localStorage.setItem("yapaycin_spor_toto_week_v1",weekKey);
+   return;
+  }
+  const raw=JSON.parse(localStorage.getItem("yapaycin_spor_toto_picks_v1")||"{}");
+  sporTotoPicks=raw&&typeof raw==="object"?raw:{};
+ }catch(e){sporTotoPicks={}}
 }
 function sporTotoSecim(no,pick){
+ if(sporTotoIlkMacBasladi(sporTotoData)){
+  $("sporTotoDurum").textContent=sporTotoDurumMetni(sporTotoData);
+  return;
+ }
  const key=String(no),arr=Array.isArray(sporTotoPicks[key])?sporTotoPicks[key]:[];
  sporTotoPicks[key]=arr.includes(pick)?arr.filter(x=>x!==pick):[...arr,pick].sort((a,b)=>["1","X","2"].indexOf(a)-["1","X","2"].indexOf(b));
  try{localStorage.setItem("yapaycin_spor_toto_picks_v1",JSON.stringify(sporTotoPicks))}catch(e){}
@@ -1290,6 +1322,9 @@ function sporTotoTahmin(m){
 }
 let sporTotoMixedCoupon=null;
 function sporTotoKarIsikKuponOlustur(){
+ if(sporTotoIlkMacBasladi(sporTotoData)){
+  $("sporTotoKarIsikSonuc").textContent="Bu haftanın ilk maçı başladı. Yeni bülten yayınlanınca kupon oluşturulabilir.";return;
+ }
  if(!sporTotoData||!Array.isArray(sporTotoData.matches)||sporTotoData.matches.length!==15){
   $("sporTotoKarIsikSonuc").textContent="Önce 15 maçlık bülten yüklensin.";return;
  }
@@ -1363,6 +1398,15 @@ function sporTotoSecimOzeti(){
 }
 function sporTotoRender(){
  if(!sporTotoData||!Array.isArray(sporTotoData.matches))return;
+ if(sporTotoIlkMacBasladi(sporTotoData)){
+  $("sporTotoMaclar").innerHTML='<div class="toto-summary" style="border:1px solid #8c6d00;color:#f5d66b">⏳ Bu haftanın ilk maçı başladı. Eski bülten kapatıldı; yeni 15 maçlık program yayınlanınca otomatik yüklenecek.</div>';
+  $("sporTotoOzet").textContent="Eski haftanın seçimleri kapalı · Yeni bülten bekleniyor";
+  const btn=$("sporTotoKarIsikBtn");if(btn)btn.disabled=true;
+  const result=$("sporTotoKarIsikSonuc");if(result)result.textContent="Yeni bülten yayınlandığında karışık kupon oluşturabilirsin.";
+  sporTotoRenderedData=sporTotoData;
+  return;
+ }
+ const btn=$("sporTotoKarIsikBtn");if(btn)btn.disabled=false;
  const rows=sporTotoData.matches.map(m=>{
   const chosen=Array.isArray(sporTotoPicks[String(m.number)])?sporTotoPicks[String(m.number)]:[];
   const d=String(m.date||"").split("-"),date=d.length===3?d[2]+"."+d[1]+"."+d[0]:m.date||"";
@@ -1383,7 +1427,7 @@ async function sporTotoYukle(force=false){
   if(!force&&!sporTotoData&&"caches" in window){
    try{
     const cached=await caches.match(new URL("./spor-toto.json",location.href).href);
-    if(cached){const data=await cached.clone().json();if(data&&Array.isArray(data.matches)&&data.matches.length===15){sporTotoData=data;sporTotoSecimleriOku();sporTotoRender();$("sporTotoDurum").textContent=(data.week?data.week+". HAFTA":"SPOR TOTO")+" · "+data.matches.length+" maç · kayıtlı listeden açıldı";}}
+    if(cached){const data=await cached.clone().json();if(data&&Array.isArray(data.matches)&&data.matches.length===15){sporTotoData=data;sporTotoSecimleriOku(data);sporTotoRender();$("sporTotoDurum").textContent=sporTotoDurumMetni(data)+" · kayıtlı listeden açıldı";}}
    }catch(_){}
   }
   $("sporTotoDurum").textContent=sporTotoData?"Liste açıldı · güncel bülten kontrol ediliyor…":"Spor Toto bülteni yükleniyor…";
@@ -1392,10 +1436,10 @@ async function sporTotoYukle(force=false){
   const data=await response.json();
   if(!data||!Array.isArray(data.matches)||data.matches.length!==15)throw new Error("15 maçlık geçerli bülten bulunamadı");
   const changed=!sporTotoData||JSON.stringify(sporTotoData.matches)!==JSON.stringify(data.matches);
-  sporTotoData=data;sporTotoSecimleriOku();
+  sporTotoData=data;sporTotoSecimleriOku(data);
   if(changed||force)sporTotoRender();
   const updated=data.updated_at?new Date(data.updated_at).toLocaleString("tr-TR"):"";
-  $("sporTotoDurum").textContent=(data.week?data.week+". HAFTA":"SPOR TOTO")+" · "+data.matches.length+" maç"+(updated?" · Güncelleme: "+updated:"");
+  $("sporTotoDurum").textContent=sporTotoDurumMetni(data)+(updated?" · Güncelleme: "+updated:"");
  }catch(e){
   $("sporTotoDurum").textContent=sporTotoData?"Kayıtlı bülten gösteriliyor · güncel liste alınamadı":"Spor Toto yükleme hatası: "+e.message;
  }finally{sporTotoLoading=false}
@@ -2515,7 +2559,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=210",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=211",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

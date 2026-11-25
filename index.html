@@ -2536,12 +2536,6 @@ async function liveScoresLoad(){
   const status=$("liveResultsStatus");if(status)status.textContent="Canlı skor bağlantı hatası: "+e.message+" · Önceki skorlar korunuyor.";
  }finally{liveScoresBusy=false}
 }
-function startLiveScores(){
- if(liveScoresTimer)return;
- liveScoresLoad();liveScoresTimer=setInterval(liveScoresLoad,60000);
-}
-document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-liveScoresLastFetch>60000)liveScoresLoad()});
-
 /* AÇILIŞ */
 $("tarih").value=today();
 $("couponTarih").value=today();
@@ -2549,7 +2543,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=214",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=215",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

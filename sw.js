@@ -59,14 +59,6 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  if (url.pathname.endsWith("/live.json")) {
-    event.respondWith(fetch(event.request, { cache: "no-store" }).catch(async () => {
-      const cache = await caches.open(CACHE_NAME);
-      return (await cache.match(event.request)) || (await cache.match(new Request(url.origin + url.pathname))) || Response.error();
-    }));
-    return;
-  }
-
   if (url.pathname.endsWith("/data.json")) {
     const cachePromise = caches.open(CACHE_NAME);
     const baseRequest = new Request(url.origin + url.pathname);

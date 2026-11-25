@@ -37,7 +37,7 @@ button.secondary,.tab-button{background:#292929;color:#fff;border:1px solid #555
 .teams{font-weight:bold;font-size:15px;line-height:1.35;color:#7ee081!important}
 .kickoff{background:var(--red);padding:5px 7px;border-radius:5px;font-size:12px;white-space:nowrap}
 .meta{font-size:11px;color:#bbb;margin-top:6px}
-.predictions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:9px}
+.predictions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:9px}.main-pick{margin-top:9px;padding:10px;background:#211014;border:1px solid #7a2632;border-radius:8px;color:#f5c400;font-size:13px}.all-predictions{margin-top:7px;background:#202020;border:1px solid #444;border-radius:7px;padding:7px}.all-predictions summary{color:#ddd;font-size:12px;font-weight:bold;cursor:pointer;min-height:25px;display:flex;align-items:center}.all-predictions[open] summary{color:#f5c400}
 .pred-name{display:block;font-size:10px;color:#bbb}
 .pred-value{display:block;color:var(--yellow);font-size:13px!important;font-weight:bold;margin-top:3px}
 .rank{font-size:11px;color:var(--yellow);white-space:nowrap}
@@ -472,34 +472,48 @@ function predictFootball(m){
 }
 function highest(t){return t?Math.max(t.one,t.draw,t.two,t.over25??0,t.over35,t.six,t.btts,t.first??0,t.second??0,t.firstOver15??0):-1}
 function predictionBox(name,value){return `<div class="pred"><span class="pred-name">${name}</span><span class="pred-value">${pct(value)}</span></div>`}
+const FOOTBALL_PICK_LIMITS={result:.56,over25:.58,over35:.60,six:.40,btts:.58,firstOver15:.55,first:.55,second:.58};
+function footballPickCandidates(t){
+ if(!t||t.marketOnly)return [];
+ const picks=[];
+ const add=(label,prob,key)=>{if(Number.isFinite(prob)&&prob>=FOOTBALL_PICK_LIMITS[key])picks.push({label,prob,key})};
+ const result=[["1",t.one],["X",t.draw],["2",t.two]].filter(x=>Number.isFinite(x[1])).sort((a,b)=>b[1]-a[1])[0];
+ if(result)add(result[0],result[1],"result");
+ add("2,5 Üst",t.over25,"over25");add("3,5 Üst",t.over35,"over35");add("6+ Gol",t.six,"six");
+ if(Number.isFinite(t.btts)){if(t.btts>=FOOTBALL_PICK_LIMITS.btts)add("KG Var",t.btts,"btts");else if(1-t.btts>=FOOTBALL_PICK_LIMITS.btts)add("KG Yok",1-t.btts,"btts")}
+ add("İY 1,5 Üst",t.firstOver15,"firstOver15");add("İlk Yarı KG",t.first,"first");add("İkinci Yarı KG",t.second,"second");
+ return picks.sort((a,b)=>b.prob-a.prob);
+}
 function matchInsight(m,t){
  if(!t)return "";
  if(t.marketOnly)return "<div class='analysis-box'><b>📊 İddaa piyasa verisi</b><br><small>Bu maçta model için yeterli geçmiş karşılaşma bulunmadığından tahminler, İddaa oranlarının marjı çıkarılarak hesaplanan piyasa olasılıklarıdır. Model tahmini değildir.</small></div>";
- const labels=[["1",t.one],["X",t.draw],["2",t.two],["2,5 Üst",t.over25],["3,5 Üst",t.over35],["6+ Gol",t.six],["KG Var",t.btts],["İlk Yarı 1,5 Üst",t.firstOver15],["İlk Yarı KG",t.first],["İkinci Yarı KG",t.second]].filter(x=>Number.isFinite(x[1])).sort((a,b)=>b[1]-a[1]);
- const best=labels[0],agreement=t.methodAgreement*.65+(t.marketAgreement??t.methodAgreement)*.35,quality=t.quality;
- const level=best[1]>=.64&&agreement>=.72&&quality==="İyi"?"Güvenli":best[1]>=.50&&agreement>=.52&&quality!=="Sınırlı"?"Orta":"Riskli";
- const strong=labels.filter(([name,p])=>p>=(name==="6+ Gol"?.20:name==="KG Var"?.50:name==="3,5 Üst"?.52:name==="2,5 Üst"?.55:name==="İlk Yarı 1,5 Üst"?.40:name.includes("Yarı")?.40:.34)&&agreement>=.48).slice(0,4);
+ const picks=footballPickCandidates(t),best=picks[0],agreement=(t.methodAgreement??0)*.65+(t.marketAgreement??t.methodAgreement??0)*.35,quality=t.quality||"Sınırlı";
+ const level=best&&best.prob>=.68&&agreement>=.72&&quality==="İyi"?"Güçlü":best&&best.prob>=.60&&agreement>=.58&&quality!=="Sınırlı"?"Orta":"Temkinli";
  const underdog=t.one>=t.two?t.two:t.one,favorite=t.one>=t.two?"Ev sahibi":"Deplasman";
  const upset=underdog>=.22&&underdog<=.46&&Math.max(t.one,t.two)-underdog>=.10;
  const drawRisk=t.draw>=.27&&Math.max(t.one,t.two)<=.62;
  const total=t.expectedHome+t.expectedAway,scenario=total>=3.35?"Yüksek tempolu ve gollü maç":total<=2.20?"Düşük tempolu, az gollü maç":"Dengeli gol beklentili maç";
  const score=t.scoreline?t.scoreline.home+"-"+t.scoreline.away:"-";
  const why="Ev sahibi gol beklentisi "+t.expectedHome.toFixed(2)+", deplasman gol beklentisi "+t.expectedAway.toFixed(2)+".";
- return "<div class='analysis-box'><b>🧠 Çoklu model değerlendirmesi</b><br>En güçlü seçenek: <b>"+best[0]+" (%"+(best[1]*100).toFixed(1)+")</b> · Güven: <b>"+level+"</b><br><small>Olası skor: <b>"+score+"</b> · Senaryo: "+scenario+"</small><br><small>Veri kalitesi: "+quality+" · Ev/dep. geçmişi: "+t.homeSamples+"/"+t.awaySamples+" maç · Model uyumu: %"+(agreement*100).toFixed(0)+"</small><br><small>"+why+" Temel Poisson, son form ve birleşik model birlikte değerlendirildi.</small>"+(strong.length?"<br><small>Güçlü adaylar: "+strong.map(x=>x[0]+" %"+(x[1]*100).toFixed(1)).join(" · ")+"</small>":"")+(upset?"<br><span style='color:#ff9b6b;font-weight:bold'>⚠️ Sürpriz alarmı: Favori olmayan "+(favorite==="Ev sahibi"?"deplasman":"ev sahibi")+" galibiyeti ihtimali %"+(underdog*100).toFixed(1)+". Favorinin üstünlüğü kesin değil.</span>":"")+(drawRisk?"<br><span style='color:#ffcf5a;font-weight:bold'>⚠️ Beraberlik/sürpriz alarmı: X olasılığı %"+(t.draw*100).toFixed(1)+"</span>":"")+"</div>";
+ return "<div class='analysis-box'><b>🧠 Model değerlendirmesi</b><br>"+(best?"Öne çıkan seçenek: <b>"+best.label+" (%"+(best.prob*100).toFixed(1)+")</b> · Seviye: <b>"+level+"</b>":"<b>Bu maçta eşikleri geçen güçlü bir seçenek bulunamadı.</b>")+"<br><small>Olası skor: <b>"+score+"</b> · "+scenario+"</small><br><small>Veri kalitesi: "+quality+" · Ev/dep. geçmişi: "+t.homeSamples+"/"+t.awaySamples+" maç · Model uyumu: %"+(agreement*100).toFixed(0)+"</small><br><small>"+why+" Tahminler olasılıktır, garanti değildir.</small>"+(picks.length>1?"<br><small>Diğer güçlü adaylar: "+picks.slice(1,4).map(x=>x.label+" %"+(x.prob*100).toFixed(1)).join(" · ")+"</small>":"")+(upset?"<br><span style='color:#ff9b6b;font-weight:bold'>⚠️ Sürpriz alarmı: Favori olmayan "+(favorite==="Ev sahibi"?"deplasman":"ev sahibi")+" galibiyeti ihtimali %"+(underdog*100).toFixed(1)+".</span>":"")+(drawRisk?"<br><span style='color:#ffcf5a;font-weight:bold'>⚠️ Beraberlik riski: X olasılığı %"+(t.draw*100).toFixed(1)+"</span>":"")+"</div>";
 }
 function matchCard(m,t,past=false,rank=0,adjusted=null){
  const finalPrediction=!past?(adjusted||iddaaAdjustedPrediction(m,t)):t;
- return `<div class="match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}`}><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?(finalPrediction&&highest(finalPrediction)>=0?("#"+rank+" · "+pct(highest(finalPrediction))):"Tahmin hazırlanıyor"):"Tahmin yok"}</span>`:""}</div>
+ const candidates=footballPickCandidates(finalPrediction),main=candidates[0];
+ return `<div class="match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}`}><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?(main?"#"+rank+" · "+pct(main.prob):"Seçici analiz"):"Tahmin yok"}</span>`:""}</div>
  <div class="meta-row"><div class="meta">${leagueView(m)}</div><div class="kickoff">${m.time||"Saat yok"}</div></div>
- ${past?`<div class="result">Maç sonucu: ${m.ft_home}-${m.ft_away}</div>`:`<div class="predictions">${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}${predictionBox("2,5 Üst",finalPrediction?.over25)}${predictionBox("3,5 Üst",finalPrediction?.over35)}${predictionBox("İY 1,5 Üst",finalPrediction?.firstOver15)}${predictionBox("6+ Gol",finalPrediction?.six)}${predictionBox("KG Var",finalPrediction?.btts)}${predictionBox("KG Yok",finalPrediction?.btts==null?null:1-finalPrediction.btts)}</div>${matchInsight(m,finalPrediction)}`}</div>`;
+ ${past?`<div class="result">Maç sonucu: ${m.ft_home}-${m.ft_away}</div>`:`<div class="main-pick">${main?"⭐ ÖNE ÇIKAN: <b>"+main.label+"</b> · <b>"+pct(main.prob)+"</b>":"ℹ️ Güçlü eşikleri geçen tahmin yok"}</div><details class="all-predictions"><summary>Tüm tahminleri göster</summary><div class="predictions">${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}${predictionBox("2,5 Üst",finalPrediction?.over25)}${predictionBox("3,5 Üst",finalPrediction?.over35)}${predictionBox("İY 1,5 Üst",finalPrediction?.firstOver15)}${predictionBox("6+ Gol",finalPrediction?.six)}${predictionBox("KG Var",finalPrediction?.btts)}${predictionBox("KG Yok",finalPrediction?.btts==null?null:1-finalPrediction.btts)}</div></details>${matchInsight(m,finalPrediction)}`}</div>`;
 }
 function filterMatch(t,f){
  if(f==="all")return true;if(!t)return false;
- if(f==="strong")return t.one>=.5||t.draw>=.3||t.two>=.5||(t.over25??0)>=.55||(t.firstOver15??0)>=.4||t.over35>=.55||t.six>=.20||t.btts>=.5||(t.first??0)>=.4||(t.second??0)>=.5;
- if(f==="one")return t.one>=.4;if(f==="draw")return t.draw>=.25;if(f==="two")return t.two>=.4;
- if(f==="over25")return (t.over25??0)>=.5;if(f==="firstOver15")return (t.firstOver15??0)>=.4;
- if(f==="over35")return t.over35>=.5;if(f==="six")return t.six>=.2;if(f==="btts")return t.btts>=.5;
- if(f==="first")return (t.first??0)>=.4;if(f==="second")return (t.second??0)>=.5;return true;
+ const picks=footballPickCandidates(t),has=k=>picks.some(x=>x.key===k);
+ if(f==="strong")return picks.length>0;
+ if(f==="one")return t.one>=FOOTBALL_PICK_LIMITS.result&&t.one>=t.draw&&t.one>=t.two;
+ if(f==="draw")return t.draw>=FOOTBALL_PICK_LIMITS.result;
+ if(f==="two")return t.two>=FOOTBALL_PICK_LIMITS.result&&t.two>=t.one&&t.two>=t.draw;
+ if(f==="over25")return has("over25");if(f==="firstOver15")return has("firstOver15");
+ if(f==="over35")return has("over35");if(f==="six")return has("six");if(f==="btts")return has("btts");
+ if(f==="first")return has("first");if(f==="second")return has("second");return true;
 }
 function fillLeagues(){
  const map=new Map(),leagueCountry=new Map(),allMatches=FIXTURES.concat(HISTORY);
@@ -596,13 +610,13 @@ function successRecordFootball(m,p){
  const markets=[],add=(key,label,prob,pick)=>{if(Number.isFinite(prob))markets.push({key,label,prob:Number(prob),pick})};
  const result=[["1",p.one],["X",p.draw],["2",p.two]].filter(x=>Number.isFinite(x[1])).sort((a,b)=>b[1]-a[1])[0];
  if(result)add("result","Maç Sonucu",result[1],result[0]);
- if(Number.isFinite(p.over25)&&p.over25>=.5)add("over25","2,5 Üst",p.over25,"over");
- if(Number.isFinite(p.over35)&&p.over35>=.5)add("over35","3,5 Üst",p.over35,"over");
- if(Number.isFinite(p.six)&&p.six>=.2)add("six","6+ Gol",p.six,"yes");
- if(Number.isFinite(p.btts)){if(p.btts>=.5)add("bttsYes","KG Var",p.btts,"yes");else if(1-p.btts>=.5)add("bttsNo","KG Yok",1-p.btts,"no")}
- if(Number.isFinite(p.first)&&p.first>=.4)add("first","İlk Yarı KG",p.first,"yes");
- if(Number.isFinite(p.second)&&p.second>=.5)add("second","İkinci Yarı KG",p.second,"yes");
- if(Number.isFinite(p.firstOver15)&&p.firstOver15>=.4)add("firstOver15","İY 1,5 Üst",p.firstOver15,"over");
+ if(Number.isFinite(p.over25)&&p.over25>=FOOTBALL_PICK_LIMITS.over25)add("over25","2,5 Üst",p.over25,"over");
+ if(Number.isFinite(p.over35)&&p.over35>=FOOTBALL_PICK_LIMITS.over35)add("over35","3,5 Üst",p.over35,"over");
+ if(Number.isFinite(p.six)&&p.six>=FOOTBALL_PICK_LIMITS.six)add("six","6+ Gol",p.six,"yes");
+ if(Number.isFinite(p.btts)){if(p.btts>=FOOTBALL_PICK_LIMITS.btts)add("bttsYes","KG Var",p.btts,"yes");else if(1-p.btts>=FOOTBALL_PICK_LIMITS.btts)add("bttsNo","KG Yok",1-p.btts,"no")}
+ if(Number.isFinite(p.first)&&p.first>=FOOTBALL_PICK_LIMITS.first)add("first","İlk Yarı KG",p.first,"yes");
+ if(Number.isFinite(p.second)&&p.second>=FOOTBALL_PICK_LIMITS.second)add("second","İkinci Yarı KG",p.second,"yes");
+ if(Number.isFinite(p.firstOver15)&&p.firstOver15>=FOOTBALL_PICK_LIMITS.firstOver15)add("firstOver15","İY 1,5 Üst",p.firstOver15,"over");
  if(!markets.length)return;
  successStore({type:"football",date:String(m.date).slice(0,10),league:String(m.league||""),league_id:String(m.league_id||""),home:String(m.home||""),away:String(m.away||""),markets});
 }

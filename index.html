@@ -529,6 +529,11 @@ function footballPickCandidates(t){
  const add=(label,prob,key)=>{if(Number.isFinite(prob)&&prob>=FOOTBALL_PICK_LIMITS[key])picks.push({label,prob,key})};
  const result=[["1",t.one],["X",t.draw],["2",t.two]].filter(x=>Number.isFinite(x[1])).sort((a,b)=>b[1]-a[1])[0];
  if(result)add(result[0],result[1],"result");
+ // Dengeli maçlarda en yüksek olasılıklı çifte şansı göster.
+ if(result&&result[1]<FOOTBALL_PICK_LIMITS.result){
+  const doubles=[["1X",t.one+t.draw],["12",t.one+t.two],["X2",t.draw+t.two]].filter(x=>Number.isFinite(x[1])).sort((a,b)=>b[1]-a[1]);
+  if(doubles[0]&&doubles[0][1]>=.70)picks.push({label:doubles[0][0]+" · Çifte Şans",prob:doubles[0][1],key:"doubleChance"});
+ }
  add("2,5 Üst",t.over25,"over25");add("3,5 Üst",t.over35,"over35");add("6+ Gol",t.six,"six");
  if(Number.isFinite(t.btts)){if(t.btts>=FOOTBALL_PICK_LIMITS.btts)add("KG Var",t.btts,"btts");else if(1-t.btts>=FOOTBALL_PICK_LIMITS.btts)add("KG Yok",1-t.btts,"btts")}
  add("İY 1,5 Üst",t.firstOver15,"firstOver15");add("İlk Yarı KG",t.first,"first");add("İkinci Yarı KG",t.second,"second");
@@ -2391,7 +2396,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=186",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=187",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

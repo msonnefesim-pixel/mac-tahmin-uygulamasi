@@ -473,7 +473,11 @@ function predictFootball(m){
 function highest(t){return t?Math.max(t.one,t.draw,t.two,t.over25??0,t.over35,t.six,t.btts,t.first??0,t.second??0,t.firstOver15??0):-1}
 function predictionBox(name,value){return `<div class="pred"><span class="pred-name">${name}</span><span class="pred-value">${pct(value)}</span></div>`}
 const FOOTBALL_PICK_LIMITS={result:.56,over25:.58,over35:.60,six:.40,btts:.58,firstOver15:.55,first:.55,second:.58};
-function footballModelFavorite(t){\n if(!t||!Number.isFinite(t.one)||!Number.isFinite(t.two))return null;\n const side=t.one>=t.two?{label:"1 · Ev sahibi",prob:t.one}:{label:"2 · Deplasman",prob:t.two};\n return side.prob>=(Number.isFinite(t.draw)?t.draw:0)?side:null;\n}\nfunction footballPickCandidates(t){
+function footballModelFavorite(t){
+ if(!t||!Number.isFinite(t.one)||!Number.isFinite(t.two))return null;
+ const side=t.one>=t.two?{label:"1 · Ev sahibi",prob:t.one}:{label:"2 · Deplasman",prob:t.two};
+ return side.prob>=(Number.isFinite(t.draw)?t.draw:0)?side:null;
+}\nfunction footballPickCandidates(t){
  if(!t||t.marketOnly)return [];
  const picks=[];
  const add=(label,prob,key)=>{if(Number.isFinite(prob)&&prob>=FOOTBALL_PICK_LIMITS[key])picks.push({label,prob,key})};
@@ -2334,7 +2338,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=176",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=178",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

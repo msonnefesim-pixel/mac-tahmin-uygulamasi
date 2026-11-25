@@ -115,6 +115,30 @@ th{color:var(--yellow)}
 .analysis-box> b:first-child{color:#f5c400;font-size:13px}
 .all-predictions{background:#151515;border-color:#554714}
 @media(max-width:380px){.teams{font-size:14px}.match{padding:10px}.rank{font-size:9px;padding:4px 6px}.main-pick{padding:9px;font-size:12px}}
+
+/* V186 - maç kartı yerleşimi: profesyonel analiz */
+.pro-match{padding:0!important;overflow:hidden;border:1px solid #493a3e!important;border-left:4px solid #c8102e!important;border-radius:14px!important;background:#171717!important;box-shadow:0 5px 18px #0008!important}
+.pro-match-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;background:linear-gradient(90deg,#2a171b,#202020);border-bottom:1px solid #3b3032}
+.pro-league{font-size:11px;color:#c9c1bd;font-weight:700;line-height:1.4}
+.pro-teams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;padding:16px 12px 13px}
+.pro-team{min-width:0;display:flex;flex-direction:column;gap:5px}
+.pro-away{text-align:right}
+.pro-team-name{font-size:16px;line-height:1.3;font-weight:900;color:#fff;overflow-wrap:anywhere}
+.pro-team-side{font-size:9px;letter-spacing:1px;color:#aaa;font-weight:800}
+.pro-vs{font-size:10px;font-weight:900;color:#f5c400;background:#302600;border:1px solid #6e5a0a;border-radius:50%;width:34px;height:34px;display:grid;place-items:center}
+.pro-match-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;background:#101010;border-top:1px solid #303030}
+.pro-kickoff,.pro-result{font-size:11px;font-weight:800;color:#f4d34a}
+.pro-result{color:#8be0a0}
+.pro-past-label{font-size:9px;color:#8be0a0;font-weight:900;letter-spacing:.6px}
+.pro-prediction{margin:11px 11px 0;padding:12px;background:linear-gradient(120deg,#392d00,#201a08);border:1px solid #9c7d10;border-radius:10px;text-align:center}
+.pro-prediction-title{font-size:10px;letter-spacing:.7px;color:#f5d85d;font-weight:900}
+.pro-prediction-value{font-size:20px;font-weight:900;color:#fff;margin:7px 0 3px}
+.pro-prediction-percent{font-size:12px;color:#ffe16a;font-weight:800}
+.pro-prediction small{display:block;color:#d2c9ad;font-size:10px;margin-top:6px}
+.pro-match .all-predictions{margin:10px 11px 0}
+.pro-match .analysis-box{margin:10px 11px 11px}
+.pro-match .rank{background:#302600;border:1px solid #806800;border-radius:20px;padding:5px 8px;color:#ffdc42;font-size:10px;font-weight:800;white-space:nowrap}
+@media(max-width:360px){.pro-teams{gap:5px;padding:13px 9px}.pro-team-name{font-size:14px}.pro-prediction-value{font-size:18px}}
 </style>
 </head>
 <body>
@@ -525,10 +549,17 @@ function matchInsight(m,t){
 }
 function matchCard(m,t,past=false,rank=0,adjusted=null){
  const finalPrediction=!past?(adjusted||iddaaAdjustedPrediction(m,t)):t;
- const candidates=footballPickCandidates(finalPrediction),main=candidates[0];
- return `<div class="match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}`}><div class="match-top"><div class="teams">${m.home} - ${m.away}</div>${!past?`<span class="rank">${rank?(main?"#"+rank+" · "+pct(main.prob):"Seçici analiz"):"Tahmin yok"}</span>`:""}</div>
- <div class="meta-row"><div class="meta">${leagueView(m)}</div><div class="kickoff">${m.time||"Saat yok"}</div></div>
- ${past?`<div class="result">Maç sonucu: ${m.ft_home}-${m.ft_away}</div>`:`<div class="main-pick">${main?"⭐ ÖNE ÇIKAN: <b>"+main.label+"</b> · <b>"+pct(main.prob)+"</b>":(footballModelFavorite(finalPrediction)?"⚖️ MODELİN ÖNDE GÖRDÜĞÜ TARAF: <b>"+footballModelFavorite(finalPrediction).label+"</b> · <b>"+pct(footballModelFavorite(finalPrediction).prob)+"</b><br><small>Güçlü seçim eşiği aşılmadı; bu gösterim güçlü tahmin değildir.</small>":"ℹ️ Güçlü seçim eşiği aşılmadı · Model dengeli görüyor")}</div><details class="all-predictions"><summary>👇 TÜM TAHMİNLERİ GÖSTER</summary><div class="predictions">${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}${predictionBox("2,5 Üst",finalPrediction?.over25)}${predictionBox("3,5 Üst",finalPrediction?.over35)}${predictionBox("İY 1,5 Üst",finalPrediction?.firstOver15)}${predictionBox("6+ Gol",finalPrediction?.six)}${predictionBox("KG Var",finalPrediction?.btts)}${predictionBox("KG Yok",finalPrediction?.btts==null?null:1-finalPrediction.btts)}</div></details>${matchInsight(m,finalPrediction)}`}</div>`;
+ const candidates=footballPickCandidates(finalPrediction),main=candidates[0],favorite=footballModelFavorite(finalPrediction);
+ const mainLabel=main?main.label:(favorite?favorite.label:"Dengeli maç");
+ const mainPercent=main?pct(main.prob):(favorite?pct(favorite.prob):"");
+ const mainTitle=main?"YAPAYCİN ÖNE ÇIKAN TAHMİN":(favorite?"YAPAYCİN MODEL TERCİHİ":"MODEL DEĞERLENDİRMESİ");
+ return `<article class="match pro-match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}`}>
+ <div class="pro-match-head"><div class="pro-league">${leagueView(m)}</div>${!past?`<span class="rank">${rank?(main?"#"+rank:"Analiz"):"Tahmin"}</span>`:"<span class='pro-past-label'>TAMAMLANDI</span>"}</div>
+ <div class="pro-teams"><div class="pro-team pro-home"><span class="pro-team-name">${m.home}</span><span class="pro-team-side">EV SAHİBİ</span></div><div class="pro-vs">VS</div><div class="pro-team pro-away"><span class="pro-team-name">${m.away}</span><span class="pro-team-side">DEPLASMAN</span></div></div>
+ <div class="pro-match-foot"><span class="pro-kickoff">🕒 ${m.time||"Saat açıklanmadı"}</span>${past?`<span class="pro-result">SONUÇ ${m.ft_home}-${m.ft_away}</span>`:""}</div>
+ ${past?"":`<div class="pro-prediction"><div class="pro-prediction-title">⭐ ${mainTitle}</div><div class="pro-prediction-value">${mainLabel}</div>${mainPercent?`<div class="pro-prediction-percent">${mainPercent} olasılık</div>`:"<div class='pro-prediction-percent'>Belirgin favori yok</div>"}${!main&&favorite?"<small>Güçlü seçim eşiği aşılmadı; bu gösterim kesin tahmin değildir.</small>":""}</div>
+ <details class="all-predictions"><summary>📊 TÜM TAHMİNLERİ VE OLASILIKLARI GÖSTER</summary><div class="predictions">${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}${predictionBox("2,5 Üst",finalPrediction?.over25)}${predictionBox("3,5 Üst",finalPrediction?.over35)}${predictionBox("İY 1,5 Üst",finalPrediction?.firstOver15)}${predictionBox("6+ Gol",finalPrediction?.six)}${predictionBox("KG Var",finalPrediction?.btts)}${predictionBox("KG Yok",finalPrediction?.btts==null?null:1-finalPrediction.btts)}</div></details>${matchInsight(m,finalPrediction)}`}
+ </article>`;
 }
 function filterMatch(t,f){
  if(f==="all")return true;if(!t)return false;
@@ -2360,7 +2391,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=185",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=186",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

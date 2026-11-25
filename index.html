@@ -1220,7 +1220,10 @@ async function testleriHesapla(){
 async function iymsBaslat(){
  if(iymsLoading||iymsYuklendi)return;iymsLoading=true;
  const status=$("iymsDurum"),summary=$("iymsOzet"),area=$("iymsMaclar");
- status.textContent="İY/MS verileri yükleniyor...";summary.innerHTML="";area.innerHTML="";
+ status.textContent="İY/MS verileri ve MBS bilgileri yükleniyor...";summary.innerHTML="";area.innerHTML="";
+ // MBS 3 maçlarını İY/MS listesinden ayıklamak için güncel İddaa bültenini hazırla.
+ if(!iddaaYuklendi&&!iddaaLoading)await iddaaBaslat();
+ while(iddaaLoading)await new Promise(resolve=>setTimeout(resolve,100));
  const options=["1/1","1/X","1/2","X/1","X/X","X/2","2/1","2/X","2/2"];
  const inverse={"1":"2","2":"1","X":"X"};
  const clean=s=>String(s??"").trim().toLocaleLowerCase("tr");
@@ -1268,7 +1271,7 @@ async function iymsBaslat(){
   const allHome={},allAway={};
   records.forEach(m=>{(allHome[m.home]||(allHome[m.home]=[])).push(m.code);(allAway[m.away]||(allAway[m.away]=[])).push(reverse(m.code))});
   const todayDate=today();
-  const upcoming=FIXTURES.filter(m=>{const d=String(m.date||"").slice(0,10),time=String(m.time||"").trim();return /^\d{4}-\d{2}-\d{2}$/.test(d)&&d>=todayDate&&/^\d{1,2}:\d{2}$/.test(time)&&!macBasladiMi(m)}).slice().sort((a,b)=>(a.date+" "+a.time).localeCompare(b.date+" "+b.time)).map(m=>{
+  const upcoming=FIXTURES.filter(m=>{const d=String(m.date||"").slice(0,10),time=String(m.time||"").trim();return /^\d{4}-\d{2}-\d{2}$/.test(d)&&d>=todayDate&&/^\d{1,2}:\d{2}$/.test(time)&&!macBasladiMi(m)}).filter(m=>{const event=iddaaFindEventForFixture(m);return !event||halfBothMbs(event)!==3}).slice().sort((a,b)=>(a.date+" "+a.time).localeCompare(b.date+" "+b.time)).map(m=>{
    const h=allHome[clean(m.home)]||[],a=allAway[clean(m.away)]||[];if(h.length<3||a.length<3)return null;
    const probs={};options.forEach(k=>{probs[k]=Math.sqrt(((h.filter(x=>x===k).length+.5)/(h.length+4.5))*((a.filter(x=>x===k).length+.5)/(a.length+4.5)))});
    const sum=Object.values(probs).reduce((x,y)=>x+y,0);options.forEach(k=>probs[k]=sum?probs[k]/sum*100:0);

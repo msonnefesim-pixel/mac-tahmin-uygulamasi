@@ -94,6 +94,24 @@ th{color:var(--yellow)}
 
 
 .success-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}.success-stat{background:#202020;border:1px solid #393939;border-radius:9px;padding:10px;text-align:center}.success-stat b{display:block;font-size:20px;color:#f5c400}.success-stat span{font-size:11px;color:#bbb}.success-table{width:100%;border-collapse:collapse;font-size:12px}.success-table th,.success-table td{padding:9px 6px;border-bottom:1px solid #383838;text-align:left}.success-table th{color:#f5c400}.success-good{color:#83d49a}.success-pending{color:#f5c400}@media(max-width:430px){.success-grid{gap:5px}.success-stat{padding:8px 4px}.success-stat b{font-size:17px}.success-table{font-size:11px}.success-table th,.success-table td{padding:8px 4px}}
+
+/* FUTBOL SAYFASI - SADE VE HİYERARŞİK YERLEŞİM */
+.football-date-panel,.football-filter-panel,.football-advanced-panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px;margin:9px 0}
+.football-date-panel{border-left:4px solid var(--red)}.football-filter-panel{border-left:4px solid var(--yellow)}
+.football-section-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 9px;color:var(--yellow);font-size:13px;font-weight:900;letter-spacing:.25px}
+.football-date-hint{color:#999;font-size:10px;font-weight:500;letter-spacing:0}
+.football-date-row{display:grid;grid-template-columns:43px minmax(0,1fr) 43px;gap:7px;align-items:center}
+.football-date-row button{width:43px;height:42px;margin:0;padding:0;font-size:17px}
+.football-date-row input{min-width:0;height:42px;margin:0;text-align:center;font-weight:700}
+.football-quick-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.quick-filter{min-width:0;min-height:39px;margin:0;padding:7px 4px;background:#292929;color:#eee;border:1px solid #4a4a4a;border-radius:8px;font-size:11px;font-weight:800;line-height:1.2;white-space:normal}
+.quick-filter.active{background:var(--yellow);color:#171000;border:1px solid #ffe36a;box-shadow:0 0 0 1px #f5c40035}
+.football-filter-note{margin:9px 1px 0;font-size:10px;line-height:1.35}
+.football-advanced-panel{padding:7px 10px}.football-advanced-panel .filter-toggle{margin:0;padding:9px 4px;text-align:left;font-size:12px}
+#matchFilters{padding:8px 0 2px}#matchFilters label{display:block;margin:8px 0 3px}
+#matchFilters input:not([type=checkbox]),#matchFilters select{margin:4px 0}
+@media(max-width:360px){.football-quick-filters{gap:5px}.quick-filter{font-size:10px;min-height:37px;padding:6px 2px}.football-date-panel,.football-filter-panel{padding:9px}}
+
 </style>
 </head>
 <body>
@@ -123,38 +141,55 @@ th{color:var(--yellow)}
  <div class="football-odds-refresh-wrap">
   <button type="button" id="footballOddsRefresh" class="secondary football-odds-refresh" onclick="iddaaBaslat(true)">💹 İddaa Oranlarını Yenile</button>
  </div>
- <h2>Maç Takvimi</h2>
- <div class="panel">
-  <button type="button" id="matchFiltersToggle" class="secondary filter-toggle" aria-expanded="false" aria-controls="matchFilters" onclick="matchFiltersToggle()">☰ Maç Takvimi Filtrelerini Göster ▼</button>
-  <div id="matchFilters" class="hidden">
-  <label><b>Tarih seç</b></label>
-  <input type="date" id="tarih" onchange="listele()">
-  <div class="controls">
-   <button class="secondary" onclick="tarihKaydir(-1)">◀ Önceki gün</button>
-   <button class="secondary" onclick="tarihKaydir(1)">Sonraki gün ▶</button>
+ <div class="football-date-panel">
+  <div class="football-section-heading"><span>📅 MAÇ TARİHİ</span><span class="football-date-hint">Gün seçimi</span></div>
+  <div class="football-date-row">
+   <button type="button" class="secondary" onclick="tarihKaydir(-1)" aria-label="Önceki gün">◀</button>
+   <input type="date" id="tarih" onchange="listele()" aria-label="Maç tarihi">
+   <button type="button" class="secondary" onclick="tarihKaydir(1)" aria-label="Sonraki gün">▶</button>
   </div>
-  <label><b>Ülke / Lig seç</b></label>
-  <select id="ligSec" onchange="listele()" style="min-height:48px;position:relative;z-index:5;touch-action:manipulation;-webkit-appearance:menulist;cursor:pointer"><option value="all">Bütün görünür ligler</option></select>
-  <button class="secondary" onclick="yonetimAc()">Ligleri Yönet / Gizle</button>
-  <div id="ligYonetim" class="hidden">
-   <p>Görmek istemediğin liglerin işaretini kaldır.</p>
-   <div id="ligCheckboxlar"></div>
-   <button onclick="ligleriKaydet()">Seçimi Kaydet</button>
-  </div>
-  <input id="arama" placeholder="Takım, ülke veya lig ara..." oninput="listele()">
-  <label><b>Tahmin filtresi</b></label>
-  <select id="filtre" onchange="listele()">
-   <option value="all">Bütün maçlar</option><option value="strong">Öne çıkanlar</option>
-   <option value="one">1 - Ev sahibi</option><option value="draw">X - Beraberlik</option>
-   <option value="two">2 - Deplasman</option><option value="over25">2,5 Üst</option><option value="over35">3,5 Üst</option><option value="firstOver15">İlk Yarı 1,5 Üst</option>
-   <option value="six">6+ Gol</option><option value="btts">KG Var</option>
-   <option value="first">İlk Yarı KG</option><option value="second">İkinci Yarı KG</option>
-  </select>
-  <p>6+ Gol ve KG Var birbirinden bağımsız tahminlerdir. Olasılıklar garanti değildir.</p>
-  </div>
-  <div id="macOzet" class="summary"></div>
-  <div id="maclar">Maçlar hazırlanıyor...</div>
  </div>
+ <div class="football-filter-panel">
+  <div class="football-section-heading"><span>🎯 TAHMİN FİLTRELERİ</span><span class="football-date-hint">Seçerek maçları süz</span></div>
+  <div class="football-quick-filters">
+   <button type="button" class="quick-filter active" data-filter="all" aria-pressed="true" onclick="setFootballQuickFilter('all')">Tüm maçlar</button>
+   <button type="button" class="quick-filter" data-filter="strong" aria-pressed="false" onclick="setFootballQuickFilter('strong')">Öne çıkan</button>
+   <button type="button" class="quick-filter" data-filter="one" aria-pressed="false" onclick="setFootballQuickFilter('one')">1 · Ev</button>
+   <button type="button" class="quick-filter" data-filter="draw" aria-pressed="false" onclick="setFootballQuickFilter('draw')">X · Beraberlik</button>
+   <button type="button" class="quick-filter" data-filter="two" aria-pressed="false" onclick="setFootballQuickFilter('two')">2 · Dep.</button>
+   <button type="button" class="quick-filter" data-filter="over25" aria-pressed="false" onclick="setFootballQuickFilter('over25')">2,5 Üst</button>
+   <button type="button" class="quick-filter" data-filter="over35" aria-pressed="false" onclick="setFootballQuickFilter('over35')">3,5 Üst</button>
+   <button type="button" class="quick-filter" data-filter="firstOver15" aria-pressed="false" onclick="setFootballQuickFilter('firstOver15')">İY 1,5 Üst</button>
+   <button type="button" class="quick-filter" data-filter="six" aria-pressed="false" onclick="setFootballQuickFilter('six')">6+ Gol</button>
+   <button type="button" class="quick-filter" data-filter="btts" aria-pressed="false" onclick="setFootballQuickFilter('btts')">KG Var</button>
+   <button type="button" class="quick-filter" data-filter="first" aria-pressed="false" onclick="setFootballQuickFilter('first')">İlk Yarı KG</button>
+   <button type="button" class="quick-filter" data-filter="second" aria-pressed="false" onclick="setFootballQuickFilter('second')">İkinci Yarı KG</button>
+  </div>
+  <p class="football-filter-note">6+ Gol ve KG Var bağımsız tahminlerdir. Olasılıklar garanti değildir.</p>
+ </div>
+ <div class="football-advanced-panel">
+  <button type="button" id="matchFiltersToggle" class="secondary filter-toggle" aria-expanded="false" aria-controls="matchFilters" onclick="matchFiltersToggle()">⚙️ Lig ve takım filtrelerini göster ▼</button>
+  <div id="matchFilters" class="hidden">
+   <label><b>Ülke / Lig seç</b></label>
+   <select id="ligSec" onchange="listele()" style="min-height:48px;position:relative;z-index:5;touch-action:manipulation;-webkit-appearance:menulist;cursor:pointer"><option value="all">Bütün görünür ligler</option></select>
+   <button class="secondary" onclick="yonetimAc()">Ligleri Yönet / Gizle</button>
+   <div id="ligYonetim" class="hidden">
+    <p>Görmek istemediğin liglerin işaretini kaldır.</p>
+    <div id="ligCheckboxlar"></div>
+    <button onclick="ligleriKaydet()">Seçimi Kaydet</button>
+   </div>
+   <input id="arama" placeholder="Takım, ülke veya lig ara..." oninput="listele()">
+   <select id="filtre" class="hidden" aria-hidden="true" tabindex="-1" onchange="listele()">
+    <option value="all">Bütün maçlar</option><option value="strong">Öne çıkanlar</option>
+    <option value="one">1 - Ev sahibi</option><option value="draw">X - Beraberlik</option>
+    <option value="two">2 - Deplasman</option><option value="over25">2,5 Üst</option><option value="over35">3,5 Üst</option><option value="firstOver15">İlk Yarı 1,5 Üst</option>
+    <option value="six">6+ Gol</option><option value="btts">KG Var</option>
+    <option value="first">İlk Yarı KG</option><option value="second">İkinci Yarı KG</option>
+   </select>
+  </div>
+ </div>
+ <div id="macOzet" class="summary"></div>
+ <div id="maclar">Maçlar hazırlanıyor...</div>
  <h2>Bağımsız Geçmiş Başarı Analizi</h2>
  <div class="panel">
   <p>Analiz isteğe bağlı başlatılır. Her maç için yalnızca o maçtan önceki geçmiş veriler kullanılır.</p>
@@ -304,7 +339,8 @@ function leagueTR(s){
  return map[s]||s||"Diğer";
 }
 function leagueView(m){const c=countryInfo(m);return c.flag+" "+c.name+" · "+leagueTR(m.league)}
-function matchFiltersToggle(){const box=$("matchFilters"),btn=$("matchFiltersToggle");if(!box||!btn)return;const opening=box.classList.contains("hidden");box.classList.toggle("hidden",!opening);btn.setAttribute("aria-expanded",String(opening));btn.textContent=opening?"☰ Maç Takvimi Filtrelerini Gizle ▲":"☰ Maç Takvimi Filtrelerini Göster ▼";}
+function setFootballQuickFilter(filter){const select=$("filtre");if(!select)return;select.value=filter;document.querySelectorAll(".quick-filter").forEach(button=>{const active=button.dataset.filter===filter;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});listele()}
+function matchFiltersToggle(){const box=$("matchFilters"),btn=$("matchFiltersToggle");if(!box||!btn)return;const opening=box.classList.contains("hidden");box.classList.toggle("hidden",!opening);btn.setAttribute("aria-expanded",String(opening));btn.textContent=opening?"⚙️ Lig ve takım filtrelerini gizle ▲":"⚙️ Lig ve takım filtrelerini göster ▼";}
 function dateAdd(s,n){const d=new Date(s+"T12:00:00");d.setDate(d.getDate()+n);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 function dateText(s){return new Date(s+"T12:00:00").toLocaleDateString("tr-TR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})}
 
@@ -2339,7 +2375,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=178",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=182",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
   schedule:
     # Canli skor verisini bes dakikada bir yenile.
+    # Zamanlanmis yenileme: yeni maclar basladiginda feed otomatik guncellensin.
     - cron: "*/5 * * * *"
 
 permissions:

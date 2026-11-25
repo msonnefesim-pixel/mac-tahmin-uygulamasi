@@ -130,6 +130,7 @@ th{color:var(--yellow)}
 .pro-match .analysis-box{margin:10px 11px 11px}
 .pro-match .rank{background:#302600;border:1px solid #806800;border-radius:20px;padding:5px 8px;color:#ffdc42;font-size:10px;font-weight:800;white-space:nowrap}
 @media(max-width:360px){.pro-teams{gap:5px;padding:13px 9px}.pro-team-name{font-size:14px}.pro-prediction-value{font-size:18px}}
+.quick-guide{margin:8px 0 12px;padding:11px 12px;background:#1b1b1b;border:1px solid #4b3c18;border-left:4px solid #f5c400;border-radius:10px}.quick-guide summary{font-weight:900;color:#f5c400;cursor:pointer;padding:3px 0}.quick-guide ol{margin:9px 0 2px;padding-left:20px;color:#eee;font-size:12px;line-height:1.7}.quick-guide li{padding:2px 0}.quick-guide b{color:#ffe16a}
 </style>
 </head>
 <body>
@@ -159,6 +160,7 @@ th{color:var(--yellow)}
   <button type="button" id="footballOddsRefresh" class="secondary football-odds-refresh" onclick="iddaaBaslat(true)">💹 İddaa Oranlarını Yenile</button>
  </div>
  <h2>Maç Takvimi</h2>
+ <details class="quick-guide"><summary>👋 İlk kez mi kullanıyorsun? 3 adımda öğren</summary><ol><li><b>Tarihi seç:</b> İstediğin günün maçlarını görüntüle.</li><li><b>Maç kartına bak:</b> Sarı alanda sistemin öne çıkardığı seçeneği gör.</li><li><b>Diğer tahminler:</b> “Tüm tahminleri göster” bölümüne dokunarak olasılıkları incele.</li></ol><p>Yüzdeler tahmini olasılıklardır; kesin sonuç veya kazanç garantisi değildir.</p></details>
  <div class="panel">
   <button type="button" id="matchFiltersToggle" class="secondary filter-toggle" aria-expanded="false" aria-controls="matchFilters" onclick="matchFiltersToggle()">☰ Maç Takvimi Filtrelerini Göster ▼</button>
   <div id="matchFilters" class="hidden">
@@ -2372,7 +2374,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=199",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=200",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

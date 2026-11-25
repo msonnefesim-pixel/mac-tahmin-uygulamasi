@@ -107,6 +107,23 @@ th{color:var(--yellow)}
 .all-predictions{background:#151515;border-color:#554714}
 @media(max-width:380px){.teams{font-size:14px}.match{padding:10px}.rank{font-size:9px;padding:4px 6px}.main-pick{padding:9px;font-size:12px}}
 
+/* V208 - futbol maç kartı tahmin olasılık grafikleri */
+.probability-visual{padding:10px 11px 11px;margin:8px 0 2px;background:#151515;border:1px solid #393126;border-radius:9px}
+.prob-group-title{margin:2px 0 9px;color:#f5c400;font-size:10px;font-weight:900;letter-spacing:.55px}
+.prob-three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:13px}
+.prob-market-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 12px}
+.prob-row{min-width:0}
+.prob-label{display:flex;justify-content:space-between;align-items:center;gap:5px;margin-bottom:5px;color:#ddd;font-size:10px;line-height:1.25}
+.prob-label span{overflow-wrap:anywhere}
+.prob-label b{color:#f5d45b;font-size:11px;white-space:nowrap}
+.prob-track{height:7px;background:#333;border-radius:8px;overflow:hidden}
+.prob-track i{display:block;height:100%;min-width:0;background:linear-gradient(90deg,#8d1828,#f5c400);border-radius:8px}
+.prob-row.result-home .prob-track i{background:#c8102e}
+.prob-row.result-draw .prob-track i{background:#d5a900}
+.prob-row.result-away .prob-track i{background:#8c2634}
+.prob-row.separate-market{padding:6px 7px;background:#211b0b;border:1px solid #594814;border-radius:7px}
+.probability-note{margin-top:10px;color:#999;font-size:9px;line-height:1.45}
+@media(max-width:340px){.probability-visual{padding:8px}.prob-three{gap:5px}.prob-label{font-size:9px}.prob-market-grid{gap:8px}}
 /* V207 - maç kartlarında son form ve gol ortalamaları */
 .recent-form{margin:10px 11px 0;background:#121212;border:1px solid #493b20;border-radius:9px;overflow:hidden}
 .recent-form summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 10px;color:#f5c400;font-size:11px;font-weight:900;cursor:pointer}
@@ -554,6 +571,16 @@ function predictFootball(m){
  return {one:r.one,draw:r.draw,two:r.two,over25,over35,six,btts:bttsP,first,second,firstOver15,expectedHome:lh,expectedAway:la,scoreline:scorelineMostLikely(lh,la),homeSamples:home.length,awaySamples:away.length,leagueSamples,methodAgreement:agreement,marketAgreement,baseProbabilities:base,recentProbabilities:recent,ensembleProbabilities:r,quality:qualityScore>=.78?"İyi":qualityScore>=.52?"Orta":"Sınırlı",modelMethods:["Temel Poisson","Son form modeli","Birleşik model"]};
 }
 function highest(t){return t?Math.max(t.one,t.draw,t.two,t.over25??0,t.over35,t.six,t.btts,t.first??0,t.second??0,t.firstOver15??0):-1}
+function probabilityBar(name,value,kind=""){
+ if(!Number.isFinite(value)||value<0||value>1)return "";
+ const percent=Math.max(0,Math.min(100,value*100));
+ return "<div class='prob-row "+kind+"'><div class='prob-label'><span>"+name+"</span><b>%"+percent.toFixed(1)+"</b></div><div class='prob-track'><i style='width:"+percent.toFixed(1)+"%'></i></div></div>";
+}
+function predictionVisual(t){
+ if(!t)return "";
+ const bttsNo=Number.isFinite(t.btts)?1-t.btts:null;
+ return "<div class='probability-visual'><div class='prob-group-title'>⚽ MAÇ SONUCU</div><div class='prob-three'>"+probabilityBar("1 · Ev sahibi",t.one,"result-home")+probabilityBar("X · Beraberlik",t.draw,"result-draw")+probabilityBar("2 · Deplasman",t.two,"result-away")+"</div><div class='prob-group-title'>🎯 GOL VE KARŞILIKLI GOL</div><div class='prob-market-grid'>"+probabilityBar("2,5 Üst",t.over25)+probabilityBar("3,5 Üst",t.over35)+probabilityBar("6+ Gol",t.six,"separate-market")+probabilityBar("KG Var",t.btts,"separate-market")+probabilityBar("KG Yok",bttsNo)+probabilityBar("İY 1,5 Üst",t.firstOver15)+probabilityBar("İlk Yarı KG",t.first)+probabilityBar("İkinci Yarı KG",t.second)+"</div><div class='probability-note'>Gösterilen yüzdeler model olasılığıdır; kesin sonuç veya garanti değildir. 6+ Gol ve KG Var ayrı tahminlerdir.</div></div>";
+}
 function predictionBox(name,value){return `<div class="pred"><span class="pred-name">${name}</span><span class="pred-value">${pct(value)}</span></div>`}
 const FOOTBALL_PICK_LIMITS={result:.56,over25:.58,over35:.60,six:.40,btts:.58,firstOver15:.55,first:.55,second:.58};
 function footballModelFavorite(t){
@@ -623,7 +650,7 @@ function matchCard(m,t,past=false,rank=0,adjusted=null){
  <div class="pro-match-foot"><span class="pro-kickoff">🕒 ${m.time||"Saat açıklanmadı"}</span>${past?`<span class="pro-result">SONUÇ ${m.ft_home}-${m.ft_away}</span>`:""}</div>
  ${past?"":matchRecentForm(m)}
  ${past?"":`<div class="pro-prediction"><div class="pro-prediction-title">⭐ ${mainTitle}</div><div class="pro-prediction-value">${mainLabel}</div>${mainPercent?`<div class="pro-prediction-percent">${mainPercent} olasılık</div>`:"<div class='pro-prediction-percent'>Belirgin favori yok</div>"}${fallbackUsed?"<small>Güçlü seçim eşiği aşılmadı; 1-X-2 arasındaki en yüksek olasılıklı sonuç gösteriliyor. Kesin tahmin değildir.</small>":(!main&&favorite?"<small>Güçlü seçim eşiği aşılmadı; bu gösterim kesin tahmin değildir.</small>":"")}</div>
- <details class="all-predictions"><summary>📊 TÜM TAHMİNLERİ VE OLASILIKLARI GÖSTER</summary><div class="predictions">${predictionBox("1",finalPrediction?.one)}${predictionBox("X",finalPrediction?.draw)}${predictionBox("2",finalPrediction?.two)}${predictionBox("2,5 Üst",finalPrediction?.over25)}${predictionBox("3,5 Üst",finalPrediction?.over35)}${predictionBox("İY 1,5 Üst",finalPrediction?.firstOver15)}${predictionBox("6+ Gol",finalPrediction?.six)}${predictionBox("KG Var",finalPrediction?.btts)}${predictionBox("KG Yok",finalPrediction?.btts==null?null:1-finalPrediction.btts)}</div></details>${matchInsight(m,finalPrediction)}`}
+ <details class="all-predictions"><summary>📊 TÜM TAHMİNLERİ VE OLASILIKLARI GÖSTER</summary>${predictionVisual(finalPrediction)}</details>${matchInsight(m,finalPrediction)}`}
  </article>`;
 }
 function featuredMatchCard(x,index){

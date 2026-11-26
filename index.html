@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#c8102e">
-<link rel="manifest" href="./manifest.json?v=219">
-<link rel="icon" href="./icon-192-pal.png?v=219" type="image/png" sizes="192x192">
+<link rel="manifest" href="./manifest.json?v=220">
+<link rel="icon" href="./icon-192-pal.png?v=220" type="image/png" sizes="192x192">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
 :root{--red:#c8102e;--yellow:#f5c400;--bg:#101010;--panel:#1b1b1b;--line:#383838;--muted:#bbb}
@@ -282,6 +282,7 @@ th{color:var(--yellow)}
  <div class="panel">
   <div class="analysis-box" style="border:2px solid #d4af37;background:rgba(212,175,55,.10);margin-bottom:12px;padding:12px">
    <label for="iddaaMarketSecim" style="display:block;font-weight:800;font-size:1rem;color:#d4af37;margin-bottom:7px">🎯 BAHİS TÜRÜNÜ SEÇ</label>
+   <div class="small" style="margin-bottom:8px">Yalnızca adı anlaşılır olan bahis türleri gösterilir; tanımlanamayan teknik kodlar gizlenir.</div>
    <select id="iddaaMarketSecim" onchange="iddaaListele()" style="display:block;width:100%;min-height:46px;font-size:1rem;font-weight:700;margin:0">
     <option value="all">TÜM BAHİS TÜRLERİ</option>
    </select>
@@ -1864,15 +1865,26 @@ function iddaaCompareCell(label,model,market){
 function iddaaMarketKey(m){return String(m.t??"")+"|"+String(m.st??"")}
 function iddaaMarketTitle(m){
  const direct=m.n||m.name||m.title||m.market_name||m.marketName;
- if(direct)return iddaaEsc(direct);
- const known={"1/1":"Maç Sonucu (1X2)","2/101":"Maç Toplam Gol","2/89":"Karşılıklı Gol","2/720":"İlk Yarı KG","2/69":"İlk Yarı KG","2/72":"İkinci Yarı KG","2/4":"Gol Sayısı"};
- const key=String(m.t)+"/"+String(m.st);
- return known[key]||("Bahis türü "+String(m.t)+" · "+String(m.st));
+ if(direct&&!/^\\d+\\s*[/·-]\\s*\\d+$/.test(String(direct).trim()))return iddaaEsc(direct);
+ const known={
+  "1/1":"Maç Sonucu",
+  "2/101":"Maç Toplam Gol (Alt / Üst)",
+  "2/89":"Karşılıklı Gol (KG Var / Yok)",
+  "2/720":"İlk Yarı Karşılıklı Gol",
+  "2/69":"İlk Yarı Karşılıklı Gol",
+  "2/72":"İkinci Yarı Karşılıklı Gol",
+  "2/4":"Toplam Gol Sayısı",
+  "2/88":"İlk Yarı Sonucu",
+  "2/90":"İlk Yarı / Maç Sonucu",
+  "2/60":"İlk Yarı Alt / Üst"
+ };
+ return known[String(m.t)+"/"+String(m.st)]||null;
 }
+function iddaaReadableMarkets(e){return iddaaMarkets(e).filter(m=>!!iddaaMarketTitle(m))}
 function iddaaMarketSecenekleriHazirla(){
  const select=$("iddaaMarketSecim");if(!select)return;
  const current=select.value||"all",markets=new Map();
- IDDAA_EVENTS.forEach(e=>iddaaMarkets(e).forEach(m=>{
+ IDDAA_EVENTS.forEach(e=>iddaaReadableMarkets(e).forEach(m=>{
   const key=iddaaMarketKey(m);if(!markets.has(key))markets.set(key,iddaaMarketTitle(m));
  }));
  const options=[...markets.entries()].sort((a,b)=>a[1].localeCompare(b[1],"tr"));
@@ -1887,7 +1899,7 @@ function iddaaCard(e){
  html+="<div class='meta'>"+iddaaCompetition(e)+"</div>";
  // Seçilen bahis türü varsa yalnızca o türün satırları gösterilir; varsayılan tüm marketlerdir.
  const selectedMarket=$("iddaaMarketSecim")?.value||"all";
- iddaaMarkets(e).filter(m=>selectedMarket==="all"||iddaaMarketKey(m)===selectedMarket)
+ iddaaReadableMarkets(e).filter(m=>selectedMarket==="all"||iddaaMarketKey(m)===selectedMarket)
   .forEach(m=>{html+=iddaaMarketHtml(iddaaMarketTitle(m),m,e)});
  if(p){
   html+="<div class='analysis-box'><b>YaPaYCiN – İDDAA karşılaştırması</b><div class='small'>Marjı çıkarılmış piyasa olasılığı ile YaPaYCiN model olasılığı arasındaki fark yüzde puan olarak gösterilir. Bu fark kesin kazanç veya bahis önerisi değildir.</div>";
@@ -1933,7 +1945,7 @@ function iddaaListele(reset=true){
   const name=iddaaNorm((e.hn||"")+" "+(e.an||"")+" "+iddaaCompetition(e));
   const date=iddaaDateKey(e);
   const selectedMarket=$("iddaaMarketSecim")?.value||"all";
-  const hasMarket=selectedMarket==="all"?iddaaMarkets(e).length>0:iddaaMarkets(e).some(m=>iddaaMarketKey(m)===selectedMarket);
+  const hasMarket=selectedMarket==="all"?iddaaReadableMarkets(e).length>0:iddaaReadableMarkets(e).some(m=>iddaaMarketKey(m)===selectedMarket);
   return (!q||name.includes(q))&&(!selected.length||selected.includes(date))&&hasMarket;
  });
  $("iddaaOzet").innerHTML="<div class='summary-item'><span class='summary-number'>"+rows.length+"</span><span class='summary-label'>Bulunan maç</span></div><div class='summary-item'><span class='summary-number'>"+Math.min(iddaaShown,rows.length)+" / "+rows.length+"</span><span class='summary-label'>Gösterilen</span></div><div class='summary-item'><span class='summary-number'>"+IDDAA_COMPETITIONS.size+"</span><span class='summary-label'>Lig / kupa</span></div><div class='summary-item'><span class='summary-number'>"+iddaaUpdated+"</span><span class='summary-label'>Son okuma</span></div>";
@@ -2254,7 +2266,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=219",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=220",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

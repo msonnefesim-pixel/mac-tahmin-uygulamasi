@@ -1798,6 +1798,10 @@ async function iymsBaslat(){
    testHtml+=`<div class="panel">Test edilen tahmin: <b>${test.total}</b><br>Doğru: <b>${test.correct}</b><br>Genel isabet: <b>%${(test.correct/test.total*100).toFixed(1)}</b></div>`;
    options.forEach(k=>{const x=test.by[k];testHtml+=`<div class="panel"><b>${k}</b><br>Tahmin: ${x.n} · Doğru: ${x.ok} · İsabet: %${x.n?(x.ok/x.n*100).toFixed(1):"0.0"}</div>`});
   }
+  // Gelecek maç hesaplaması hata verse bile geçmiş İY/MS analizi ekranda kalsın.
+  area.innerHTML=historyHtml+testHtml;
+  status.innerHTML+="<br>Geçmiş analiz hazır; gelecek maçlar hesaplanıyor...";
+  await yieldUI();
   const allHome={},allAway={};
   for(let i=0;i<records.length;i++){const m=records[i];(allHome[m.home]||(allHome[m.home]=[])).push(m.code);(allAway[m.away]||(allAway[m.away]=[])).push(reverse(m.code));if(i%500===499)await yieldUI()}
   const todayDate=today();

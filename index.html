@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#c8102e">
-<link rel="manifest" href="./manifest.json?v=222">
-<link rel="icon" href="./icon-192-pal.png?v=222" type="image/png" sizes="192x192">
+<link rel="manifest" href="./manifest.json?v=223">
+<link rel="icon" href="./icon-192-pal.png?v=223" type="image/png" sizes="192x192">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
 :root{--red:#c8102e;--yellow:#f5c400;--bg:#101010;--panel:#1b1b1b;--line:#383838;--muted:#bbb}
@@ -1905,12 +1905,13 @@ function iddaaMarketSecenekleriHazirla(){
   const key=iddaaMarketKey(m);if(!markets.has(key))markets.set(key,iddaaMarketTitle(m));
  }));
  const options=[...markets.entries()].sort((a,b)=>a[1].localeCompare(b[1],"tr"));
- const categoryOptions=[];
- if(categories.corners)categoryOptions.push("<option value='category:corners'>⚽ Korner Bahisleri ("+categories.corners+")</option>");
- if(categories.cards)categoryOptions.push("<option value='category:cards'>🟨 Kart Bahisleri ("+categories.cards+")</option>");
+ const categoryOptions=[
+  "<option value='category:corners'>⚽ Korner Bahisleri ("+categories.corners+" bahis)</option>",
+  "<option value='category:cards'>🟨 Kart Bahisleri ("+categories.cards+" bahis)</option>"
+ ];
  select.innerHTML="<option value='all'>Tüm bahis türleri ("+options.length+")</option>"+categoryOptions.join("")+
   options.map(([key,title])=>"<option value='"+iddaaEsc(key)+"'>"+title+"</option>").join("");
- select.value=(current==="category:corners"&&categories.corners)||(current==="category:cards"&&categories.cards)||markets.has(current)?current:"all";
+ select.value=(current==="category:corners"||current==="category:cards"||markets.has(current))?current:"all";
 }
 function iddaaCard(e){
  const m1=iddaaMarket(e,1,1),ou=iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89),first=iddaaMarket(e,2,720);
@@ -2290,7 +2291,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=222",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=223",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

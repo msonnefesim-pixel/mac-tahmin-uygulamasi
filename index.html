@@ -250,6 +250,22 @@ th{color:var(--yellow)}
 .calendar-auto-note{font-size:9px;color:#aaa}
 #matchFilters{margin-top:5px}
 
+/* V235 - uc bagimsiz, kompakt acilir filtre */
+.filter-panel{margin:4px 0 8px;padding:0;background:transparent;border:0;box-shadow:none;display:grid;gap:5px}
+.filter-fold{border:1px solid #49413a;border-radius:9px;background:linear-gradient(145deg,#202020,#171717);overflow:hidden}
+.filter-fold>summary{list-style:none;cursor:pointer;padding:8px 11px;color:#f5d34b;font-size:12px;font-weight:900;min-height:34px;display:flex;align-items:center}
+.filter-fold>summary::-webkit-details-marker{display:none}
+.filter-fold>summary:after{content:"＋";margin-left:auto;color:#f5c400;font-size:14px}
+.filter-fold[open]>summary:after{content:"−"}
+.filter-fold-content{padding:7px 8px 9px;border-top:1px solid #38332b}
+.filter-fold .filter-tools{grid-template-columns:1fr;gap:6px}
+.filter-fold .filter-field{padding:6px}
+.filter-fold .search-field{grid-column:auto}
+.filter-fold .league-manage-button{margin:6px 0 0!important}
+.filter-fold .prediction-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.filter-fold .prediction-chip{min-height:32px;font-size:10px}
+@media(max-width:380px){.filter-fold .prediction-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.filter-fold .prediction-chip{min-height:32px;font-size:10px}}
+
 </style>
 <!-- V232: Kompakt takvim ve görünür filtre tasarımı -->
 </head>
@@ -292,36 +308,44 @@ th{color:var(--yellow)}
    </div>
   </details>
   <div id="matchFilters" class="filter-panel">
-   <div class="filter-panel-title"><span>⚙️ Maç filtreleri</span><small>İstediğin seçeneğe dokun</small></div>
-   <div class="filter-tools">
-    <div class="filter-field search-field"><label for="arama">🔎 Takım veya lig ara</label><input id="arama" placeholder="Takım, ülke veya lig yaz..." oninput="listele()"></div>
-    <div class="filter-field"><label for="ligSec">🌍 Ülke / Lig</label><select id="ligSec" onchange="listele()" style="min-height:44px;position:relative;z-index:5;touch-action:manipulation;-webkit-appearance:menulist;cursor:pointer"><option value="all">Bütün görünür ligler</option></select></div>
-   </div>
-   <button type="button" class="secondary league-manage-button" onclick="yonetimAc()">☷ Ligleri Yönet / Gizle</button>
-   <div id="ligYonetim" class="hidden">
-    <p>Görmek istemediğin liglerin işaretini kaldır.</p>
-    <div id="ligCheckboxlar"></div>
-    <button onclick="ligleriKaydet()">Seçimi Kaydet</button>
-   </div>
-   <div class="prediction-filter-title">🎯 Tahmin türü</div>
-   <div class="prediction-filter-grid">
-    <button type="button" class="prediction-chip active" data-filter="all" onclick="tahminFiltresiSec('all')">Tüm maçlar</button>
-    <button type="button" class="prediction-chip" data-filter="strong" onclick="tahminFiltresiSec('strong')">⭐ Öne çıkanlar</button>
-    <button type="button" class="prediction-chip" data-filter="one" onclick="tahminFiltresiSec('one')">1 · Ev sahibi</button>
-    <button type="button" class="prediction-chip" data-filter="draw" onclick="tahminFiltresiSec('draw')">X · Beraberlik</button>
-    <button type="button" class="prediction-chip" data-filter="two" onclick="tahminFiltresiSec('two')">2 · Deplasman</button>
-    <button type="button" class="prediction-chip" data-filter="over25" onclick="tahminFiltresiSec('over25')">2,5 Üst</button>
-    <button type="button" class="prediction-chip" data-filter="over35" onclick="tahminFiltresiSec('over35')">3,5 Üst</button>
-    <button type="button" class="prediction-chip" data-filter="firstOver15" onclick="tahminFiltresiSec('firstOver15')">İY 1,5 Üst</button>
-    <button type="button" class="prediction-chip" data-filter="six" onclick="tahminFiltresiSec('six')">⚽ 6+ Gol</button>
-    <button type="button" class="prediction-chip" data-filter="btts" onclick="tahminFiltresiSec('btts')">KG Var</button>
-    <button type="button" class="prediction-chip" data-filter="first" onclick="tahminFiltresiSec('first')">İlk Yarı KG</button>
-    <button type="button" class="prediction-chip" data-filter="second" onclick="tahminFiltresiSec('second')">İkinci Yarı KG</button>
-   </div>
-   <select id="filtre" class="hidden" aria-hidden="true" tabindex="-1">
-    <option value="all">Bütün maçlar</option><option value="strong">Öne çıkanlar</option><option value="one">1 - Ev sahibi</option><option value="draw">X - Beraberlik</option><option value="two">2 - Deplasman</option><option value="over25">2,5 Üst</option><option value="over35">3,5 Üst</option><option value="firstOver15">İlk Yarı 1,5 Üst</option><option value="six">6+ Gol</option><option value="btts">KG Var</option><option value="first">İlk Yarı KG</option><option value="second">İkinci Yarı KG</option>
-   </select>
-   <p class="filter-note">Seçtiğin filtreye uyan maçlar listelenir. Tahmin yüzdeleri garanti değildir.</p>
+   <details class="filter-fold">
+    <summary>🌍 Ligler</summary>
+    <div class="filter-fold-content">
+     <div class="filter-tools">
+      <div class="filter-field search-field"><label for="arama">🔎 Takım veya lig ara</label><input id="arama" placeholder="Takım, ülke veya lig yaz..." oninput="listele()"></div>
+      <div class="filter-field"><label for="ligSec">Ülke / Lig seç</label><select id="ligSec" onchange="listele()" style="min-height:44px;position:relative;z-index:5;touch-action:manipulation;-webkit-appearance:menulist;cursor:pointer"><option value="all">Bütün görünür ligler</option></select></div>
+     </div>
+     <button type="button" class="secondary league-manage-button" onclick="yonetimAc()">☷ Ligleri Yönet / Gizle</button>
+     <div id="ligYonetim" class="hidden">
+      <p>Görmek istemediğin liglerin işaretini kaldır.</p>
+      <div id="ligCheckboxlar"></div>
+      <button onclick="ligleriKaydet()">Seçimi Kaydet</button>
+     </div>
+    </div>
+   </details>
+   <details class="filter-fold">
+    <summary>🎯 Tahmin türü</summary>
+    <div class="filter-fold-content">
+     <div class="prediction-filter-grid">
+      <button type="button" class="prediction-chip active" data-filter="all" onclick="tahminFiltresiSec('all')">Tüm maçlar</button>
+      <button type="button" class="prediction-chip" data-filter="strong" onclick="tahminFiltresiSec('strong')">⭐ Öne çıkanlar</button>
+      <button type="button" class="prediction-chip" data-filter="one" onclick="tahminFiltresiSec('one')">1 · Ev sahibi</button>
+      <button type="button" class="prediction-chip" data-filter="draw" onclick="tahminFiltresiSec('draw')">X · Beraberlik</button>
+      <button type="button" class="prediction-chip" data-filter="two" onclick="tahminFiltresiSec('two')">2 · Deplasman</button>
+      <button type="button" class="prediction-chip" data-filter="over25" onclick="tahminFiltresiSec('over25')">2,5 Üst</button>
+      <button type="button" class="prediction-chip" data-filter="over35" onclick="tahminFiltresiSec('over35')">3,5 Üst</button>
+      <button type="button" class="prediction-chip" data-filter="firstOver15" onclick="tahminFiltresiSec('firstOver15')">İY 1,5 Üst</button>
+      <button type="button" class="prediction-chip" data-filter="six" onclick="tahminFiltresiSec('six')">⚽ 6+ Gol</button>
+      <button type="button" class="prediction-chip" data-filter="btts" onclick="tahminFiltresiSec('btts')">KG Var</button>
+      <button type="button" class="prediction-chip" data-filter="first" onclick="tahminFiltresiSec('first')">İlk Yarı KG</button>
+      <button type="button" class="prediction-chip" data-filter="second" onclick="tahminFiltresiSec('second')">İkinci Yarı KG</button>
+     </div>
+     <select id="filtre" class="hidden" aria-hidden="true" tabindex="-1">
+      <option value="all">Bütün maçlar</option><option value="strong">Öne çıkanlar</option><option value="one">1 - Ev sahibi</option><option value="draw">X - Beraberlik</option><option value="two">2 - Deplasman</option><option value="over25">2,5 Üst</option><option value="over35">3,5 Üst</option><option value="firstOver15">İlk Yarı 1,5 Üst</option><option value="six">6+ Gol</option><option value="btts">KG Var</option><option value="first">İlk Yarı KG</option><option value="second">İkinci Yarı KG</option>
+     </select>
+     <p class="filter-note">Seçtiğin filtreye uyan maçlar listelenir. Tahmin yüzdeleri garanti değildir.</p>
+    </div>
+   </details>
   </div>
   <section id="featuredSection" class="featured-section hidden" aria-live="polite"><h3 class="featured-heading">⭐ Günün Öne Çıkan Maçları</h3><p class="featured-note">En yüksek olasılıklı tahminler burada. Diğer bütün maçlar aşağıda aynen listelenir.</p><div id="featuredMatches" class="featured-list"></div></section>
   <div id="macOzet" class="summary"></div>

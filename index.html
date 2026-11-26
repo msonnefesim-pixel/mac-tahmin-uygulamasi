@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#c8102e">
-<link rel="manifest" href="./manifest.json?v=230">
-<link rel="icon" href="./icon-192-pal.png?v=230" type="image/png" sizes="192x192">
+<link rel="manifest" href="./manifest.json?v=231">
+<link rel="icon" href="./icon-192-pal.png?v=231" type="image/png" sizes="192x192">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
 :root{--red:#c8102e;--yellow:#f5c400;--bg:#101010;--panel:#1b1b1b;--line:#383838;--muted:#bbb}
@@ -171,8 +171,23 @@ th{color:var(--yellow)}
 .featured-section{margin:10px 0 14px;padding:10px;background:#191919;border:1px solid #695512;border-left:4px solid #f5c400;border-radius:11px}.featured-heading{margin:0 0 4px;color:#f5c400;font-size:16px;font-weight:900}.featured-note{margin:0 0 8px;color:#aaa;font-size:11px;line-height:1.4}.featured-list{display:grid;gap:7px}.featured-match{padding:9px 10px;background:linear-gradient(120deg,#302600,#1d1a10);border:1px solid #806800;border-radius:9px}.featured-top{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#d9c77c;font-size:10px;font-weight:800}.featured-number{color:#171000;background:#f5c400;border-radius:12px;padding:3px 7px;white-space:nowrap}.featured-teams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:7px;align-items:center;margin:8px 0;font-size:13px;font-weight:900;color:#fff}.featured-teams span:last-child{text-align:right}.featured-vs{color:#f5c400;font-size:10px}.featured-pick{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;background:#111;border:1px solid #574600;border-radius:7px}.featured-pick small{display:block;color:#b9a85d;font-size:9px;font-weight:800}.featured-pick strong{display:block;color:#ffe16a;font-size:13px}.featured-percent{color:#f5c400;font-size:13px;font-weight:900;white-space:nowrap}@media(max-width:360px){.featured-teams{font-size:12px}.featured-match{padding:8px}}
 
 .multi-date-picker{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px;align-items:start;margin:5px 0 9px}.multi-date-picker>input{min-width:0;margin:0}.multi-date-picker>button{width:auto;margin:0;padding:10px 12px;white-space:nowrap}.selected-dates{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin:3px 0}.date-chip{display:inline-flex;align-items:center;gap:7px;padding:6px 9px;background:#302600;border:1px solid #806800;border-radius:18px;color:#ffe16a;font-size:12px;font-weight:700}.date-chip button{width:auto;margin:0;padding:0 2px;background:transparent;color:#fff;font-size:16px;line-height:1}.multi-date-picker .small{grid-column:1/-1;margin:0}
+
+.football-calendar{margin:8px 0 13px;padding:13px;background:#171717;border:1px solid #514313;border-radius:13px}
+.football-calendar-head b{font-size:16px;color:#ffe16a}.football-calendar-head .small{margin-top:3px}
+.calendar-month-row{display:grid;grid-template-columns:42px 1fr 42px;align-items:center;gap:8px;margin:12px 0 9px;text-align:center}
+.calendar-month-row strong{font-size:16px;color:#fff;text-transform:capitalize}
+.calendar-nav{width:42px;min-height:38px;margin:0;padding:3px;font-size:24px;line-height:1}
+.calendar-weekdays,.calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;text-align:center}
+.calendar-weekdays{margin-bottom:6px;color:#b9b9b9;font-size:11px;font-weight:800}
+.calendar-days button{width:100%;min-width:0;min-height:39px;margin:0;padding:2px;border:1px solid #393939;border-radius:8px;background:#242424;color:#eee;font-size:13px;font-weight:700}
+.calendar-days button.selected{background:#f5c400;border-color:#ffe16a;color:#171000;box-shadow:inset 0 0 0 1px #ffe16a}
+.calendar-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
+.calendar-bottom span{font-size:12px;color:#ffe16a;font-weight:800}
+.calendar-bottom button{width:auto;min-height:42px;margin:0;padding:9px 13px;background:#f5c400;color:#171000;font-weight:900;border:0;border-radius:9px}
+@media(max-width:360px){.calendar-days{gap:3px}.calendar-days button{min-height:35px;font-size:12px}.calendar-bottom button{padding:8px 9px;font-size:12px}}
+
 </style>
-<!-- V230: Kart/korner market tarama ve görüntüleme hızlandırması -->
+<!-- V231: Kart/korner market tarama ve görüntüleme hızlandırması -->
 </head>
 <body>
 
@@ -203,14 +218,15 @@ th{color:var(--yellow)}
  <h2>Maç Takvimi</h2>
  <details class="quick-guide"><summary>👋 İlk kez mi kullanıyorsun? 3 adımda öğren</summary><ol><li><b>Tarihi seç:</b> İstediğin günün maçlarını görüntüle.</li><li><b>Maç kartına bak:</b> Sarı alanda sistemin öne çıkardığı seçeneği gör.</li><li><b>Diğer tahminler:</b> “Tüm tahminleri göster” bölümüne dokunarak olasılıkları incele.</li></ol><p>Yüzdeler tahmini olasılıklardır; kesin sonuç veya kazanç garantisi değildir.</p></details>
  <div class="panel">
-  <button type="button" id="matchFiltersToggle" class="secondary filter-toggle" aria-expanded="false" aria-controls="matchFilters" onclick="matchFiltersToggle()">☰ Maç Takvimi Filtrelerini Göster ▼</button>
-  <div id="matchFilters" class="hidden">
-  <label><b>Tarih seç</b></label>
-  <div class="multi-date-picker"><input type="date" id="tarih" onchange="tarihEkle()"><button type="button" class="secondary" onclick="tarihEkle()">＋ Tarihi ekle</button><div id="selectedDates" class="selected-dates" aria-live="polite"></div><div class="small">Birden fazla günü seçebilirsin; seçtiğin günlerin maçları birlikte listelenir.</div></div>
-  <div class="controls">
-   <button class="secondary" onclick="tarihKaydir(-1)">◀ Önceki gün</button>
-   <button class="secondary" onclick="tarihKaydir(1)">Sonraki gün ▶</button>
+  <div class="football-calendar" aria-label="Çoklu maç tarihi seçimi">
+   <div class="football-calendar-head"><b>📅 Maç günlerini seç</b><div class="small">Birden fazla güne dokunabilirsin.</div></div>
+   <div class="calendar-month-row"><button type="button" class="secondary calendar-nav" onclick="footballCalendarMove(-1)" aria-label="Önceki ay">‹</button><strong id="footballCalendarMonth"></strong><button type="button" class="secondary calendar-nav" onclick="footballCalendarMove(1)" aria-label="Sonraki ay">›</button></div>
+   <div class="calendar-weekdays"><span>Pzt</span><span>Sal</span><span>Çar</span><span>Per</span><span>Cum</span><span>Cmt</span><span>Paz</span></div>
+   <div id="footballCalendarDays" class="calendar-days"></div>
+   <div class="calendar-bottom"><span id="footballCalendarCount">1 gün seçildi</span><button type="button" id="footballCalendarApply" onclick="footballCalendarApply()">Seçilen Maçları Göster</button></div>
   </div>
+  <button type="button" id="matchFiltersToggle" class="secondary filter-toggle" aria-expanded="false" aria-controls="matchFilters" onclick="matchFiltersToggle()">☰ Diğer filtreleri göster ▼</button>
+  <div id="matchFilters" class="hidden">
   <label><b>Ülke / Lig seç</b></label>
   <select id="ligSec" onchange="listele()" style="min-height:48px;position:relative;z-index:5;touch-action:manipulation;-webkit-appearance:menulist;cursor:pointer"><option value="all">Bütün görünür ligler</option></select>
   <button class="secondary" onclick="yonetimAc()">Ligleri Yönet / Gizle</button>
@@ -1042,19 +1058,39 @@ function saatiGecenMaclariKaldir(){
 setInterval(saatiGecenMaclariKaldir,15000);
 
 const selectedFootballDates=new Set();
-function footballDatesRender(){
- const area=$("selectedDates");if(!area)return;
- const dates=[...selectedFootballDates].sort();
- area.innerHTML=dates.map(d=>'<span class="date-chip">'+dateText(d)+' <button type="button" aria-label="'+d+' tarihini kaldır" onclick="tarihCikar(\''+d+'\')">×</button></span>').join("");
+const draftFootballDates=new Set();
+let footballCalendarMonth=today().slice(0,7);
+function footballCalendarRender(){
+ const monthEl=$("footballCalendarMonth"),daysEl=$("footballCalendarDays");
+ if(!monthEl||!daysEl)return;
+ const [yy,mm]=footballCalendarMonth.split("-").map(Number),first=new Date(yy,mm-1,1),count=new Date(yy,mm,0).getDate();
+ monthEl.textContent=first.toLocaleDateString("tr-TR",{month:"long",year:"numeric"});
+ const offset=(first.getDay()+6)%7;let html="";
+ for(let i=0;i<offset;i++)html+='<span class="calendar-empty"></span>';
+ for(let day=1;day<=count;day++){
+  const value=yy+"-"+String(mm).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+  const chosen=draftFootballDates.has(value);
+  html+='<button type="button" class="'+(chosen?"selected":"")+'" aria-pressed="'+chosen+'" onclick="footballCalendarToggle(\''+value+'\')">'+day+'</button>';
+ }
+ daysEl.innerHTML=html;
+ const n=draftFootballDates.size;
+ $("footballCalendarCount").textContent=n+" gün seçildi";
+ $("footballCalendarApply").disabled=n===0;
+ $("footballCalendarApply").style.opacity=n===0?".5":"1";
 }
-function tarihEkle(){
- const value=$("tarih").value||today();selectedFootballDates.add(value);
- footballDatesRender();listele();
+function footballCalendarMove(delta){
+ const [y,m]=footballCalendarMonth.split("-").map(Number),d=new Date(y,m-1+delta,1);
+ footballCalendarMonth=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+ footballCalendarRender();
 }
-function tarihCikar(value){
- selectedFootballDates.delete(value);
- if(!selectedFootballDates.size){selectedFootballDates.add(today());$("tarih").value=today()}
- footballDatesRender();listele();
+function footballCalendarToggle(value){
+ if(draftFootballDates.has(value))draftFootballDates.delete(value);else draftFootballDates.add(value);
+ footballCalendarRender();
+}
+function footballCalendarApply(){
+ if(!draftFootballDates.size)return;
+ selectedFootballDates.clear();draftFootballDates.forEach(d=>selectedFootballDates.add(d));
+ listele();
 }
 function listele(){
  if(!FIXTURES.length&&!HISTORY.length)return;
@@ -2337,7 +2373,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=230",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=231",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

@@ -389,6 +389,27 @@ button{transition:filter .15s ease,transform .15s ease}button:active{transform:s
 .pro-match .analysis-box{margin:10px 11px 11px}
 @media(max-width:360px){.pro-teams{padding:14px 9px}.pro-team-name{font-size:14px}.quick-market-grid{gap:5px;margin-left:9px;margin-right:9px}.quick-market{padding:8px 7px}.quick-market b{font-size:16px}.pro-prediction{margin-left:9px;margin-right:9px}}
 
+
+/* V240 - öne çıkan maçlar belirgin açılır/kapanır alan */
+.featured-section{padding:0!important;overflow:hidden;border:1px solid #8b6b18!important;border-left:4px solid #f5c400!important;border-radius:13px!important;background:linear-gradient(145deg,#211b12,#151515)!important}
+.featured-toggle{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:72px;padding:12px 13px;cursor:pointer;user-select:none;background:linear-gradient(100deg,#40200f 0%,#2b1c12 55%,#211b12 100%);border-bottom:1px solid #70541a;outline:none}
+.featured-toggle::-webkit-details-marker{display:none}
+.featured-toggle::marker{content:""}
+.featured-toggle:focus-visible{outline:3px solid #ffe27a;outline-offset:-4px}
+.featured-toggle-main{display:flex;align-items:center;gap:10px;min-width:0}
+.featured-toggle-icon{display:grid;place-items:center;flex:0 0 39px;width:39px;height:39px;border-radius:11px;background:#f5c400;color:#211600;font-size:20px;box-shadow:0 2px 12px #f5c40033}
+.featured-toggle .featured-heading{display:block;margin:0;color:#ffe27a;font-size:15px;line-height:1.25}
+.featured-toggle .featured-note{display:block;margin:4px 0 0;color:#d1bfa5;font-size:10px;line-height:1.3}
+.featured-toggle-action{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.featured-count{padding:6px 8px;border:1px solid #b08a22;border-radius:7px;background:#201a0b;color:#ffe27a;font-size:10px;font-weight:900;white-space:nowrap}
+.featured-chevron{display:grid;place-items:center;width:31px;height:31px;border-radius:8px;background:#f5c400;color:#211600;font-size:23px;font-weight:900;line-height:1;transition:transform .2s ease}
+.featured-section[open] .featured-chevron{transform:rotate(180deg)}
+.featured-section[open] .featured-toggle{background:linear-gradient(100deg,#4b2412,#2b1c12)}
+.featured-content{padding:10px}
+.featured-help{margin:0 0 9px;color:#c7b99f;font-size:10px;line-height:1.4}
+.featured-list{display:grid;gap:8px}
+@media(max-width:360px){.featured-toggle{padding:10px;gap:6px}.featured-toggle .featured-heading{font-size:13px}.featured-toggle .featured-note{font-size:9px}.featured-toggle-icon{width:34px;height:34px;flex-basis:34px}.featured-toggle-action{gap:5px}.featured-count{font-size:9px;padding:5px 6px}.featured-chevron{width:28px;height:28px}}
+
 </style>
 <!-- V232: Kompakt takvim ve görünür filtre tasarımı -->
 </head>
@@ -479,7 +500,7 @@ button{transition:filter .15s ease,transform .15s ease}button:active{transform:s
    </div>
   </details>
  </div>
- <section id="featuredSection" class="featured-section hidden" aria-live="polite"><h3 class="featured-heading">⭐ Günün Öne Çıkan Maçları</h3><p class="featured-note">En yüksek olasılıklı tahminler burada. Diğer bütün maçlar aşağıda aynen listelenir.</p><div id="featuredMatches" class="featured-list"></div></section>
+ <details id="featuredSection" class="featured-section hidden"><summary class="featured-toggle"><span class="featured-toggle-main"><span class="featured-toggle-icon">⭐</span><span><strong class="featured-heading">Günün Öne Çıkan Maçları</strong><small class="featured-note">En yüksek olasılıklı 5 maç burada</small></span></span><span class="featured-toggle-action"><span id="featuredCount" class="featured-count">0 MAÇ</span><span class="featured-chevron">⌄</span></span></summary><div class="featured-content"><p class="featured-help">Diğer bütün maçlar aşağıda aynen listelenir.</p><div id="featuredMatches" class="featured-list"></div></div></details>
   <div id="macOzet" class="summary"></div>
   <div id="maclar">Maçlar hazırlanıyor...</div>
  </div>
@@ -1401,7 +1422,7 @@ function listele(){
   list.sort((a,b)=>String(a.m.date||"").localeCompare(String(b.m.date||""))||String(a.m.time||"").localeCompare(String(b.m.time||""))||String(a.m.home||"").localeCompare(String(b.m.home||""),"tr"));
   if(!past&&featuredSection&&featuredArea){
    const featured=list.filter(x=>!x.past).map(x=>{const picks=footballPickCandidates(x.displayT),favorite=footballModelFavorite(x.displayT),fallback=x.displayT?[["1 · Ev sahibi",x.displayT.one],["X · Beraberlik",x.displayT.draw],["2 · Deplasman",x.displayT.two]].filter(y=>Number.isFinite(y[1])).sort((a,b)=>b[1]-a[1])[0]:null;return {...x,featuredPick:picks[0]||favorite||(fallback?{label:fallback[0],prob:fallback[1]}:null)}}).filter(x=>x.featuredPick).sort((a,b)=>b.featuredPick.prob-a.featuredPick.prob||String(a.m.time||"").localeCompare(String(b.m.time||""))).slice(0,5);
-   if(featured.length){featuredArea.innerHTML=featured.map(featuredMatchCard).join("");featuredSection.classList.remove("hidden")}
+   if(featured.length){featuredArea.innerHTML=featured.map(featuredMatchCard).join("");const featuredCount=$("featuredCount");if(featuredCount)featuredCount.textContent=featured.length+" MAÇ";featuredSection.classList.remove("hidden")}
   }
   const count=list.filter(x=>x.rank>=0).length;
   ozetAlan.innerHTML=past?"":`<div class="summary-item"><span class="summary-number">${list.length}</span><span class="summary-label">Toplam maç</span></div><div class="summary-item"><span class="summary-number">${count}</span><span class="summary-label">Tahmin üretilen</span></div><div class="summary-item"><span class="summary-number">${list.length-count}</span><span class="summary-label">Tahmin bulunmayan</span></div>`;

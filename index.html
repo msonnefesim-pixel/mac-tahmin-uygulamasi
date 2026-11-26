@@ -425,7 +425,7 @@ button{transition:filter .15s ease,transform .15s ease}button:active{transform:s
 .model-insight>summary:focus-visible{outline:2px solid #ffe16a;outline-offset:-3px}
 @media(prefers-reduced-motion:reduce){.model-insight-hint b{transition:none}}
 
-/* V245 - kart ve korner piyasa tahminlerini maç kartında kompakt göster */
+/* V246 - kart/korner market verisi doğrulama ve hata koruması */
 .special-market-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:9px 11px 0}
 .special-market-box{min-width:0;padding:8px;background:#171717;border:1px solid #51451d;border-radius:8px}
 .special-market-title{font-size:12px;font-weight:900;color:#ffe16a;margin-bottom:5px}
@@ -934,27 +934,39 @@ function matchQuickMarkets(t){
  return "<div class='quick-market-grid'>"+items.map(([name,value])=>"<div class='quick-market'><span>"+name+"</span><b>%"+(value*100).toFixed(1)+"</b><i><em style='width:"+Math.max(0,Math.min(100,value*100)).toFixed(1)+"%'></em></i></div>").join('')+"</div>";
 }
 function matchIddaaSpecialMarkets(fixture){
- if(!fixture||!IDDAA_EVENTS.length)return "";
- const event=iddaaFindEventForFixture(fixture);if(!event)return "";
- const markets=iddaaReadableMarkets(event);
- const defs=[{key:"cards",name:"🟨 KART",primary:"49",fallback:"68"},{key:"corners",name:"⚽ KORNER",primary:"48",fallback:"67"}];
- const boxes=[];
- for(const def of defs){
-  const candidates=markets.filter(m=>iddaaMarketCategory(m)===def.key);
-  if(!candidates.length)continue;
-  candidates.sort((a,b)=>{
-   const ap=String(a.st)===def.primary?0:String(a.st)===def.fallback?1:2;
-   const bp=String(b.st)===def.primary?0:String(b.st)===def.fallback?1:2;
-   return ap-bp;
-  });
-  const market=candidates[0],valid=(Array.isArray(market.o)?market.o:[]).map(o=>({name:iddaaEsc(o.n||o.name||o.no||"Seçim"),odd:iddaaOdds(o)})).filter(x=>x.odd&&x.odd>1);
-  if(!valid.length)continue;
-  const sum=valid.reduce((n,x)=>n+1/x.odd,0);
-  const ranked=valid.map(x=>({...x,prob:(1/x.odd)/sum})).sort((a,b)=>b.prob-a.prob);
-  const line=market.sov!==undefined&&market.sov!==null&&market.sov!==""?" · "+iddaaEsc(market.sov):"";
-  boxes.push("<div class='special-market-box'><div class='special-market-title'>"+def.name+"</div><div class='special-market-note'>İddaa oranlarından hesaplanan marjsız piyasa olasılığı · bağımsız model tahmini değildir</div><div class='special-market-line'>"+(def.key==="cards"?"Kart marketi":"Korner marketi")+line+"</div><div class='special-market-outcomes'>"+ranked.slice(0,4).map((x,i)=>"<span class='special-market-outcome"+(i===0?" top":"")+"'>"+x.name+" · <strong>"+x.odd.toFixed(2)+"</strong> · %"+(x.prob*100).toFixed(1)+"</span>").join("")+"</div></div>");
- }
- return boxes.length?"<div class='special-market-summary'>"+boxes.join("")+"</div>":"";
+ try{
+  if(!fixture||typeof IDDAA_EVENTS==="undefined"||!Array.isArray(IDDAA_EVENTS)||!IDDAA_EVENTS.length)return "";
+  const event=iddaaFindEventForFixture(fixture);if(!event)return "";
+  const markets=iddaaReadableMarkets(event);if(!Array.isArray(markets)||!markets.length)return "";
+  const defs=[{key:"cards",name:"🟨 KART",primary:"49",fallback:"68"},{key:"corners",name:"⚽ KORNER",primary:"48",fallback:"67"}];
+  const boxes=[];
+  for(const def of defs){
+   const candidates=markets.filter(m=>m&&iddaaMarketCategory(m)===def.key).map(m=>{
+    const raw=Array.isArray(m.o)?m.o:[];
+    const seen=new Set(),valid=[];
+    raw.forEach(o=>{
+     const rawName=o&&(o.n||o.name||o.no),name=String(rawName||"Seçim").trim();
+     const parsed=Number(String(o&&o.odd!==undefined?o.odd:"").replace(",","."));
+     if(!Number.isFinite(parsed)||parsed<=1||!name)return;
+     const key=name.toLocaleLowerCase("tr-TR");
+     if(seen.has(key))return;seen.add(key);
+     valid.push({name:iddaaEsc(name),odd:parsed});
+    });
+    const subtype=String(m.st??"");
+    const priority=subtype===def.primary?0:(subtype===def.fallback?1:2);
+    return {market:m,valid,priority};
+   }).filter(x=>x.valid.length>=2);
+   if(!candidates.length)continue;
+   candidates.sort((a,b)=>a.priority-b.priority||b.valid.length-a.valid.length);
+   const chosen=candidates[0],market=chosen.market,valid=chosen.valid;
+   const sum=valid.reduce((n,x)=>n+1/x.odd,0);
+   if(!Number.isFinite(sum)||sum<=0)continue;
+   const ranked=valid.map(x=>({...x,prob:(1/x.odd)/sum})).sort((a,b)=>b.prob-a.prob);
+   const line=market.sov!==undefined&&market.sov!==null&&String(market.sov).trim()!==""?" · "+iddaaEsc(String(market.sov)):"";
+   boxes.push("<div class='special-market-box'><div class='special-market-title'>"+def.name+"</div><div class='special-market-note'>İddaa oranlarından hesaplanan marjsız piyasa olasılığı · bağımsız model tahmini değildir</div><div class='special-market-line'>"+(def.key==="cards"?"Kart marketi":"Korner marketi")+line+"</div><div class='special-market-outcomes'>"+ranked.slice(0,4).map((x,i)=>"<span class='special-market-outcome"+(i===0?" top":"")+"'>"+x.name+" · <strong>"+x.odd.toFixed(2)+"</strong> · %"+(x.prob*100).toFixed(1)+"</span>").join("")+"</div></div>");
+  }
+  return boxes.length?"<div class='special-market-summary'>"+boxes.join("")+"</div>":"";
+ }catch(error){console.warn("Kart/korner piyasa alanı gösterilemedi:",error);return "";}
 }
 function matchCard(m,t,past=false,rank=0,adjusted=null){
  const finalPrediction=!past?(adjusted||iddaaAdjustedPrediction(m,t)):t;

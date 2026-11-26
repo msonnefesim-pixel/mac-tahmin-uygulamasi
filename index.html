@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#c8102e">
-<link rel="manifest" href="./manifest.json?v=225">
-<link rel="icon" href="./icon-192-pal.png?v=225" type="image/png" sizes="192x192">
+<link rel="manifest" href="./manifest.json?v=226">
+<link rel="icon" href="./icon-192-pal.png?v=226" type="image/png" sizes="192x192">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
 :root{--red:#c8102e;--yellow:#f5c400;--bg:#101010;--panel:#1b1b1b;--line:#383838;--muted:#bbb}
@@ -1868,11 +1868,18 @@ function iddaaCompareCell(label,model,market){
 
 function iddaaMarketKey(m){return String(m.t??"")+"|"+String(m.st??"")}
 function iddaaMarketRawName(m){
- const fields=[m.n,m.name,m.title,m.market_name,m.marketName,m.mn,m.marketTitle,m.betTypeName,m.sn,m.stn,m.desc,m.label];
+ const fields=[m.n,m.name,m.title,m.market_name,m.marketName,m.mn,m.marketTitle,m.betTypeName,m.sn,m.stn,m.desc,m.label,m.tn,m.typeName,m.stName,m.marketTypeName,m.betName,m.marketDesc,m.market_description,m.categoryName,m.groupName];
  return fields.find(x=>typeof x==="string"&&x.trim()&&!/^\d+\s*[/·-]\s*\d+$/.test(x.trim()))||"";
 }
+function iddaaMarketTextValues(value,depth=0,out=[]){
+ if(depth>3||value===null||value===undefined)return out;
+ if(typeof value==="string"){out.push(value);return out}
+ if(Array.isArray(value)){value.forEach(x=>iddaaMarketTextValues(x,depth+1,out));return out}
+ if(typeof value==="object"){Object.values(value).forEach(x=>iddaaMarketTextValues(x,depth+1,out))}
+ return out;
+}
 function iddaaMarketCategory(m){
- const name=iddaaNorm(iddaaMarketRawName(m));
+ const name=iddaaNorm([iddaaMarketRawName(m),...iddaaMarketTextValues(m)].join(" "));
  if(/korner|corner/.test(name))return "corners";
  if(/kart|card|booking/.test(name))return "cards";
  return "other";
@@ -1892,22 +1899,30 @@ function iddaaMarketTitle(m){
   "2/90":"İlk Yarı / Maç Sonucu",
   "2/60":"İlk Yarı Alt / Üst"
  };
+ const category=iddaaMarketCategory(m);
+ if(category==="corners")return "Korner Bahisleri";
+ if(category==="cards")return "Kart Bahisleri";
  return known[String(m.t)+"/"+String(m.st)]||null;
 }
 function iddaaReadableMarkets(e){return iddaaMarkets(e).filter(m=>!!iddaaMarketTitle(m))}
 function iddaaMarketSecenekleriHazirla(){
  const select=$("iddaaMarketSecim");if(!select)return;
  const current=select.value||"all",markets=new Map(),categories={corners:0,cards:0};
- IDDAA_EVENTS.forEach(e=>iddaaReadableMarkets(e).forEach(m=>{
-  const category=iddaaMarketCategory(m);
-  if(category==="corners")categories.corners++;
-  if(category==="cards")categories.cards++;
-  const key=iddaaMarketKey(m);if(!markets.has(key))markets.set(key,iddaaMarketTitle(m));
- }));
+ IDDAA_EVENTS.forEach(e=>{
+  let hasCorners=false,hasCards=false;
+  iddaaReadableMarkets(e).forEach(m=>{
+   const category=iddaaMarketCategory(m);
+   if(category==="corners")hasCorners=true;
+   if(category==="cards")hasCards=true;
+   const key=iddaaMarketKey(m);if(!markets.has(key))markets.set(key,iddaaMarketTitle(m));
+  });
+  if(hasCorners)categories.corners++;
+  if(hasCards)categories.cards++;
+ });
  const options=[...markets.entries()].sort((a,b)=>a[1].localeCompare(b[1],"tr"));
  const categoryOptions=[
-  "<option value='category:corners'>⚽ Korner Bahisleri ("+categories.corners+" bahis)</option>",
-  "<option value='category:cards'>🟨 Kart Bahisleri ("+categories.cards+" bahis)</option>"
+  "<option value='category:corners'>⚽ Korner Bahisleri ("+categories.corners+" maç)</option>",
+  "<option value='category:cards'>🟨 Kart Bahisleri ("+categories.cards+" maç)</option>"
  ];
  select.innerHTML="<option value='all'>Tüm bahis türleri ("+options.length+")</option>"+categoryOptions.join("")+
   options.map(([key,title])=>"<option value='"+iddaaEsc(key)+"'>"+title+"</option>").join("");
@@ -2294,7 +2309,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=225",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=226",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

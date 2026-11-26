@@ -79,7 +79,7 @@ def inspect_events(events):
 
 def inspect_event_details(events):
     result = {"detail_samples": []}
-    for event in events[:3]:
+    for event in events[:10]:
         if not isinstance(event, dict) or not event.get("i"):
             continue
         url = f"{BASE}/sportsbook/event/{event['i']}"
@@ -97,6 +97,8 @@ def inspect_event_details(events):
                     "t": market.get("t"),
                     "st": market.get("st"),
                     "sov": market.get("sov"),
+                    "s": market.get("s"),
+                    "v": market.get("v"),
                     "name_fields": {k: market.get(k) for k in ("n", "name", "title", "mn", "sn", "stn", "desc", "label") if market.get(k) is not None},
                     "outcomes": [o.get("n") for o in (market.get("o") or []) if isinstance(o, dict)][:8]
                 }

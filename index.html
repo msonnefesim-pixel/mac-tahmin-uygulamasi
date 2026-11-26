@@ -410,6 +410,17 @@ button{transition:filter .15s ease,transform .15s ease}button:active{transform:s
 .featured-list{display:grid;gap:8px}
 @media(max-width:360px){.featured-toggle{padding:10px;gap:6px}.featured-toggle .featured-heading{font-size:13px}.featured-toggle .featured-note{font-size:9px}.featured-toggle-icon{width:34px;height:34px;flex-basis:34px}.featured-toggle-action{gap:5px}.featured-count{font-size:9px;padding:5px 6px}.featured-chevron{width:28px;height:28px}}
 
+
+/* V241 - tum sekmeler tek ekranda, kompakt ve dokunmasi kolay */
+.tabbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding:7px;margin:7px 0 10px;background:linear-gradient(145deg,#211014,#171717);border:1px solid #493038;border-radius:13px;box-shadow:0 4px 14px #0005}
+.tab-button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0;min-height:48px;margin:0;padding:5px 2px;border:1px solid #40343a;border-radius:9px;background:#242124;color:#d8d2d0;font-size:10px;line-height:1.1;font-weight:800;white-space:normal;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:background-color .12s,border-color .12s,color .12s}
+.tab-icon{font-size:15px;line-height:1.1}
+.tab-label{display:block;max-width:100%;overflow-wrap:anywhere;text-align:center;letter-spacing:.05px}
+.tab-button.active{background:linear-gradient(145deg,#f8d84a,#dca900);color:#211600;border:1px solid #fff0a0;box-shadow:0 2px 8px #f5c40035}
+.tab-button:focus-visible{outline:2px solid #fff0a0;outline-offset:2px}
+@media(min-width:620px){.tabbar{grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}.tab-button{min-height:52px;font-size:11px}.tab-icon{font-size:17px}}
+@media(max-width:360px){.tabbar{gap:4px;padding:5px}.tab-button{min-height:44px;font-size:9px;padding:4px 1px}.tab-icon{font-size:14px}}
+@media(prefers-reduced-motion:reduce){.tab-button{transition:none}}
 </style>
 <!-- V232: Kompakt takvim ve görünür filtre tasarımı -->
 </head>
@@ -423,13 +434,13 @@ button{transition:filter .15s ease,transform .15s ease}button:active{transform:s
 </header>
 
 <nav class="tabbar" aria-label="Analiz bölümleri">
- <button id="futbolButon" class="tab-button active" onclick="sekmeAc('futbol')">⚽ FUTBOL</button>
- <button id="iymsButon" class="tab-button" onclick="sekmeAc('iyms')">🎯 İY/MS</button>
- <button id="couponButon" class="tab-button" onclick="sekmeAc('coupons')">🎟️ KUPONLAR</button>
- <button id="halfBothButon" class="tab-button" onclick="sekmeAc('halfBoth')">⚽ EVET/EVET</button>
- <button id="sporTotoButon" class="tab-button" onclick="sekmeAc('sporToto')">🏆 SPOR TOTO</button>
- <button id="successButon" class="tab-button" onclick="sekmeAc('success')">📊 BAŞARI</button>
- <button id="iddaaButon" class="tab-button" onclick="sekmeAc('iddaa')">💹 İDDAA</button>
+ <button id="futbolButon" class="tab-button active" aria-pressed="true" onclick="sekmeAc('futbol')"><span class="tab-icon">⚽</span><span class="tab-label">Futbol</span></button>
+ <button id="iymsButon" class="tab-button" aria-pressed="false" onclick="sekmeAc('iyms')"><span class="tab-icon">🎯</span><span class="tab-label">İY/MS</span></button>
+ <button id="couponButon" class="tab-button" aria-pressed="false" onclick="sekmeAc('coupons')"><span class="tab-icon">🎟️</span><span class="tab-label">Kuponlar</span></button>
+ <button id="halfBothButon" class="tab-button" aria-pressed="false" onclick="sekmeAc('halfBoth')"><span class="tab-icon">⚽</span><span class="tab-label">Evet/Evet</span></button>
+ <button id="sporTotoButon" class="tab-button" aria-pressed="false" onclick="sekmeAc('sporToto')"><span class="tab-icon">🏆</span><span class="tab-label">Spor Toto</span></button>
+ <button id="successButon" class="tab-button" aria-pressed="false" onclick="sekmeAc('success')"><span class="tab-icon">📊</span><span class="tab-label">Başarı</span></button>
+ <button id="iddaaButon" class="tab-button" aria-pressed="false" onclick="sekmeAc('iddaa')"><span class="tab-icon">💹</span><span class="tab-label">İddaa</span></button>
 </nav>
 
 <section id="futbolBolumu">
@@ -1533,9 +1544,12 @@ async function baslat(force=false){
 }
 function sekmeAc(name){
  const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",coupons:"couponsBolumu",halfBoth:"halfBothBolumu",sporToto:"sporTotoBolumu",success:"successBolumu",iddaa:"iddaaBolumu"};
+ // Zaten acik olan sekmeye tekrar basildiysa pahali liste/analiz cizimini tekrarlama.
+ if(activeTabName===name)return;
  activeTabName=name;
  Object.keys(ids).forEach(k=>$(ids[k]).classList.toggle("hidden",k!==name));
- $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");$("couponButon").classList.toggle("active",name==="coupons");$("halfBothButon").classList.toggle("active",name==="halfBoth");$("sporTotoButon").classList.toggle("active",name==="sporToto");$("successButon").classList.toggle("active",name==="success");$("iddaaButon").classList.toggle("active",name==="iddaa");
+ const tabButtons={futbol:"futbolButon",iyms:"iymsButon",coupons:"couponButon",halfBoth:"halfBothButon",sporToto:"sporTotoButon",success:"successButon",iddaa:"iddaaButon"};
+ Object.keys(tabButtons).forEach(k=>{const b=$(tabButtons[k]),active=k===name;b.classList.toggle("active",active);b.setAttribute("aria-pressed",String(active))});
  // Önce görünür sekmeyi değiştir; içerik çizimini ilk ekrandan sonraya bırak.
  requestAnimationFrame(()=>{
  setTimeout(()=>{

@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#c8102e">
-<link rel="manifest" href="./manifest.json?v=217">
-<link rel="icon" href="./icon-192-pal.png?v=217" type="image/png" sizes="192x192">
+<link rel="manifest" href="./manifest.json?v=218">
+<link rel="icon" href="./icon-192-pal.png?v=218" type="image/png" sizes="192x192">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
 :root{--red:#c8102e;--yellow:#f5c400;--bg:#101010;--panel:#1b1b1b;--line:#383838;--muted:#bbb}
@@ -280,6 +280,12 @@ th{color:var(--yellow)}
 <section id="iddaaBolumu" class="hidden">
  <h2>💹 İDDAA ORANLARI</h2>
  <div class="panel">
+  <div class="analysis-box" style="border:2px solid #d4af37;background:rgba(212,175,55,.10);margin-bottom:12px;padding:12px">
+   <label for="iddaaMarketSecim" style="display:block;font-weight:800;font-size:1rem;color:#d4af37;margin-bottom:7px">🎯 BAHİS TÜRÜNÜ SEÇ</label>
+   <select id="iddaaMarketSecim" onchange="iddaaListele()" style="display:block;width:100%;min-height:46px;font-size:1rem;font-weight:700;margin:0">
+    <option value="all">TÜM BAHİS TÜRLERİ</option>
+   </select>
+  </div>
   <div id="iddaaDurum">Oranlar yüklenmeye hazır. Sekmeyi açınca güncel bülten alınır.</div>
   <button onclick="iddaaBaslat(true)">Oranları Yenile</button>
   <div class="analysis-box">
@@ -288,10 +294,6 @@ th{color:var(--yellow)}
    <div id="iddaaTarihSecim"></div>
    <button type="button" class="secondary" onclick="iddaaTarihleriTemizle()">↻ Tüm tarihleri göster</button>
   </div>
-  <label for="iddaaMarketSecim" class="small">Bahis türü</label>
-  <select id="iddaaMarketSecim" onchange="iddaaListele()" style="width:100%;margin:6px 0 10px">
-   <option value="all">Tüm bahis türleri</option>
-  </select>
   <input id="iddaaArama" placeholder="Takım veya lig ara..." oninput="iddaaListele()">
   <div id="iddaaOzet" class="summary"></div>
   <div id="iddaaMaclar"></div>
@@ -2252,7 +2254,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=217",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=218",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

@@ -238,6 +238,18 @@ th{color:var(--yellow)}
  .calendar-days button{min-height:23px;font-size:9px}
 }
 
+
+/* V234 - acilir kompakt takvim, aninda tarih filtresi */
+.football-calendar-fold{margin:4px 0 7px;border:1px solid #55451b;border-radius:9px;background:#191919}
+.football-calendar-fold>summary{list-style:none;cursor:pointer;padding:9px 11px;color:#ffe16a;font-size:12px;font-weight:900}
+.football-calendar-fold>summary::-webkit-details-marker{display:none}
+.football-calendar-fold>summary:after{content:"＋";float:right;color:#f5c400}
+.football-calendar-fold[open]>summary:after{content:"−"}
+.football-calendar-fold .football-calendar{max-width:none;margin:0;padding:5px 8px 8px;border:0;border-top:1px solid #3d351e;border-radius:0;background:transparent}
+.football-calendar-fold .calendar-bottom{justify-content:flex-start;gap:12px}
+.calendar-auto-note{font-size:9px;color:#aaa}
+#matchFilters{margin-top:5px}
+
 </style>
 <!-- V232: Kompakt takvim ve görünür filtre tasarımı -->
 </head>
@@ -270,13 +282,15 @@ th{color:var(--yellow)}
  <h2>Maç Takvimi</h2>
  <details class="quick-guide"><summary>👋 İlk kez mi kullanıyorsun? 3 adımda öğren</summary><ol><li><b>Tarihi seç:</b> İstediğin günün maçlarını görüntüle.</li><li><b>Maç kartına bak:</b> Sarı alanda sistemin öne çıkardığı seçeneği gör.</li><li><b>Diğer tahminler:</b> “Tüm tahminleri göster” bölümüne dokunarak olasılıkları incele.</li></ol><p>Yüzdeler tahmini olasılıklardır; kesin sonuç veya kazanç garantisi değildir.</p></details>
  <div class="panel">
-  <div class="football-calendar" aria-label="Çoklu maç tarihi seçimi">
-   <div class="football-calendar-head"><b>📅 Maç günlerini seç</b><div class="small">Birden fazla güne dokunabilirsin.</div></div>
-   <div class="calendar-month-row"><button type="button" class="secondary calendar-nav" onclick="footballCalendarMove(-1)" aria-label="Önceki ay">‹</button><strong id="footballCalendarMonth"></strong><button type="button" class="secondary calendar-nav" onclick="footballCalendarMove(1)" aria-label="Sonraki ay">›</button></div>
-   <div class="calendar-weekdays"><span>Pzt</span><span>Sal</span><span>Çar</span><span>Per</span><span>Cum</span><span>Cmt</span><span>Paz</span></div>
-   <div id="footballCalendarDays" class="calendar-days"></div>
-   <div class="calendar-bottom"><span id="footballCalendarCount">1 gün seçildi</span><button type="button" id="footballCalendarApply" onclick="footballCalendarApply()">Seçilen Maçları Göster</button></div>
-  </div>
+  <details class="football-calendar-fold">
+   <summary id="footballCalendarSummary">📅 Maç tarihlerini seç · 1 gün</summary>
+   <div class="football-calendar" aria-label="Çoklu maç tarihi seçimi">
+    <div class="calendar-month-row"><button type="button" class="secondary calendar-nav" onclick="footballCalendarMove(-1)" aria-label="Önceki ay">‹</button><strong id="footballCalendarMonth"></strong><button type="button" class="secondary calendar-nav" onclick="footballCalendarMove(1)" aria-label="Sonraki ay">›</button></div>
+    <div class="calendar-weekdays"><span>Pzt</span><span>Sal</span><span>Çar</span><span>Per</span><span>Cum</span><span>Cmt</span><span>Paz</span></div>
+    <div id="footballCalendarDays" class="calendar-days"></div>
+    <div class="calendar-bottom"><span id="footballCalendarCount">1 gün seçildi</span><span class="calendar-auto-note">Seçince maçlar otomatik gelir ✓</span></div>
+   </div>
+  </details>
   <div id="matchFilters" class="filter-panel">
    <div class="filter-panel-title"><span>⚙️ Maç filtreleri</span><small>İstediğin seçeneğe dokun</small></div>
    <div class="filter-tools">
@@ -1138,8 +1152,7 @@ function footballCalendarRender(){
  daysEl.innerHTML=html;
  const n=draftFootballDates.size;
  $("footballCalendarCount").textContent=n+" gün seçildi";
- $("footballCalendarApply").disabled=n===0;
- $("footballCalendarApply").style.opacity=n===0?".5":"1";
+ const summary=$("footballCalendarSummary");if(summary)summary.textContent="📅 Maç tarihlerini seç · "+n+" gün";
 }
 function footballCalendarMove(delta){
  const [y,m]=footballCalendarMonth.split("-").map(Number),d=new Date(y,m-1+delta,1);
@@ -1148,11 +1161,9 @@ function footballCalendarMove(delta){
 }
 function footballCalendarToggle(value){
  if(draftFootballDates.has(value))draftFootballDates.delete(value);else draftFootballDates.add(value);
- footballCalendarRender();
-}
-function footballCalendarApply(){
- if(!draftFootballDates.size)return;
+ if(!draftFootballDates.size)draftFootballDates.add(today());
  selectedFootballDates.clear();draftFootballDates.forEach(d=>selectedFootballDates.add(d));
+ footballCalendarRender();
  listele();
 }
 function tahminFiltresiSec(value){

@@ -1095,7 +1095,7 @@ function footballCalendarApply(){
 function listele(){
  if(!FIXTURES.length&&!HISTORY.length)return;
  const token=++listRenderToken;
- if(!selectedFootballDates.size)selectedFootballDates.add($("tarih").value||today());
+ if(!selectedFootballDates.size)selectedFootballDates.add(today());
  const dates=[...selectedFootballDates].sort(),past=dates.every(d=>d<today());
  const source=dates.flatMap(d=>d<today()?(historyDateIndex.get(d)||[]):(fixtureDateIndex.get(d)||[]));
  const query=($("arama").value||"").toLocaleLowerCase("tr"),filter=$("filtre").value,league=$("ligSec").value;
@@ -1207,7 +1207,6 @@ function maclariDevamEttir(){
   }
  }
 }
-function tarihKaydir(n){$("tarih").value=dateAdd($("tarih").value||today(),n);tarihEkle()}
 
 // Mobil cihazlarda büyük geçmiş verisini parçalara bölerek hazırla.
 const footballYield=()=>new Promise(resolve=>setTimeout(resolve,0));
@@ -2366,8 +2365,7 @@ function espnLiveList(payload){
  }).filter(Boolean);
 }
 /* AÇILIŞ */
-$("tarih").value=today();
-selectedFootballDates.add(today());footballDatesRender();
+ selectedFootballDates.add(today());draftFootballDates.add(today());footballCalendarRender();
 $("couponTarih").value=today();
 baslat();
 </script>

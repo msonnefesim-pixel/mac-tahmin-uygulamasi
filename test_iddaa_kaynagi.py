@@ -77,6 +77,37 @@ def inspect_events(events):
     return result
 
 
+def inspect_event_details(events):
+    result = {"detail_samples": []}
+    for event in events[:3]:
+        if not isinstance(event, dict) or not event.get("i"):
+            continue
+        url = f"{BASE}/sportsbook/event/{event['i']}"
+        req = urllib.request.Request(url, headers=HEADERS, method="GET")
+        sample = {"event_id": event.get("i"), "home": event.get("hn"), "away": event.get("an")}
+        try:
+            with urllib.request.urlopen(req, timeout=35) as response:
+                data = json.loads(response.read().decode("utf-8-sig"))
+            payload = data.get("data") if isinstance(data, dict) else None
+            markets = payload.get("m", []) if isinstance(payload, dict) else []
+            sample["market_count"] = len(markets) if isinstance(markets, list) else 0
+            sample["markets"] = [
+                {
+                    "fields": list(market.keys()),
+                    "t": market.get("t"),
+                    "st": market.get("st"),
+                    "sov": market.get("sov"),
+                    "name_fields": {k: market.get(k) for k in ("n", "name", "title", "mn", "sn", "stn", "desc", "label") if market.get(k) is not None},
+                    "outcomes": [o.get("n") for o in (market.get("o") or []) if isinstance(o, dict)][:8]
+                }
+                for market in markets if isinstance(market, dict)
+            ]
+        except Exception as exc:
+            sample["error"] = type(exc).__name__ + ": " + str(exc)
+        result["detail_samples"].append(sample)
+    return result
+
+
 def check(item):
     url = BASE + item["path"]
 
@@ -125,12 +156,14 @@ def check(item):
 
                         if isinstance(events, list):
                             result.update(inspect_events(events))
+                            result.update(inspect_event_details(events))
                         else:
                             result["events_type"] = type(events).__name__
                             result["events_value"] = events
 
                     elif isinstance(payload, list):
                         result.update(inspect_events(payload))
+                        result.update(inspect_event_details(payload))
                     else:
                         result["data_type"] = type(payload).__name__
                         result["data_value"] = payload

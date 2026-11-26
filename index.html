@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#c8102e">
-<link rel="manifest" href="./manifest.json?v=215">
-<link rel="icon" href="./icon-192-pal.png?v=215" type="image/png" sizes="192x192">
+<link rel="manifest" href="./manifest.json?v=216">
+<link rel="icon" href="./icon-192-pal.png?v=216" type="image/png" sizes="192x192">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
 :root{--red:#c8102e;--yellow:#f5c400;--bg:#101010;--panel:#1b1b1b;--line:#383838;--muted:#bbb}
@@ -1543,9 +1543,7 @@ async function iymsBaslat(){
  if(iymsLoading||iymsYuklendi)return;iymsLoading=true;
  const status=$("iymsDurum"),summary=$("iymsOzet"),area=$("iymsMaclar");
  status.textContent="İY/MS verileri ve MBS bilgileri yükleniyor...";summary.innerHTML="";area.innerHTML="";
- // MBS 3 maçlarını İY/MS listesinden ayıklamak için güncel İddaa bültenini hazırla.
- if(!iddaaYuklendi&&!iddaaLoading)await iddaaBaslat();
- while(iddaaLoading)await new Promise(resolve=>setTimeout(resolve,100));
+ // İY/MS analizi İddaa oranlarını beklemez; MBS eşleşmeleri varsa mevcut veriyi kullanır.
  const options=["1/1","1/X","1/2","X/1","X/X","X/2","2/1","2/X","2/2"];
  const inverse={"1":"2","2":"1","X":"X"};
  const clean=s=>String(s??"").trim().toLocaleLowerCase("tr");
@@ -1645,12 +1643,16 @@ function iddaaOddsSnapshotKey(e,m,o){
  const event=iddaaEventKey(iddaaDateKey(e),e.hn,e.an),market=[m.t??"",m.st??"",m.sov??""].join("/"),outcome=iddaaNorm(o.n||o.name||o.no||"");
  return [event,market,outcome].join("|");
 }
-function recordIddaaOddsMovement(events){
+async function recordIddaaOddsMovement(events){
  IDDAA_MOVEMENTS=new Map();let previous=null;
  try{previous=JSON.parse(localStorage.getItem("yapaycinOddsSnapshotV1")||"null")}catch(e){}
  const now=Date.now(),fresh=previous&&now-Number(previous.at)<48*3600000&&previous.values?previous.values:{};
  const current={};let compared=0;
- for(const e of events){for(const m of iddaaMarkets(e)){for(const o of m.o||[]){const odd=iddaaOdds(o);if(!odd)continue;const key=iddaaOddsSnapshotKey(e,m,o);current[key]=odd;const old=Number(fresh[key]);if(old>1&&Math.abs(old-odd)>=.01){IDDAA_MOVEMENTS.set(key,{old,now:odd,delta:odd-old,percent:(odd-old)/old*100});compared++}}}}
+ for(let i=0;i<events.length;i++){
+  const e=events[i];
+  for(const m of iddaaMarkets(e)){for(const o of m.o||[]){const odd=iddaaOdds(o);if(!odd)continue;const key=iddaaOddsSnapshotKey(e,m,o);current[key]=odd;const old=Number(fresh[key]);if(old>1&&Math.abs(old-odd)>=.01){IDDAA_MOVEMENTS.set(key,{old,now:odd,delta:odd-old,percent:(odd-old)/old*100});compared++}}}
+  if(i%40===39)await new Promise(resolve=>setTimeout(resolve,0));
+ }
  try{localStorage.setItem("yapaycinOddsSnapshotV1",JSON.stringify({at:now,values:current}))}catch(e){}
  return compared;
 }
@@ -1853,18 +1855,20 @@ function iddaaCompareCell(label,model,market){
  return "<div class='pred'><span class='pred-name'>"+label+"</span><span class='pred-value'>Model "+(model*100).toFixed(1)+"%</span><span class='small'>Piyasa "+(market*100).toFixed(1)+"%</span><span class='small'>Fark <b>"+sign+diff.toFixed(1)+" puan</b></span></div>";
 }
 
+function iddaaMarketTitle(m){
+ const direct=m.n||m.name||m.title||m.market_name||m.marketName;
+ if(direct)return iddaaEsc(direct);
+ const known={"1/1":"Maç Sonucu (1X2)","2/101":"Maç Toplam Gol","2/89":"Karşılıklı Gol","2/720":"İlk Yarı KG","2/69":"İlk Yarı KG","2/72":"İkinci Yarı KG","2/4":"Gol Sayısı"};
+ const key=String(m.t)+"/"+String(m.st),base=known[key]||("Bahis türü "+String(m.t)+" · "+String(m.st));
+ return base+(m.sov!==undefined&&m.sov!==null&&m.sov!==""?" · "+iddaaEsc(m.sov):"");
+}
 function iddaaCard(e){
- const m1=iddaaMarket(e,1,1),ou=iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89),goal=iddaaMarket(e,2,4);
- const first=iddaaMarket(e,2,720);
- const six=goal&&goal.o?goal.o.find(x=>/6\s*\+|6\+ gol/i.test(String(x.n||""))):null;
+ const m1=iddaaMarket(e,1,1),ou=iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89);
  const fixture=iddaaFixture(e),p=fixture?predictFootball(fixture):null;
  let html="<div class='match'><div class='match-top'><div class='teams'>"+iddaaEsc(e.hn||"Ev sahibi")+" - "+iddaaEsc(e.an||"Deplasman")+"</div><span class='rank'>"+iddaaDate(e)+"</span></div>";
  html+="<div class='meta'>"+iddaaCompetition(e)+"</div>";
- html+=iddaaMarketHtml("Maç Sonucu (1X2)",m1,e);
- html+=iddaaMarketHtml("Maç Toplam Gol",ou,e);
- html+=iddaaMarketHtml("Karşılıklı Gol",bttsM,e);
- html+=iddaaMarketHtml("İlk Yarı KG",first,e);
- if(six&&iddaaOdds(six))html+="<div class='analysis-box'><b>6+ Gol</b><div class='pred'><span class='pred-value'>"+iddaaOdds(six).toFixed(2)+"</span></div></div>";
+ // Kaynak bültendeki tüm marketler ve mevcut tüm seçim/oranları gösterilir.
+ iddaaMarkets(e).forEach(m=>{html+=iddaaMarketHtml(iddaaMarketTitle(m),m,e)});
  if(p){
   html+="<div class='analysis-box'><b>YaPaYCiN – İDDAA karşılaştırması</b><div class='small'>Marjı çıkarılmış piyasa olasılığı ile YaPaYCiN model olasılığı arasındaki fark yüzde puan olarak gösterilir. Bu fark kesin kazanç veya bahis önerisi değildir.</div>";
   const market1=[["1",p.one,["1","Ev sahibi","Home"]],["X",p.draw,["X","0","Beraberlik","Beraber","Draw"]],["2",p.two,["2","Deplasman","Away"]]].map(([k,v,a])=>iddaaCompareCell(k,v,iddaaFairProbability(m1,a)));
@@ -1935,10 +1939,16 @@ async function iddaaBaslat(force=false){
   const comps=Array.isArray(payload.competitions)?payload.competitions:[];
   if(payload.updated_at)iddaaUpdated=new Date(payload.updated_at).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
   if(!events.length)throw new Error("Bültende okunabilir etkinlik bulunamadı.");
-  const movedMarkets=recordIddaaOddsMovement(events);
+  const movedMarkets=await recordIddaaOddsMovement(events);
   IDDAA_EVENTS=events;IDDAA_INDEX=new Map();IDDAA_BY_DATE=new Map();IDDAA_MATCH_CACHE=new Map();IDDAA_COMPETITIONS=new Map();
   comps.forEach(c=>{if(c)IDDAA_COMPETITIONS.set(String(c.i??c.cid??c.id),c);if(c&&c.cid)IDDAA_COMPETITIONS.set(String(c.cid),c)});
-  IDDAA_EVENTS.forEach(e=>{const date=iddaaDateKey(e),key=iddaaEventKey(date,e.hn,e.an);if(!IDDAA_INDEX.has(key))IDDAA_INDEX.set(key,e);if(!IDDAA_BY_DATE.has(date))IDDAA_BY_DATE.set(date,[]);IDDAA_BY_DATE.get(date).push(e)});
+  for(let i=0;i<IDDAA_EVENTS.length;i++){
+   const e=IDDAA_EVENTS[i],date=iddaaDateKey(e),key=iddaaEventKey(date,e.hn,e.an);
+   if(!IDDAA_INDEX.has(key))IDDAA_INDEX.set(key,e);
+   if(!IDDAA_BY_DATE.has(date))IDDAA_BY_DATE.set(date,[]);
+   IDDAA_BY_DATE.get(date).push(e);
+   if(i%100===99)await new Promise(resolve=>setTimeout(resolve,0));
+  }
   iddaaUpdated=new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
   iddaaYuklendi=true;
   iddaaTarihleriHazirla();
@@ -2221,7 +2231,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=215",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=216",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

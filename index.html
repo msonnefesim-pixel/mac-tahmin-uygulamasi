@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#c8102e">
-<link rel="manifest" href="./manifest.json?v=221">
-<link rel="icon" href="./icon-192-pal.png?v=221" type="image/png" sizes="192x192">
+<link rel="manifest" href="./manifest.json?v=222">
+<link rel="icon" href="./icon-192-pal.png?v=222" type="image/png" sizes="192x192">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
 :root{--red:#c8102e;--yellow:#f5c400;--bg:#101010;--panel:#1b1b1b;--line:#383838;--muted:#bbb}
@@ -1867,9 +1867,19 @@ function iddaaCompareCell(label,model,market){
 }
 
 function iddaaMarketKey(m){return String(m.t??"")+"|"+String(m.st??"")}
+function iddaaMarketRawName(m){
+ const fields=[m.n,m.name,m.title,m.market_name,m.marketName,m.mn,m.marketTitle,m.betTypeName,m.sn,m.stn,m.desc,m.label];
+ return fields.find(x=>typeof x==="string"&&x.trim()&&!/^\d+\s*[/·-]\s*\d+$/.test(x.trim()))||"";
+}
+function iddaaMarketCategory(m){
+ const name=iddaaNorm(iddaaMarketRawName(m));
+ if(/korner|corner/.test(name))return "corners";
+ if(/kart|card|booking/.test(name))return "cards";
+ return "other";
+}
 function iddaaMarketTitle(m){
- const direct=m.n||m.name||m.title||m.market_name||m.marketName;
- if(direct&&!/^\\d+\\s*[/·-]\\s*\\d+$/.test(String(direct).trim()))return iddaaEsc(direct);
+ const direct=iddaaMarketRawName(m);
+ if(direct)return iddaaEsc(direct);
  const known={
   "1/1":"Maç Sonucu",
   "2/101":"Maç Toplam Gol (Alt / Üst)",
@@ -1887,14 +1897,20 @@ function iddaaMarketTitle(m){
 function iddaaReadableMarkets(e){return iddaaMarkets(e).filter(m=>!!iddaaMarketTitle(m))}
 function iddaaMarketSecenekleriHazirla(){
  const select=$("iddaaMarketSecim");if(!select)return;
- const current=select.value||"all",markets=new Map();
+ const current=select.value||"all",markets=new Map(),categories={corners:0,cards:0};
  IDDAA_EVENTS.forEach(e=>iddaaReadableMarkets(e).forEach(m=>{
+  const category=iddaaMarketCategory(m);
+  if(category==="corners")categories.corners++;
+  if(category==="cards")categories.cards++;
   const key=iddaaMarketKey(m);if(!markets.has(key))markets.set(key,iddaaMarketTitle(m));
  }));
  const options=[...markets.entries()].sort((a,b)=>a[1].localeCompare(b[1],"tr"));
- select.innerHTML="<option value='all'>Tüm bahis türleri ("+options.length+")</option>"+
+ const categoryOptions=[];
+ if(categories.corners)categoryOptions.push("<option value='category:corners'>⚽ Korner Bahisleri ("+categories.corners+")</option>");
+ if(categories.cards)categoryOptions.push("<option value='category:cards'>🟨 Kart Bahisleri ("+categories.cards+")</option>");
+ select.innerHTML="<option value='all'>Tüm bahis türleri ("+options.length+")</option>"+categoryOptions.join("")+
   options.map(([key,title])=>"<option value='"+iddaaEsc(key)+"'>"+title+"</option>").join("");
- select.value=markets.has(current)?current:"all";
+ select.value=(current==="category:corners"&&categories.corners)||(current==="category:cards"&&categories.cards)||markets.has(current)?current:"all";
 }
 function iddaaCard(e){
  const m1=iddaaMarket(e,1,1),ou=iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89),first=iddaaMarket(e,2,720);
@@ -1903,7 +1919,7 @@ function iddaaCard(e){
  html+="<div class='meta'>"+iddaaCompetition(e)+"</div>";
  // Seçilen bahis türü varsa yalnızca o türün satırları gösterilir; varsayılan tüm marketlerdir.
  const selectedMarket=$("iddaaMarketSecim")?.value||"all";
- iddaaReadableMarkets(e).filter(m=>selectedMarket==="all"||iddaaMarketKey(m)===selectedMarket)
+ iddaaReadableMarkets(e).filter(m=>selectedMarket==="all"||(selectedMarket==="category:corners"&&iddaaMarketCategory(m)==="corners")||(selectedMarket==="category:cards"&&iddaaMarketCategory(m)==="cards")||iddaaMarketKey(m)===selectedMarket)
   .forEach(m=>{html+=iddaaMarketHtml(iddaaMarketTitle(m),m,e)});
  if(p){
   html+="<div class='analysis-box'><b>YaPaYCiN – İDDAA karşılaştırması</b><div class='small'>Marjı çıkarılmış piyasa olasılığı ile YaPaYCiN model olasılığı arasındaki fark yüzde puan olarak gösterilir. Bu fark kesin kazanç veya bahis önerisi değildir.</div>";
@@ -2274,7 +2290,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=221",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=222",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

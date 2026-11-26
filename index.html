@@ -1882,8 +1882,8 @@ function iddaaMarketTextValues(value,depth=0,out=[]){
 function iddaaMarketCategory(m){
  // Iddaa API market kodları: 48/67 toplam-kategori korner, 49/68 kart.
  // İsim alanı olmayan Alt/Üst marketleri de bu kodlarla tanı.
- const type=String(m&&m.t??"");
- const subtype=String(m&&m.st??"");
+ const type=String((m&&m.t)??"");
+ const subtype=String((m&&m.st)??"");
  if(type==="2"&&["48","67"].includes(subtype))return "corners";
  if(type==="2"&&["49","68"].includes(subtype))return "cards";
  const name=iddaaNorm([iddaaMarketRawName(m),...iddaaMarketTextValues(m)].join(" "));

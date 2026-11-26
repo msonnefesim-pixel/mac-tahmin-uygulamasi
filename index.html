@@ -1018,7 +1018,7 @@ function macBasladiMi(m){
  return Number.isFinite(kickoffMs)&&kickoffMs<=Date.now();
 }
 function saatiGecenMaclariKaldir(){
- if(($("tarih").value||today())!==today())return;
+ if(!selectedFootballDates.has(today()))return;
  const alan=$("maclar");if(!alan)return;
  const featuredCards=document.querySelectorAll('.featured-match[data-auto-hide="1"]');
  featuredCards.forEach(card=>{const date=card.dataset.matchDate||"";let home="",away="";try{home=decodeURIComponent(card.dataset.matchHome||"");away=decodeURIComponent(card.dataset.matchAway||"")}catch(e){}if(macBasladiMi({date,time:card.dataset.matchTime,home,away}))card.remove()});

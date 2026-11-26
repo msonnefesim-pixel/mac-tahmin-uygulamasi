@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#c8102e">
-<link rel="manifest" href="./manifest.json?v=220">
-<link rel="icon" href="./icon-192-pal.png?v=220" type="image/png" sizes="192x192">
+<link rel="manifest" href="./manifest.json?v=221">
+<link rel="icon" href="./icon-192-pal.png?v=221" type="image/png" sizes="192x192">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
 :root{--red:#c8102e;--yellow:#f5c400;--bg:#101010;--panel:#1b1b1b;--line:#383838;--muted:#bbb}
@@ -1556,19 +1556,20 @@ async function iymsBaslat(){
  const clean=s=>String(s??"").trim().toLocaleLowerCase("tr");
  const getTeam=(m,home)=>String(home?(m.home||m.home_team||m.home_name||""):(m.away||m.away_team||m.away_name||"")).trim();
  const getScore=(m,keys)=>{for(const k of keys)if(m[k]!==undefined&&m[k]!==null&&m[k]!==""){const n=Number(m[k]);if(Number.isFinite(n))return n}return null};
+ const yieldUI=()=>new Promise(resolve=>setTimeout(resolve,0));
  const outcome=(a,b)=>a>b?"1":a<b?"2":"X";
  const reverse=code=>inverse[code[0]]+"/"+inverse[code[2]];
  try{
   const response=await fetch("./iyms-veri.json",{cache:"default"});if(!response.ok)throw new Error("iyms-veri.json bulunamadı");
   const data=await response.json(),raw=Array.isArray(data.matches)?data.matches:[];
   const records=[];
-  raw.forEach(m=>{
-   const home=getTeam(m,true),away=getTeam(m,false);
+  for(let i=0;i<raw.length;i++){
+   const m=raw[i],home=getTeam(m,true),away=getTeam(m,false);
    const htH=getScore(m,["ht_home","home_ht","halftime_home"]),htA=getScore(m,["ht_away","away_ht","halftime_away"]);
    const ftH=getScore(m,["ft_home","home_ft","home_score"]),ftA=getScore(m,["ft_away","away_ft","away_score"]);
-   if(!home||!away||[htH,htA,ftH,ftA].some(v=>v===null))return;
-   records.push({home:clean(home),away:clean(away),date:String(m.date||m.match_date||m.fixture_date||"").slice(0,10),code:outcome(htH,htA)+"/"+outcome(ftH,ftA)});
-  });
+   if(home&&away&&![htH,htA,ftH,ftA].some(v=>v===null))records.push({home:clean(home),away:clean(away),date:String(m.date||m.match_date||m.fixture_date||"").slice(0,10),code:outcome(htH,htA)+"/"+outcome(ftH,ftA)});
+   if(i%300===299)await yieldUI();
+  }
   const counts=Object.fromEntries(options.map(k=>[k,0]));records.forEach(m=>{if(counts[m.code]!==undefined)counts[m.code]++});
   status.innerHTML="İlk yarı skoru bulunan geçmiş maç: <b>"+records.length+"</b><br>Kaynak kapsamı: <b>"+(data.coverage_percent??0)+"%</b>";
   let historyHtml="<h3>Geçmiş İY/MS dağılımı</h3>";
@@ -1577,17 +1578,20 @@ async function iymsBaslat(){
   const homeData={},awayData={},test={total:0,correct:0,by:{}};
   options.forEach(k=>test.by[k]={n:0,ok:0});
   const byDate=new Map();
-  for(const m of sorted){if(!byDate.has(m.date))byDate.set(m.date,[]);byDate.get(m.date).push(m)}
+  for(let i=0;i<sorted.length;i++){const m=sorted[i];if(!byDate.has(m.date))byDate.set(m.date,[]);byDate.get(m.date).push(m);if(i%500===499)await yieldUI()}
+  let processed=0;
   for(const dayMatches of byDate.values()){
-   dayMatches.forEach(m=>{
+   for(const m of dayMatches){
     const h=homeData[m.home]||[],a=awayData[m.away]||[];
-    if(h.length<3||a.length<3)return;
-    const probs={};
-    options.forEach(k=>{const ph=(h.filter(x=>x===k).length+.5)/(h.length+4.5),pa=(a.filter(x=>x===k).length+.5)/(a.length+4.5);probs[k]=Math.sqrt(ph*pa)});
-    const pick=options.slice().sort((x,y)=>probs[y]-probs[x])[0];
-    test.total++;test.by[pick].n++;if(pick===m.code){test.correct++;test.by[pick].ok++}
-   });
-   dayMatches.forEach(m=>{(homeData[m.home]||(homeData[m.home]=[])).push(m.code);(awayData[m.away]||(awayData[m.away]=[])).push(reverse(m.code))});
+    if(h.length>=3&&a.length>=3){
+     const probs={};
+     options.forEach(k=>{const ph=(h.filter(x=>x===k).length+.5)/(h.length+4.5),pa=(a.filter(x=>x===k).length+.5)/(a.length+4.5);probs[k]=Math.sqrt(ph*pa)});
+     const pick=options.slice().sort((x,y)=>probs[y]-probs[x])[0];
+     test.total++;test.by[pick].n++;if(pick===m.code){test.correct++;test.by[pick].ok++}
+    }
+    if(++processed%300===0)await yieldUI();
+   }
+   for(const m of dayMatches){(homeData[m.home]||(homeData[m.home]=[])).push(m.code);(awayData[m.away]||(awayData[m.away]=[])).push(reverse(m.code));if(++processed%300===0)await yieldUI()}
   }
   let testHtml="<h3>📊 Geriye dönük kronolojik başarı testi</h3>";
   if(!test.total)testHtml+="<div class='panel'>Test için yeterli tarihli takım verisi bulunamadı.</div>";
@@ -1596,7 +1600,7 @@ async function iymsBaslat(){
    options.forEach(k=>{const x=test.by[k];testHtml+=`<div class="panel"><b>${k}</b><br>Tahmin: ${x.n} · Doğru: ${x.ok} · İsabet: %${x.n?(x.ok/x.n*100).toFixed(1):"0.0"}</div>`});
   }
   const allHome={},allAway={};
-  records.forEach(m=>{(allHome[m.home]||(allHome[m.home]=[])).push(m.code);(allAway[m.away]||(allAway[m.away]=[])).push(reverse(m.code))});
+  for(let i=0;i<records.length;i++){const m=records[i];(allHome[m.home]||(allHome[m.home]=[])).push(m.code);(allAway[m.away]||(allAway[m.away]=[])).push(reverse(m.code));if(i%500===499)await yieldUI()}
   const todayDate=today();
   const upcoming=FIXTURES.filter(m=>{const d=String(m.date||"").slice(0,10),time=String(m.time||"").trim();return /^\d{4}-\d{2}-\d{2}$/.test(d)&&d>=todayDate&&/^\d{1,2}:\d{2}$/.test(time)&&!macBasladiMi(m)}).filter(m=>{const event=iddaaFindEventForFixture(m);return !event||halfBothMbs(event)!==3}).slice().sort((a,b)=>(a.date+" "+a.time).localeCompare(b.date+" "+b.time)).map(m=>{
    const h=allHome[clean(m.home)]||[],a=allAway[clean(m.away)]||[];if(h.length<3||a.length<3)return null;
@@ -1973,8 +1977,11 @@ async function iddaaBaslat(force=false){
   const comps=Array.isArray(payload.competitions)?payload.competitions:[];
   if(payload.updated_at)iddaaUpdated=new Date(payload.updated_at).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
   if(!events.length)throw new Error("Bültende okunabilir etkinlik bulunamadı.");
-  const movedMarkets=await recordIddaaOddsMovement(events);
+  // Bahis türü listesini ağır oran hareketi taramasından önce hazırla.
   IDDAA_EVENTS=events;IDDAA_INDEX=new Map();IDDAA_BY_DATE=new Map();IDDAA_MATCH_CACHE=new Map();IDDAA_COMPETITIONS=new Map();
+  iddaaMarketSecenekleriHazirla();
+  status.textContent="Bahis türleri hazır. Oran ayrıntıları arka planda tamamlanıyor...";
+  const movedMarkets=await recordIddaaOddsMovement(events);
   comps.forEach(c=>{if(c)IDDAA_COMPETITIONS.set(String(c.i??c.cid??c.id),c);if(c&&c.cid)IDDAA_COMPETITIONS.set(String(c.cid),c)});
   for(let i=0;i<IDDAA_EVENTS.length;i++){
    const e=IDDAA_EVENTS[i],date=iddaaDateKey(e),key=iddaaEventKey(date,e.hn,e.an);
@@ -1987,6 +1994,7 @@ async function iddaaBaslat(force=false){
   iddaaYuklendi=true;
   iddaaMarketSecenekleriHazirla();
   iddaaTarihleriHazirla();
+  iddaaListele();
   status.innerHTML="<span class='good'>Sunucu oran bülteni hazır.</span> · "+events.length+" etkinlik · Oran hareketi karşılaştırılan market: "+movedMarkets+" · Kaynak okuma: "+iddaaUpdated;
   const couponStatus=$("iddaaCouponStatus");if(couponStatus)couponStatus.innerHTML="<span class='good'>İddaa bülteni güncellendi.</span> · "+events.length+" kayıt · Oran hareketi: "+movedMarkets+" · "+iddaaUpdated;
   if($("couponsBolumu")&&!$("couponsBolumu").classList.contains("hidden"))kuponlariGoster();
@@ -2266,7 +2274,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=220",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=221",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

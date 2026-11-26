@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#c8102e">
-<link rel="manifest" href="./manifest.json?v=218">
-<link rel="icon" href="./icon-192-pal.png?v=218" type="image/png" sizes="192x192">
+<link rel="manifest" href="./manifest.json?v=219">
+<link rel="icon" href="./icon-192-pal.png?v=219" type="image/png" sizes="192x192">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
 :root{--red:#c8102e;--yellow:#f5c400;--bg:#101010;--panel:#1b1b1b;--line:#383838;--muted:#bbb}
@@ -186,7 +186,7 @@ th{color:var(--yellow)}
  <button id="halfBothButon" class="tab-button" onclick="sekmeAc('halfBoth')">⚽ EVET/EVET</button>
  <button id="sporTotoButon" class="tab-button" onclick="sekmeAc('sporToto')">🏆 SPOR TOTO</button>
  <button id="successButon" class="tab-button" onclick="sekmeAc('success')">📊 BAŞARI KARNESİ</button>
- <!-- İDDAA arka planda çalışır; kullanıcı sekmesi gösterilmez. -->
+ <button id="iddaaButon" class="tab-button" onclick="sekmeAc('iddaa')">💹 İDDAA ORANLARI</button>
 </div>
 
 <section id="futbolBolumu">
@@ -1219,7 +1219,7 @@ function sekmeAc(name){
  const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",coupons:"couponsBolumu",halfBoth:"halfBothBolumu",sporToto:"sporTotoBolumu",success:"successBolumu",iddaa:"iddaaBolumu"};
  activeTabName=name;
  Object.keys(ids).forEach(k=>$(ids[k]).classList.toggle("hidden",k!==name));
- $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");$("couponButon").classList.toggle("active",name==="coupons");$("halfBothButon").classList.toggle("active",name==="halfBoth");$("sporTotoButon").classList.toggle("active",name==="sporToto");$("successButon").classList.toggle("active",name==="success");
+ $("futbolButon").classList.toggle("active",name==="futbol");$("iymsButon").classList.toggle("active",name==="iyms");$("couponButon").classList.toggle("active",name==="coupons");$("halfBothButon").classList.toggle("active",name==="halfBoth");$("sporTotoButon").classList.toggle("active",name==="sporToto");$("successButon").classList.toggle("active",name==="success");$("iddaaButon").classList.toggle("active",name==="iddaa");
  // Önce görünür sekmeyi değiştir; içerik çizimini ilk ekrandan sonraya bırak.
  requestAnimationFrame(()=>{
  setTimeout(()=>{
@@ -2254,7 +2254,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=218",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=219",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

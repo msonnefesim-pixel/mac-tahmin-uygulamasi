@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#c8102e">
-<link rel="manifest" href="./manifest.json?v=231">
-<link rel="icon" href="./icon-192-pal.png?v=231" type="image/png" sizes="192x192">
+<link rel="manifest" href="./manifest.json?v=232">
+<link rel="icon" href="./icon-192-pal.png?v=232" type="image/png" sizes="192x192">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
 :root{--red:#c8102e;--yellow:#f5c400;--bg:#101010;--panel:#1b1b1b;--line:#383838;--muted:#bbb}
@@ -186,8 +186,25 @@ th{color:var(--yellow)}
 .calendar-bottom button{width:auto;min-height:42px;margin:0;padding:9px 13px;background:#f5c400;color:#171000;font-weight:900;border:0;border-radius:9px}
 @media(max-width:360px){.calendar-days{gap:3px}.calendar-days button{min-height:35px;font-size:12px}.calendar-bottom button{padding:8px 9px;font-size:12px}}
 
+
+/* V232 - kompakt takvim ve daima görünür filtreler */
+.football-calendar{max-width:440px;margin:6px auto 12px;padding:9px 10px;background:linear-gradient(145deg,#1c1c1c,#141414);border-color:#493d1c}
+.football-calendar-head b{font-size:14px}.football-calendar-head .small{font-size:10px;margin-top:1px}
+.calendar-month-row{margin:7px 0 6px;grid-template-columns:34px 1fr 34px;gap:6px}.calendar-month-row strong{font-size:14px}.calendar-nav{width:34px;min-height:31px;font-size:20px}
+.calendar-weekdays{font-size:9px;margin-bottom:4px}.calendar-weekdays,.calendar-days{gap:4px}.calendar-days button{min-height:30px;border-radius:7px;font-size:11px}
+.calendar-bottom{margin-top:8px}.calendar-bottom span{font-size:10px}.calendar-bottom button{min-height:36px;padding:7px 10px;font-size:11px}
+.filter-panel{margin:10px 0 12px;padding:12px;background:linear-gradient(145deg,#202020,#171717);border:1px solid #49413a;border-radius:13px;box-shadow:0 4px 13px #0005}
+.filter-panel-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;color:#f5c400;font-size:15px;font-weight:900}.filter-panel-title small{color:#aaa;font-size:10px;font-weight:500}
+.filter-tools{display:grid;grid-template-columns:1fr 1fr;gap:8px}.filter-field{min-width:0;padding:8px;background:#151515;border:1px solid #373737;border-radius:9px}.filter-field label{display:block;margin:0 0 4px;color:#d8c98c;font-size:11px;font-weight:800}.filter-field input,.filter-field select{margin:0;padding:9px 8px;min-height:40px;font-size:12px;border-color:#4b4540}.search-field{grid-column:1/-1}
+.league-manage-button{margin:8px 0 10px!important;min-height:38px;padding:8px!important;font-size:12px!important;border-radius:8px!important}
+.prediction-filter-title{margin:4px 0 8px;color:#f5c400;font-size:12px;font-weight:900}.prediction-filter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.prediction-chip{width:100%;min-width:0;min-height:38px;margin:0;padding:6px 4px;background:#292929;color:#e9e5df;border:1px solid #4b4540;border-radius:8px;font-size:10px;font-weight:800;line-height:1.2;overflow-wrap:anywhere}
+.prediction-chip.active{background:linear-gradient(135deg,#f5c400,#d9a900);color:#171000;border:1px solid #ffe36a;box-shadow:0 0 0 1px #f5c40055}
+.filter-note{margin:9px 1px 0;font-size:10px;line-height:1.4}
+#matchFilters.hidden{display:block!important}
+@media(max-width:380px){.filter-panel{padding:9px}.filter-tools{gap:6px}.prediction-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.prediction-chip{min-height:36px;font-size:10px}.calendar-days{gap:3px}.calendar-days button{min-height:28px}}
 </style>
-<!-- V231: Kart/korner market tarama ve görüntüleme hızlandırması -->
+<!-- V232: Kompakt takvim ve görünür filtre tasarımı -->
 </head>
 <body>
 
@@ -225,26 +242,37 @@ th{color:var(--yellow)}
    <div id="footballCalendarDays" class="calendar-days"></div>
    <div class="calendar-bottom"><span id="footballCalendarCount">1 gün seçildi</span><button type="button" id="footballCalendarApply" onclick="footballCalendarApply()">Seçilen Maçları Göster</button></div>
   </div>
-  <button type="button" id="matchFiltersToggle" class="secondary filter-toggle" aria-expanded="false" aria-controls="matchFilters" onclick="matchFiltersToggle()">☰ Diğer filtreleri göster ▼</button>
-  <div id="matchFilters" class="hidden">
-  <label><b>Ülke / Lig seç</b></label>
-  <select id="ligSec" onchange="listele()" style="min-height:48px;position:relative;z-index:5;touch-action:manipulation;-webkit-appearance:menulist;cursor:pointer"><option value="all">Bütün görünür ligler</option></select>
-  <button class="secondary" onclick="yonetimAc()">Ligleri Yönet / Gizle</button>
-  <div id="ligYonetim" class="hidden">
-   <p>Görmek istemediğin liglerin işaretini kaldır.</p>
-   <div id="ligCheckboxlar"></div>
-   <button onclick="ligleriKaydet()">Seçimi Kaydet</button>
-  </div>
-  <input id="arama" placeholder="Takım, ülke veya lig ara..." oninput="listele()">
-  <label><b>Tahmin filtresi</b></label>
-  <select id="filtre" onchange="listele()">
-   <option value="all">Bütün maçlar</option><option value="strong">Öne çıkanlar</option>
-   <option value="one">1 - Ev sahibi</option><option value="draw">X - Beraberlik</option>
-   <option value="two">2 - Deplasman</option><option value="over25">2,5 Üst</option><option value="over35">3,5 Üst</option><option value="firstOver15">İlk Yarı 1,5 Üst</option>
-   <option value="six">6+ Gol</option><option value="btts">KG Var</option>
-   <option value="first">İlk Yarı KG</option><option value="second">İkinci Yarı KG</option>
-  </select>
-  <p>6+ Gol ve KG Var birbirinden bağımsız tahminlerdir. Olasılıklar garanti değildir.</p>
+  <div id="matchFilters" class="filter-panel">
+   <div class="filter-panel-title"><span>⚙️ Maç filtreleri</span><small>İstediğin seçeneğe dokun</small></div>
+   <div class="filter-tools">
+    <div class="filter-field search-field"><label for="arama">🔎 Takım veya lig ara</label><input id="arama" placeholder="Takım, ülke veya lig yaz..." oninput="listele()"></div>
+    <div class="filter-field"><label for="ligSec">🌍 Ülke / Lig</label><select id="ligSec" onchange="listele()" style="min-height:44px;position:relative;z-index:5;touch-action:manipulation;-webkit-appearance:menulist;cursor:pointer"><option value="all">Bütün görünür ligler</option></select></div>
+   </div>
+   <button type="button" class="secondary league-manage-button" onclick="yonetimAc()">☷ Ligleri Yönet / Gizle</button>
+   <div id="ligYonetim" class="hidden">
+    <p>Görmek istemediğin liglerin işaretini kaldır.</p>
+    <div id="ligCheckboxlar"></div>
+    <button onclick="ligleriKaydet()">Seçimi Kaydet</button>
+   </div>
+   <div class="prediction-filter-title">🎯 Tahmin türü</div>
+   <div class="prediction-filter-grid">
+    <button type="button" class="prediction-chip active" data-filter="all" onclick="tahminFiltresiSec('all')">Tüm maçlar</button>
+    <button type="button" class="prediction-chip" data-filter="strong" onclick="tahminFiltresiSec('strong')">⭐ Öne çıkanlar</button>
+    <button type="button" class="prediction-chip" data-filter="one" onclick="tahminFiltresiSec('one')">1 · Ev sahibi</button>
+    <button type="button" class="prediction-chip" data-filter="draw" onclick="tahminFiltresiSec('draw')">X · Beraberlik</button>
+    <button type="button" class="prediction-chip" data-filter="two" onclick="tahminFiltresiSec('two')">2 · Deplasman</button>
+    <button type="button" class="prediction-chip" data-filter="over25" onclick="tahminFiltresiSec('over25')">2,5 Üst</button>
+    <button type="button" class="prediction-chip" data-filter="over35" onclick="tahminFiltresiSec('over35')">3,5 Üst</button>
+    <button type="button" class="prediction-chip" data-filter="firstOver15" onclick="tahminFiltresiSec('firstOver15')">İY 1,5 Üst</button>
+    <button type="button" class="prediction-chip" data-filter="six" onclick="tahminFiltresiSec('six')">⚽ 6+ Gol</button>
+    <button type="button" class="prediction-chip" data-filter="btts" onclick="tahminFiltresiSec('btts')">KG Var</button>
+    <button type="button" class="prediction-chip" data-filter="first" onclick="tahminFiltresiSec('first')">İlk Yarı KG</button>
+    <button type="button" class="prediction-chip" data-filter="second" onclick="tahminFiltresiSec('second')">İkinci Yarı KG</button>
+   </div>
+   <select id="filtre" class="hidden" aria-hidden="true" tabindex="-1">
+    <option value="all">Bütün maçlar</option><option value="strong">Öne çıkanlar</option><option value="one">1 - Ev sahibi</option><option value="draw">X - Beraberlik</option><option value="two">2 - Deplasman</option><option value="over25">2,5 Üst</option><option value="over35">3,5 Üst</option><option value="firstOver15">İlk Yarı 1,5 Üst</option><option value="six">6+ Gol</option><option value="btts">KG Var</option><option value="first">İlk Yarı KG</option><option value="second">İkinci Yarı KG</option>
+   </select>
+   <p class="filter-note">Seçtiğin filtreye uyan maçlar listelenir. Tahmin yüzdeleri garanti değildir.</p>
   </div>
   <section id="featuredSection" class="featured-section hidden" aria-live="polite"><h3 class="featured-heading">⭐ Günün Öne Çıkan Maçları</h3><p class="featured-note">En yüksek olasılıklı tahminler burada. Diğer bütün maçlar aşağıda aynen listelenir.</p><div id="featuredMatches" class="featured-list"></div></section>
   <div id="macOzet" class="summary"></div>
@@ -1090,6 +1118,11 @@ function footballCalendarToggle(value){
 function footballCalendarApply(){
  if(!draftFootballDates.size)return;
  selectedFootballDates.clear();draftFootballDates.forEach(d=>selectedFootballDates.add(d));
+ listele();
+}
+function tahminFiltresiSec(value){
+ const select=$("filtre");if(!select)return;select.value=value;
+ document.querySelectorAll(".prediction-chip").forEach(btn=>btn.classList.toggle("active",btn.dataset.filter===value));
  listele();
 }
 function listele(){
@@ -2371,7 +2404,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=231",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=232",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

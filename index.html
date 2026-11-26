@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#c8102e">
-<link rel="manifest" href="./manifest.json?v=229">
-<link rel="icon" href="./icon-192-pal.png?v=229" type="image/png" sizes="192x192">
+<link rel="manifest" href="./manifest.json?v=230">
+<link rel="icon" href="./icon-192-pal.png?v=230" type="image/png" sizes="192x192">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
 :root{--red:#c8102e;--yellow:#f5c400;--bg:#101010;--panel:#1b1b1b;--line:#383838;--muted:#bbb}
@@ -169,8 +169,10 @@ th{color:var(--yellow)}
 @media(max-width:360px){.pro-teams{gap:5px;padding:13px 9px}.pro-team-name{font-size:14px}.pro-prediction-value{font-size:18px}}
 .quick-guide{margin:8px 0 12px;padding:11px 12px;background:#1b1b1b;border:1px solid #4b3c18;border-left:4px solid #f5c400;border-radius:10px}.quick-guide summary{font-weight:900;color:#f5c400;cursor:pointer;padding:3px 0}.quick-guide ol{margin:9px 0 2px;padding-left:20px;color:#eee;font-size:12px;line-height:1.7}.quick-guide li{padding:2px 0}.quick-guide b{color:#ffe16a}
 .featured-section{margin:10px 0 14px;padding:10px;background:#191919;border:1px solid #695512;border-left:4px solid #f5c400;border-radius:11px}.featured-heading{margin:0 0 4px;color:#f5c400;font-size:16px;font-weight:900}.featured-note{margin:0 0 8px;color:#aaa;font-size:11px;line-height:1.4}.featured-list{display:grid;gap:7px}.featured-match{padding:9px 10px;background:linear-gradient(120deg,#302600,#1d1a10);border:1px solid #806800;border-radius:9px}.featured-top{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#d9c77c;font-size:10px;font-weight:800}.featured-number{color:#171000;background:#f5c400;border-radius:12px;padding:3px 7px;white-space:nowrap}.featured-teams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:7px;align-items:center;margin:8px 0;font-size:13px;font-weight:900;color:#fff}.featured-teams span:last-child{text-align:right}.featured-vs{color:#f5c400;font-size:10px}.featured-pick{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;background:#111;border:1px solid #574600;border-radius:7px}.featured-pick small{display:block;color:#b9a85d;font-size:9px;font-weight:800}.featured-pick strong{display:block;color:#ffe16a;font-size:13px}.featured-percent{color:#f5c400;font-size:13px;font-weight:900;white-space:nowrap}@media(max-width:360px){.featured-teams{font-size:12px}.featured-match{padding:8px}}
+
+.multi-date-picker{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px;align-items:start;margin:5px 0 9px}.multi-date-picker>input{min-width:0;margin:0}.multi-date-picker>button{width:auto;margin:0;padding:10px 12px;white-space:nowrap}.selected-dates{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin:3px 0}.date-chip{display:inline-flex;align-items:center;gap:7px;padding:6px 9px;background:#302600;border:1px solid #806800;border-radius:18px;color:#ffe16a;font-size:12px;font-weight:700}.date-chip button{width:auto;margin:0;padding:0 2px;background:transparent;color:#fff;font-size:16px;line-height:1}.multi-date-picker .small{grid-column:1/-1;margin:0}
 </style>
-<!-- V229: Kart/korner market tarama ve görüntüleme hızlandırması -->
+<!-- V230: Kart/korner market tarama ve görüntüleme hızlandırması -->
 </head>
 <body>
 
@@ -204,7 +206,7 @@ th{color:var(--yellow)}
   <button type="button" id="matchFiltersToggle" class="secondary filter-toggle" aria-expanded="false" aria-controls="matchFilters" onclick="matchFiltersToggle()">☰ Maç Takvimi Filtrelerini Göster ▼</button>
   <div id="matchFilters" class="hidden">
   <label><b>Tarih seç</b></label>
-  <input type="date" id="tarih" onchange="listele()">
+  <div class="multi-date-picker"><input type="date" id="tarih" onchange="tarihEkle()"><button type="button" class="secondary" onclick="tarihEkle()">＋ Tarihi ekle</button><div id="selectedDates" class="selected-dates" aria-live="polite"></div><div class="small">Birden fazla günü seçebilirsin; seçtiğin günlerin maçları birlikte listelenir.</div></div>
   <div class="controls">
    <button class="secondary" onclick="tarihKaydir(-1)">◀ Önceki gün</button>
    <button class="secondary" onclick="tarihKaydir(1)">Sonraki gün ▶</button>
@@ -1039,15 +1041,31 @@ function saatiGecenMaclariKaldir(){
 }
 setInterval(saatiGecenMaclariKaldir,15000);
 
+const selectedFootballDates=new Set();
+function footballDatesRender(){
+ const area=$("selectedDates");if(!area)return;
+ const dates=[...selectedFootballDates].sort();
+ area.innerHTML=dates.map(d=>'<span class="date-chip">'+dateText(d)+' <button type="button" aria-label="'+d+' tarihini kaldır" onclick="tarihCikar(\''+d+'\')">×</button></span>').join("");
+}
+function tarihEkle(){
+ const value=$("tarih").value||today();selectedFootballDates.add(value);
+ footballDatesRender();listele();
+}
+function tarihCikar(value){
+ selectedFootballDates.delete(value);
+ if(!selectedFootballDates.size){selectedFootballDates.add(today());$("tarih").value=today()}
+ footballDatesRender();listele();
+}
 function listele(){
  if(!FIXTURES.length&&!HISTORY.length)return;
  const token=++listRenderToken;
- const date=$("tarih").value||today(),past=date<today();
- const source=past?(historyDateIndex.get(date)||[]):(fixtureDateIndex.get(date)||[]);
+ if(!selectedFootballDates.size)selectedFootballDates.add($("tarih").value||today());
+ const dates=[...selectedFootballDates].sort(),past=dates.every(d=>d<today());
+ const source=dates.flatMap(d=>d<today()?(historyDateIndex.get(d)||[]):(fixtureDateIndex.get(d)||[]));
  const query=($("arama").value||"").toLocaleLowerCase("tr"),filter=$("filtre").value,league=$("ligSec").value;
  const macAlan=$("maclar"),ozetAlan=$("macOzet"),featuredSection=$("featuredSection"),featuredArea=$("featuredMatches");
  if(featuredSection)featuredSection.classList.add("hidden");if(featuredArea)featuredArea.innerHTML="";
- if(!source.length){macAlan.textContent="Bu tarihte "+(past?"kayıtlı geçmiş maç":"gösterilecek maç")+" bulunamadı.";ozetAlan.innerHTML="";return}
+ if(!source.length){macAlan.textContent="Seçilen tarihlerde "+(past?"kayıtlı geçmiş maç":"gösterilecek maç")+" bulunamadı.";ozetAlan.innerHTML="";return}
  const list=[];
  let i=0;
  // Geçmiş günlerde tahmin hesaplanmadığı için kayıtları daha büyük gruplarla hazırla.
@@ -1058,15 +1076,15 @@ function listele(){
   if(token!==listRenderToken)return;
   const stop=Math.min(i+prepareSize,source.length);
   for(;i<stop;i++){
-   const m=source[i];
+   const m=source[i],matchPast=String(m.date||"").slice(0,10)<today();
    try{
     const ln=m.league||"Diğer";
-    if(!past&&(!/^\d{1,2}:\d{2}$/.test(String(m.time||"").trim())||macBasladiMi(m)))continue;
+    if(!matchPast&&(!/^\d{1,2}:\d{2}$/.test(String(m.time||"").trim())||macBasladiMi(m)))continue;
     if(hiddenLeagues.has(ln))continue;
     if(league!=="all"&&encodeURIComponent(ln)!==league)continue;
     const country=countryInfo(m),searchText=(m.home+" "+m.away+" "+ln+" "+country.name).toLocaleLowerCase("tr");
     if(query&&!searchText.includes(query))continue;
-    if(past){list.push({m,t:null,rank:-1});continue}
+    if(matchPast){list.push({m,t:null,rank:-1,past:true});continue}
     const key=[m.league_id,m.date,m.time,m.home,m.away].join("|");
     let t;
     if(predictionCache.has(key))t=predictionCache.get(key);
@@ -1077,18 +1095,18 @@ function listele(){
     const displayT=iddaaAdjustedPrediction(m,t);
     if(displayT)successRecordFootball(m,displayT);
     if(!filterMatch(displayT,filter))continue;
-    list.push({m,t,displayT,rank:highest(displayT)});
+    list.push({m,t,displayT,rank:highest(displayT),past:false});
    }catch(err){
     console.warn("Maç analiz hatası:",m&&m.home,m&&m.away,err);
-    if(!past&&filter==="all")list.push({m,t:null,rank:-1});
+    if(!matchPast&&filter==="all")list.push({m,t:null,rank:-1,past:false});
    }
   }
-  if(!past&&list.length>previewCount){
+  if(list.length>previewCount){
    let previewHtml="";
    for(;previewCount<list.length;previewCount++){
     const x=list[previewCount];
     if(x.m.date!==previewLastDate){previewHtml+=`<div class="day-title">${dateText(x.m.date)}</div>`;previewLastDate=x.m.date}
-    previewHtml+=matchCard(x.m,x.t,false,previewCount+1,x.displayT);
+    previewHtml+=matchCard(x.m,x.t,!!x.past,previewCount+1,x.displayT);
    }
    let progress=macAlan.querySelector(".small");
    if(progress)progress.remove();
@@ -1104,14 +1122,14 @@ function listele(){
    setTimeout(prepareBatch,16);return
   }
   if(token!==listRenderToken)return;
-  list.sort((a,b)=>String(a.m.time||"").localeCompare(String(b.m.time||""))||String(a.m.home||"").localeCompare(String(b.m.home||""),"tr"));
+  list.sort((a,b)=>String(a.m.date||"").localeCompare(String(b.m.date||""))||String(a.m.time||"").localeCompare(String(b.m.time||""))||String(a.m.home||"").localeCompare(String(b.m.home||""),"tr"));
   if(!past&&featuredSection&&featuredArea){
-   const featured=list.map(x=>{const picks=footballPickCandidates(x.displayT),favorite=footballModelFavorite(x.displayT),fallback=x.displayT?[["1 · Ev sahibi",x.displayT.one],["X · Beraberlik",x.displayT.draw],["2 · Deplasman",x.displayT.two]].filter(y=>Number.isFinite(y[1])).sort((a,b)=>b[1]-a[1])[0]:null;return {...x,featuredPick:picks[0]||favorite||(fallback?{label:fallback[0],prob:fallback[1]}:null)}}).filter(x=>x.featuredPick).sort((a,b)=>b.featuredPick.prob-a.featuredPick.prob||String(a.m.time||"").localeCompare(String(b.m.time||""))).slice(0,5);
+   const featured=list.filter(x=>!x.past).map(x=>{const picks=footballPickCandidates(x.displayT),favorite=footballModelFavorite(x.displayT),fallback=x.displayT?[["1 · Ev sahibi",x.displayT.one],["X · Beraberlik",x.displayT.draw],["2 · Deplasman",x.displayT.two]].filter(y=>Number.isFinite(y[1])).sort((a,b)=>b[1]-a[1])[0]:null;return {...x,featuredPick:picks[0]||favorite||(fallback?{label:fallback[0],prob:fallback[1]}:null)}}).filter(x=>x.featuredPick).sort((a,b)=>b.featuredPick.prob-a.featuredPick.prob||String(a.m.time||"").localeCompare(String(b.m.time||""))).slice(0,5);
    if(featured.length){featuredArea.innerHTML=featured.map(featuredMatchCard).join("");featuredSection.classList.remove("hidden")}
   }
   const count=list.filter(x=>x.rank>=0).length;
   ozetAlan.innerHTML=past?"":`<div class="summary-item"><span class="summary-number">${list.length}</span><span class="summary-label">Toplam maç</span></div><div class="summary-item"><span class="summary-number">${count}</span><span class="summary-label">Tahmin üretilen</span></div><div class="summary-item"><span class="summary-number">${list.length-count}</span><span class="summary-label">Tahmin bulunmayan</span></div>`;
-  if(!list.length){macAlan.textContent=past?"Bu tarihte kayıtlı geçmiş maç bulunamadı.":"Bu tarihte gösterilecek maç bulunamadı.";return}
+  if(!list.length){macAlan.textContent=past?"Seçilen tarihlerde kayıtlı geçmiş maç bulunamadı.":"Seçilen tarihlerde gösterilecek maç bulunamadı.";return}
   macAlan.innerHTML="";
   matchRenderState={token,list,renderIndex:0,last:"",past};
   maclariDevamEttir();
@@ -1129,7 +1147,7 @@ function maclariDevamEttir(){
  for(;state.renderIndex<stop;state.renderIndex++){
   const x=state.list[state.renderIndex];
   if(x.m.date!==state.last){html+=`<div class="day-title">${dateText(x.m.date)}</div>`;state.last=x.m.date}
-  html+=matchCard(x.m,x.t,state.past,state.renderIndex+1,x.displayT);
+  html+=matchCard(x.m,x.t,!!x.past,state.renderIndex+1,x.displayT);
  }
  alan.insertAdjacentHTML("beforeend",html);
  if(state.renderIndex<state.list.length){
@@ -1153,7 +1171,7 @@ function maclariDevamEttir(){
   }
  }
 }
-function tarihKaydir(n){$("tarih").value=dateAdd($("tarih").value||today(),n);listele()}
+function tarihKaydir(n){$("tarih").value=dateAdd($("tarih").value||today(),n);tarihEkle()}
 
 // Mobil cihazlarda büyük geçmiş verisini parçalara bölerek hazırla.
 const footballYield=()=>new Promise(resolve=>setTimeout(resolve,0));
@@ -2313,12 +2331,13 @@ function espnLiveList(payload){
 }
 /* AÇILIŞ */
 $("tarih").value=today();
+selectedFootballDates.add(today());footballDatesRender();
 $("couponTarih").value=today();
 baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=229",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=230",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

@@ -421,6 +421,19 @@ button{transition:filter .15s ease,transform .15s ease}button:active{transform:s
 @media(min-width:620px){.tabbar{grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}.tab-button{min-height:52px;font-size:11px}.tab-icon{font-size:17px}}
 @media(max-width:360px){.tabbar{gap:4px;padding:5px}.tab-button{min-height:44px;font-size:9px;padding:4px 1px}.tab-icon{font-size:14px}}
 @media(prefers-reduced-motion:reduce){.tab-button{transition:none}}
+
+/* V242 - mac kartinda model degerlendirmesi acilir/kapanir */
+.model-insight{margin:9px 11px 11px;border:1px solid #51421c;border-left:3px solid #d5aa19;border-radius:9px;background:#171717;overflow:hidden}
+.model-insight>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:42px;padding:9px 11px;list-style:none;cursor:pointer;color:#f5d45a;font-size:12px;font-weight:900;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.model-insight>summary::-webkit-details-marker{display:none}
+.model-insight-hint{display:inline-flex;align-items:center;gap:7px;color:#c9c0a6;font-size:10px;font-weight:700;white-space:nowrap}
+.model-insight-hint b{display:grid;place-items:center;width:24px;height:24px;border:1px solid #8a6e22;border-radius:7px;color:#ffe16a;font-size:16px;transition:transform .15s}
+.model-insight[open]>summary{background:#28210f;border-bottom:1px solid #51421c}
+.model-insight[open] .model-insight-hint b{transform:rotate(180deg)}
+.model-insight-content{padding:10px 11px;color:#e4dfdc;font-size:12px;line-height:1.55}
+.model-insight-content small{display:inline-block;margin-top:3px}
+.model-insight>summary:focus-visible{outline:2px solid #ffe16a;outline-offset:-3px}
+@media(prefers-reduced-motion:reduce){.model-insight-hint b{transition:none}}
 </style>
 <!-- V232: Kompakt takvim ve görünür filtre tasarımı -->
 </head>
@@ -897,7 +910,7 @@ function matchInsight(m,t){
  const total=t.expectedHome+t.expectedAway,scenario=total>=3.35?"Yüksek tempolu ve gollü maç":total<=2.20?"Düşük tempolu, az gollü maç":"Dengeli gol beklentili maç";
  const score=t.scoreline?t.scoreline.home+"-"+t.scoreline.away:"-";
  const why="Ev sahibi gol beklentisi "+t.expectedHome.toFixed(2)+", deplasman gol beklentisi "+t.expectedAway.toFixed(2)+".";
- return "<div class='analysis-box'><b>🧠 Model değerlendirmesi</b><br>"+(best?"Öne çıkan seçenek: <b>"+best.label+" (%"+(best.prob*100).toFixed(1)+")</b> · GÜVEN: <b>"+level+"</b>":"<b>Güçlü seçim eşiği aşılmadı.</b>"+(favorite?" <span style='display:inline-block;margin-top:5px;padding:6px 10px;background:#f5c400;color:#171000;border:2px solid #ffe36a;border-radius:7px;font-weight:900;font-size:14px;box-shadow:0 0 0 2px #f5c40035'>⭐ YAPAYCİN TAHMİN: "+favorite.label+" (%"+(favorite.prob*100).toFixed(1)+")</span>.":" Model belirgin bir tarafı önde görmüyor."))+"<br><small>Olası skor: <b>"+score+"</b> · "+scenario+"</small><br><small>Veri kalitesi: "+quality+" · Ev/dep. geçmişi: "+t.homeSamples+"/"+t.awaySamples+" maç · Model uyumu: %"+(agreement*100).toFixed(0)+"</small><br><small>"+why+" Tahminler olasılıktır, garanti değildir.</small>"+(picks.length>1?"<br><small>Diğer güçlü adaylar: "+picks.slice(1,4).map(x=>x.label+" %"+(x.prob*100).toFixed(1)).join(" · ")+"</small>":"")+(upset?"<br><span style='color:#ff9b6b;font-weight:bold'>⚠️ Sürpriz alarmı: Favori olmayan "+(favoriteSide==="Ev sahibi"?"deplasman":"ev sahibi")+" galibiyeti ihtimali %"+(underdog*100).toFixed(1)+".</span>":"")+(drawRisk?"<br><span style='color:#ffcf5a;font-weight:bold'>⚠️ Beraberlik riski: X olasılığı %"+(t.draw*100).toFixed(1)+"</span>":"")+"</div>";
+ return "<details class='model-insight'><summary><span>🧠 Model değerlendirmesi</span><span class='model-insight-hint'>Ayrıntıları aç <b>⌄</b></span></summary><div class='model-insight-content'>"+(best?"Öne çıkan seçenek: <b>"+best.label+" (%"+(best.prob*100).toFixed(1)+")</b> · GÜVEN: <b>"+level+"</b>":"<b>Güçlü seçim eşiği aşılmadı.</b>"+(favorite?" <span style='display:inline-block;margin-top:5px;padding:6px 10px;background:#f5c400;color:#171000;border:2px solid #ffe36a;border-radius:7px;font-weight:900;font-size:14px;box-shadow:0 0 0 2px #f5c40035'>⭐ YAPAYCİN TAHMİN: "+favorite.label+" (%"+(favorite.prob*100).toFixed(1)+")</span>.":" Model belirgin bir tarafı önde görmüyor."))+"<br><small>Olası skor: <b>"+score+"</b> · "+scenario+"</small><br><small>Veri kalitesi: "+quality+" · Ev/dep. geçmişi: "+t.homeSamples+"/"+t.awaySamples+" maç · Model uyumu: %"+(agreement*100).toFixed(0)+"</small><br><small>"+why+" Tahminler olasılıktır, garanti değildir.</small>"+(picks.length>1?"<br><small>Diğer güçlü adaylar: "+picks.slice(1,4).map(x=>x.label+" %"+(x.prob*100).toFixed(1)).join(" · ")+"</small>":"")+(upset?"<br><span style='color:#ff9b6b;font-weight:bold'>⚠️ Sürpriz alarmı: Favori olmayan "+(favoriteSide==="Ev sahibi"?"deplasman":"ev sahibi")+" galibiyeti ihtimali %"+(underdog*100).toFixed(1)+".</span>":"")+(drawRisk?"<br><span style='color:#ffcf5a;font-weight:bold'>⚠️ Beraberlik riski: X olasılığı %"+(t.draw*100).toFixed(1)+"</span>":"")+"</div></details>";
 }
 function recentTeamPanel(team,league,date){
  const rows=previousMatches(team,league,date,5);

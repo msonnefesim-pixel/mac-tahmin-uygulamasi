@@ -508,8 +508,10 @@ button{transition:filter .15s ease,transform .15s ease}button:active{transform:s
      <button type="button" class="prediction-chip" data-filter="btts" onclick="tahminFiltresiSec('btts')">KG Var</button>
      <button type="button" class="prediction-chip" data-filter="first" onclick="tahminFiltresiSec('first')">İlk Yarı KG</button>
      <button type="button" class="prediction-chip" data-filter="second" onclick="tahminFiltresiSec('second')">İkinci Yarı KG</button>
+     <button type="button" class="prediction-chip" data-filter="cards" onclick="tahminFiltresiSec('cards')">🟨 Kart</button>
+     <button type="button" class="prediction-chip" data-filter="corners" onclick="tahminFiltresiSec('corners')">⚽ Korner</button>
     </div>
-    <select id="filtre" class="hidden" aria-hidden="true" tabindex="-1"><option value="all">Bütün maçlar</option><option value="strong">Öne çıkanlar</option><option value="one">1 - Ev sahibi</option><option value="draw">X - Beraberlik</option><option value="two">2 - Deplasman</option><option value="over25">2,5 Üst</option><option value="over35">3,5 Üst</option><option value="firstOver15">İlk Yarı 1,5 Üst</option><option value="six">6+ Gol</option><option value="btts">KG Var</option><option value="first">İlk Yarı KG</option><option value="second">İkinci Yarı KG</option></select>
+    <select id="filtre" class="hidden" aria-hidden="true" tabindex="-1"><option value="all">Bütün maçlar</option><option value="strong">Öne çıkanlar</option><option value="one">1 - Ev sahibi</option><option value="draw">X - Beraberlik</option><option value="two">2 - Deplasman</option><option value="over25">2,5 Üst</option><option value="over35">3,5 Üst</option><option value="firstOver15">İlk Yarı 1,5 Üst</option><option value="six">6+ Gol</option><option value="btts">KG Var</option><option value="first">İlk Yarı KG</option><option value="second">İkinci Yarı KG</option><option value="cards">Kart</option><option value="corners">Korner</option></select>
     <p class="filter-note">Seçtiğin filtreye uyan maçlar listelenir. Tahmin yüzdeleri garanti değildir.</p>
    </div>
   </details>
@@ -939,8 +941,14 @@ function featuredMatchCard(x,index){
   const m=x.m,p=x.featuredPick;
   return `<article class="featured-match" data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}"><div class="featured-top"><span>${liveEsc(leagueView(m))}</span><span class="featured-number">⭐ ${index+1}. ÖNE ÇIKAN</span></div><div class="featured-teams"><span>${liveEsc(m.home||"Ev sahibi")}</span><span class="featured-vs">VS</span><span>${liveEsc(m.away||"Deplasman")}</span></div><div class="featured-pick"><div><small>YAPAYCİN TAHMİNİ</small><strong>${liveEsc(p.label)}</strong></div><span class="featured-percent">%${(p.prob*100).toFixed(1)}</span></div><div class="featured-top" style="margin-top:6px"><span>🕒 ${liveEsc(m.time||"")}</span><span>Maç takviminde de listelenir</span></div></article>`;
  }
-function filterMatch(t,f){
- if(f==="all")return true;if(!t)return false;
+function filterMatch(t,f,fixture){
+ if(f==="all")return true;
+ if(f==="cards"||f==="corners"){
+  if(!fixture||!IDDAA_EVENTS.length)return false;
+  const event=iddaaFindEventForFixture(fixture);
+  return !!event&&iddaaReadableMarkets(event).some(m=>iddaaMarketCategory(m)===f);
+ }
+ if(!t)return false;
  const picks=footballPickCandidates(t),has=k=>picks.some(x=>x.key===k);
  if(f==="strong")return picks.length>0;
  if(f==="one")return t.one>=FOOTBALL_PICK_LIMITS.result&&t.one>=t.draw&&t.one>=t.two;
@@ -1397,7 +1405,7 @@ function listele(){
     // ekranda gösterilen son olasılıkları kullansın.
     const displayT=iddaaAdjustedPrediction(m,t);
     if(displayT)successRecordFootball(m,displayT);
-    if(!filterMatch(displayT,filter))continue;
+    if(!filterMatch(displayT,filter,m))continue;
     list.push({m,t,displayT,rank:highest(displayT),past:false});
    }catch(err){
     console.warn("Maç analiz hatası:",m&&m.home,m&&m.away,err);
@@ -2262,7 +2270,7 @@ function iddaaMarketSecenekleriHazirla(){
    const category=iddaaMarketCategory(m);
    if(category==="corners")hasCorners=true;
    if(category==="cards")hasCards=true;
-   const key=iddaaMarketKey(m);if(!markets.has(key))markets.set(key,iddaaMarketTitle(m));
+   if(category==="other"){const key=iddaaMarketKey(m);if(!markets.has(key))markets.set(key,iddaaMarketTitle(m));}
   });
   if(hasCorners)categories.corners++;
   if(hasCards)categories.cards++;

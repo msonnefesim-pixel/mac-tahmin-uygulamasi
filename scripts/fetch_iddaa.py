@@ -5,6 +5,7 @@ import os
 import sys
 import time
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 BASE = "https://sportsbookv2.iddaa.com/sportsbook"
@@ -49,6 +50,27 @@ def extract(payload, keys):
                 return value
     return []
 
+def fetch_event_detail(event):
+    """The events list contains only the basic markets; event detail includes the full market bulletin."""
+    event_time = float(event.get("d") or 0)
+    now = time.time()
+    # Detailed markets are requested for matches starting in the next 36 hours.
+    if not event.get("i") or event_time <= now or event_time - now > 36 * 3600:
+        return event, False
+    url = BASE + "/event/" + str(event["i"])
+    try:
+        request = urllib.request.Request(url, headers=HEADERS)
+        with urllib.request.urlopen(request, timeout=12) as response:
+            payload = json.loads(response.read().decode("utf-8-sig"))
+        data = payload.get("data") if isinstance(payload, dict) else None
+        markets = data.get("m") if isinstance(data, dict) else None
+        if payload.get("isSuccess") and isinstance(markets, list) and markets:
+            event["m"] = markets
+            return event, True
+    except Exception as exc:
+        print(f"Detay market alınamadı ({event.get('i')}): {exc}")
+    return event, False
+
 def main():
     events_payload = get_json(URLS["events"])
     comps_payload = get_json(URLS["competitions"])
@@ -60,6 +82,12 @@ def main():
     recognizable = sum(1 for event in events if isinstance(event, dict) and event.get("hn") and event.get("an"))
     if recognizable == 0:
         raise RuntimeError("Bültende takım adı olan etkinlik bulunamadı; mevcut dosya korunacak.")
+    detailed_count = 0
+    with ThreadPoolExecutor(max_workers=12) as pool:
+        for event, detailed in pool.map(fetch_event_detail, events):
+            if detailed:
+                detailed_count += 1
+    print(f"Detaylı market bülteni: {detailed_count} maç için alındı.")
     result = {
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "source": "sportsbookv2.iddaa.com",

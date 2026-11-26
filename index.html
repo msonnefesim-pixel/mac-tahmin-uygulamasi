@@ -362,6 +362,33 @@ button{transition:filter .15s ease,transform .15s ease}button:active{transform:s
 .filter-field input,.filter-field select{border-radius:8px;background:#111;border-color:#4b4140}
 .league-manage-button{border-radius:8px}
 @media(max-width:380px){.home-welcome{min-height:105px;padding:14px 12px}.home-ball{width:48px;height:48px;flex-basis:48px;font-size:26px}.home-welcome h1{font-size:20px}.tab-button{min-width:86px;padding:9px 10px}.home-status-card{padding:10px}}
+
+/* V239 - premium, dengeli maç kartı görünümü */
+.pro-match{border-color:#49333a!important;border-left:4px solid #9f1830!important;border-radius:15px!important;background:linear-gradient(155deg,#1d191b 0%,#131313 72%)!important;box-shadow:0 7px 22px #0007!important;margin:12px 0 14px}
+.pro-match-head{padding:11px 13px;background:linear-gradient(100deg,#35151e 0%,#211719 58%,#1b1b1b 100%);border-bottom:1px solid #493039}
+.pro-league{font-size:11px;color:#e2d5d4;letter-spacing:.15px}
+.pro-match .rank{background:#33280b;border:1px solid #80691a;color:#ffe27a;padding:5px 9px}
+.pro-teams{padding:17px 13px 14px}
+.pro-team-name{font-size:16px;letter-spacing:.05px}
+.pro-vs{background:linear-gradient(145deg,#4a3510,#2c220b);border-color:#80691a;color:#ffe27a}
+.pro-match-foot{padding:9px 13px;background:#111;border-top:1px solid #33292b}
+.pro-kickoff{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;background:#35151e;border:1px solid #702638;border-radius:7px;color:#ffdce2}
+.pro-prediction{margin:11px 11px 0;padding:13px 12px;background:linear-gradient(120deg,#3b2e08 0%,#211b0c 72%,#1b1710 100%);border:1px solid #9b7b18;border-left:4px solid #f5c400;border-radius:11px;text-align:left;box-shadow:inset 0 1px #ffffff0a}
+.pro-prediction-title{font-size:10px;letter-spacing:.8px;color:#f7dc75}
+.pro-prediction-value{font-size:21px;line-height:1.25;color:#fff;margin:7px 0 4px}
+.pro-prediction-percent{font-size:12px;color:#ffe27a}
+.quick-market-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:9px 11px 0}
+.quick-market{min-width:0;padding:9px 9px 8px;background:linear-gradient(145deg,#242020,#191919);border:1px solid #423638;border-radius:9px}
+.quick-market span{display:block;color:#c5babc;font-size:9px;font-weight:800;letter-spacing:.45px;line-height:1.25}
+.quick-market b{display:block;margin-top:5px;color:#ffe27a;font-size:17px;line-height:1.1;font-weight:900}
+.quick-market i{display:block;height:4px;margin-top:7px;background:#383033;border-radius:8px;overflow:hidden}
+.quick-market em{display:block;height:100%;background:linear-gradient(90deg,#941b31,#f5c400);border-radius:8px}
+.pro-match .all-predictions{margin:10px 11px 0}
+.pro-match .all-predictions summary{background:#292318;border:1px solid #6d5718;color:#ffe27a;box-shadow:none;min-height:43px}
+.pro-match .all-predictions[open] summary{background:#302600;color:#ffe27a}
+.pro-match .analysis-box{margin:10px 11px 11px}
+@media(max-width:360px){.pro-teams{padding:14px 9px}.pro-team-name{font-size:14px}.quick-market-grid{gap:5px;margin-left:9px;margin-right:9px}.quick-market{padding:8px 7px}.quick-market b{font-size:16px}.pro-prediction{margin-left:9px;margin-right:9px}}
+
 </style>
 <!-- V232: Kompakt takvim ve görünür filtre tasarımı -->
 </head>
@@ -858,6 +885,11 @@ function matchRecentForm(m){
  if(!home.count&&!away.count)return "";
  return "<details class='recent-form'><summary>📈 TAKIMLARIN SON FORMU <span>Son 5 maç</span></summary><div class='form-grid'>"+home.html+away.html+"</div><div class='form-note'>G: Galibiyet · B: Beraberlik · M: Mağlubiyet. Ortalamalar maç başınadır.</div></details>";
 }
+function matchQuickMarkets(t){
+ const items=t?[['KG VAR',t.btts],['3,5 ÜST',t.over35],['İLK YARI KG',t.first],['İKİNCİ YARI KG',t.second]].filter(x=>Number.isFinite(x[1])&&x[1]>=0&&x[1]<=1):[];
+ if(!items.length)return '';
+ return "<div class='quick-market-grid'>"+items.map(([name,value])=>"<div class='quick-market'><span>"+name+"</span><b>%"+(value*100).toFixed(1)+"</b><i><em style='width:"+Math.max(0,Math.min(100,value*100)).toFixed(1)+"%'></em></i></div>").join('')+"</div>";
+}
 function matchCard(m,t,past=false,rank=0,adjusted=null){
  const finalPrediction=!past?(adjusted||iddaaAdjustedPrediction(m,t)):t;
  const candidates=footballPickCandidates(finalPrediction),main=candidates[0],favorite=footballModelFavorite(finalPrediction);
@@ -872,7 +904,7 @@ function matchCard(m,t,past=false,rank=0,adjusted=null){
  <div class="pro-teams"><div class="pro-team pro-home"><span class="pro-team-name">${m.home}</span><span class="pro-team-side">EV SAHİBİ</span></div><div class="pro-vs">VS</div><div class="pro-team pro-away"><span class="pro-team-name">${m.away}</span><span class="pro-team-side">DEPLASMAN</span></div></div>
  <div class="pro-match-foot"><span class="pro-kickoff">🕒 ${m.time||"Saat açıklanmadı"}</span>${past?`<span class="pro-result">SONUÇ ${m.ft_home}-${m.ft_away}</span>`:""}</div>
  ${past?"":matchRecentForm(m)}
- ${past?"":`<div class="pro-prediction"><div class="pro-prediction-title">⭐ ${mainTitle}</div><div class="pro-prediction-value">${mainLabel}</div>${mainPercent?`<div class="pro-prediction-percent">${mainPercent} olasılık</div>`:"<div class='pro-prediction-percent'>Belirgin favori yok</div>"}${fallbackUsed?"<small>Güçlü seçim eşiği aşılmadı; 1-X-2 arasındaki en yüksek olasılıklı sonuç gösteriliyor. Kesin tahmin değildir.</small>":(!main&&favorite?"<small>Güçlü seçim eşiği aşılmadı; bu gösterim kesin tahmin değildir.</small>":"")}</div>
+ ${past?"":`<div class="pro-prediction"><div class="pro-prediction-title">⭐ ${mainTitle}</div><div class="pro-prediction-value">${mainLabel}</div>${mainPercent?`<div class="pro-prediction-percent">${mainPercent} olasılık</div>`:"<div class='pro-prediction-percent'>Belirgin favori yok</div>"}${fallbackUsed?"<small>Güçlü seçim eşiği aşılmadı; 1-X-2 arasındaki en yüksek olasılıklı sonuç gösteriliyor. Kesin tahmin değildir.</small>":(!main&&favorite?"<small>Güçlü seçim eşiği aşılmadı; bu gösterim kesin tahmin değildir.</small>":"")}</div>${matchQuickMarkets(finalPrediction)}
  <details class="all-predictions"><summary>📊 TÜM TAHMİNLERİ VE OLASILIKLARI GÖSTER</summary>${predictionVisual(finalPrediction)}</details>${matchInsight(m,finalPrediction)}`}
  </article>`;
 }
@@ -2583,7 +2615,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=232",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=239",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

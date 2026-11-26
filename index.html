@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#c8102e">
-<link rel="manifest" href="./manifest.json?v=224">
-<link rel="icon" href="./icon-192-pal.png?v=224" type="image/png" sizes="192x192">
+<link rel="manifest" href="./manifest.json?v=225">
+<link rel="icon" href="./icon-192-pal.png?v=225" type="image/png" sizes="192x192">
 <title>YaPaYCiN Maç Analiz</title>
 <style>
 :root{--red:#c8102e;--yellow:#f5c400;--bg:#101010;--panel:#1b1b1b;--line:#383838;--muted:#bbb}
@@ -2016,7 +2016,7 @@ async function iddaaBaslat(force=false){
     if(activeTabName==="iddaa")iddaaListele(false);
    }
   }).catch(err=>console.warn("Oran hareketleri arka plan hesabı:",err));
-  const couponStatus=$("iddaaCouponStatus");if(couponStatus)couponStatus.innerHTML="<span class='good'>İddaa bülteni güncellendi.</span> · "+events.length+" kayıt · Oran hareketi: "+movedMarkets+" · "+iddaaUpdated;
+  const couponStatus=$("iddaaCouponStatus");if(couponStatus)couponStatus.innerHTML="<span class='good'>İddaa bülteni güncellendi.</span> · "+events.length+" kayıt · Oran hareketleri arka planda hesaplanıyor · "+iddaaUpdated;
   if($("couponsBolumu")&&!$("couponsBolumu").classList.contains("hidden"))kuponlariGoster();
   // Oranlar yüklendiğinde mevcut futbol listesini yeniden çiz; kartlar piyasa verisini de kullansın.
   if(FIXTURES.length){try{listele()}catch(renderError){console.warn("İddaa sonrası futbol listesi yenilenemedi:",renderError)}}
@@ -2294,7 +2294,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=224",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=225",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

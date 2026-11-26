@@ -1966,7 +1966,7 @@ function iddaaListele(reset=true){
   const name=iddaaNorm((e.hn||"")+" "+(e.an||"")+" "+iddaaCompetition(e));
   const date=iddaaDateKey(e);
   const selectedMarket=$("iddaaMarketSecim")?.value||"all";
-  const hasMarket=selectedMarket==="all"?iddaaReadableMarkets(e).length>0:iddaaReadableMarkets(e).some(m=>iddaaMarketKey(m)===selectedMarket);
+  const hasMarket=selectedMarket==="all"?iddaaMarkets(e).length>0:selectedMarket==="category:corners"?iddaaReadableMarkets(e).some(m=>iddaaMarketCategory(m)==="corners"):selectedMarket==="category:cards"?iddaaReadableMarkets(e).some(m=>iddaaMarketCategory(m)==="cards"):iddaaReadableMarkets(e).some(m=>iddaaMarketKey(m)===selectedMarket);
   return (!q||name.includes(q))&&(!selected.length||selected.includes(date))&&hasMarket;
  });
  $("iddaaOzet").innerHTML="<div class='summary-item'><span class='summary-number'>"+rows.length+"</span><span class='summary-label'>Bulunan maç</span></div><div class='summary-item'><span class='summary-number'>"+Math.min(iddaaShown,rows.length)+" / "+rows.length+"</span><span class='summary-label'>Gösterilen</span></div><div class='summary-item'><span class='summary-number'>"+IDDAA_COMPETITIONS.size+"</span><span class='summary-label'>Lig / kupa</span></div><div class='summary-item'><span class='summary-number'>"+iddaaUpdated+"</span><span class='summary-label'>Son okuma</span></div>";
@@ -1994,25 +1994,28 @@ async function iddaaBaslat(force=false){
   const comps=Array.isArray(payload.competitions)?payload.competitions:[];
   if(payload.updated_at)iddaaUpdated=new Date(payload.updated_at).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
   if(!events.length)throw new Error("Bültende okunabilir etkinlik bulunamadı.");
-  // Bahis türü listesini ağır oran hareketi taramasından önce hazırla.
+  // Maç listesini önce hazırla ve ekrana bas; ağır oran hareketi taraması arkada sürsün.
   IDDAA_EVENTS=events;IDDAA_INDEX=new Map();IDDAA_BY_DATE=new Map();IDDAA_MATCH_CACHE=new Map();IDDAA_COMPETITIONS=new Map();
-  iddaaMarketSecenekleriHazirla();
-  status.textContent="Bahis türleri hazır. Oran ayrıntıları arka planda tamamlanıyor...";
-  const movedMarkets=await recordIddaaOddsMovement(events);
   comps.forEach(c=>{if(c)IDDAA_COMPETITIONS.set(String(c.i??c.cid??c.id),c);if(c&&c.cid)IDDAA_COMPETITIONS.set(String(c.cid),c)});
   for(let i=0;i<IDDAA_EVENTS.length;i++){
    const e=IDDAA_EVENTS[i],date=iddaaDateKey(e),key=iddaaEventKey(date,e.hn,e.an);
    if(!IDDAA_INDEX.has(key))IDDAA_INDEX.set(key,e);
    if(!IDDAA_BY_DATE.has(date))IDDAA_BY_DATE.set(date,[]);
    IDDAA_BY_DATE.get(date).push(e);
-   if(i%100===99)await new Promise(resolve=>setTimeout(resolve,0));
+   if(i%250===249)await new Promise(resolve=>setTimeout(resolve,0));
   }
   iddaaUpdated=new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
   iddaaYuklendi=true;
   iddaaMarketSecenekleriHazirla();
   iddaaTarihleriHazirla();
   iddaaListele();
-  status.innerHTML="<span class='good'>Sunucu oran bülteni hazır.</span> · "+events.length+" etkinlik · Oran hareketi karşılaştırılan market: "+movedMarkets+" · Kaynak okuma: "+iddaaUpdated;
+  status.innerHTML="<span class='good'>Maç ve bahis oranları hazır.</span> · "+events.length+" etkinlik · Oran hareketleri arka planda hesaplanıyor · "+iddaaUpdated;
+  recordIddaaOddsMovement(events).then(movedMarkets=>{
+   if(iddaaSourceUpdatedAt===String(payload.updated_at||"")){
+    status.innerHTML="<span class='good'>Sunucu oran bülteni hazır.</span> · "+events.length+" etkinlik · Oran hareketi karşılaştırılan market: "+movedMarkets+" · Kaynak okuma: "+iddaaUpdated;
+    if(activeTabName==="iddaa")iddaaListele(false);
+   }
+  }).catch(err=>console.warn("Oran hareketleri arka plan hesabı:",err));
   const couponStatus=$("iddaaCouponStatus");if(couponStatus)couponStatus.innerHTML="<span class='good'>İddaa bülteni güncellendi.</span> · "+events.length+" kayıt · Oran hareketi: "+movedMarkets+" · "+iddaaUpdated;
   if($("couponsBolumu")&&!$("couponsBolumu").classList.contains("hidden"))kuponlariGoster();
   // Oranlar yüklendiğinde mevcut futbol listesini yeniden çiz; kartlar piyasa verisini de kullansın.

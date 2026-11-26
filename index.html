@@ -1863,7 +1863,7 @@ function iddaaMarketTitle(m){
  return base+(m.sov!==undefined&&m.sov!==null&&m.sov!==""?" · "+iddaaEsc(m.sov):"");
 }
 function iddaaCard(e){
- const m1=iddaaMarket(e,1,1),ou=iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89);
+ const m1=iddaaMarket(e,1,1),ou=iddaaMarket(e,2,101),bttsM=iddaaMarket(e,2,89),first=iddaaMarket(e,2,720);
  const fixture=iddaaFixture(e),p=fixture?predictFootball(fixture):null;
  let html="<div class='match'><div class='match-top'><div class='teams'>"+iddaaEsc(e.hn||"Ev sahibi")+" - "+iddaaEsc(e.an||"Deplasman")+"</div><span class='rank'>"+iddaaDate(e)+"</span></div>";
  html+="<div class='meta'>"+iddaaCompetition(e)+"</div>";

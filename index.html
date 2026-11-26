@@ -1891,7 +1891,7 @@ async function iymsBaslat(){
    const m=raw[i],home=getTeam(m,true),away=getTeam(m,false);
    const htH=getScore(m,["ht_home","home_ht","halftime_home"]),htA=getScore(m,["ht_away","away_ht","halftime_away"]);
    const ftH=getScore(m,["ft_home","home_ft","home_score"]),ftA=getScore(m,["ft_away","away_ft","away_score"]);
-   if(home&&away&&![htH,htA,ftH,ftA].some(v=>v===null))records.push({home:clean(home),away:clean(away),date:String(m.date||m.match_date||m.fixture_date||"").slice(0,10),code:outcome(htH,htA)+"/"+outcome(ftH,ftA)});
+   if(home&&away&&![htH,htA,ftH,ftA].some(v=>v===null))records.push({home:clean(home),away:clean(away),league:String(m.league_id||m.league||""),date:String(m.date||m.match_date||m.fixture_date||"").slice(0,10),code:outcome(htH,htA)+"/"+outcome(ftH,ftA)});
    if(i%300===299)await yieldUI();
   }
   const counts=Object.fromEntries(options.map(k=>[k,0]));records.forEach(m=>{if(counts[m.code]!==undefined)counts[m.code]++});
@@ -1927,14 +1927,23 @@ async function iymsBaslat(){
   area.innerHTML=historyHtml+testHtml;
   status.innerHTML+="<br>Geçmiş analiz hazır; gelecek maçlar hesaplanıyor...";
   await yieldUI();
-  const allHome={},allAway={};
-  for(let i=0;i<records.length;i++){const m=records[i];(allHome[m.home]||(allHome[m.home]=[])).push(m.code);(allAway[m.away]||(allAway[m.away]=[])).push(reverse(m.code));if(i%500===499)await yieldUI()}
+  const allHome={},allAway={},leagueHome={},leagueAway={},globalHome=[],globalAway=[];
+  for(let i=0;i<records.length;i++){
+   const m=records[i],awayCode=reverse(m.code),lid=m.league||"";
+   (allHome[m.home]||(allHome[m.home]=[])).push(m.code);(allAway[m.away]||(allAway[m.away]=[])).push(awayCode);
+   globalHome.push(m.code);globalAway.push(awayCode);
+   if(lid){(leagueHome[lid]||(leagueHome[lid]=[])).push(m.code);(leagueAway[lid]||(leagueAway[lid]=[])).push(awayCode)}
+   if(i%500===499)await yieldUI();
+  }
   const todayDate=today();
   const upcoming=FIXTURES.filter(m=>{const d=String(m.date||"").slice(0,10),time=String(m.time||"").trim();return /^\d{4}-\d{2}-\d{2}$/.test(d)&&d>=todayDate&&/^\d{1,2}:\d{2}$/.test(time)&&!macBasladiMi(m)}).filter(m=>{const event=iddaaFindEventForFixture(m);return !event||halfBothMbs(event)!==3}).slice().sort((a,b)=>(a.date+" "+a.time).localeCompare(b.date+" "+b.time)).map(m=>{
-   const h=allHome[clean(m.home)]||[],a=allAway[clean(m.away)]||[];if(h.length<3||a.length<3)return null;
+   const homeDirect=allHome[clean(m.home)]||[],awayDirect=allAway[clean(m.away)]||[],lid=String(m.league_id||"");
+   const h=homeDirect.length>=3?homeDirect:(leagueHome[lid]?.length?leagueHome[lid]:globalHome);
+   const a=awayDirect.length>=3?awayDirect:(leagueAway[lid]?.length?leagueAway[lid]:globalAway);
+   if(!h.length||!a.length)return null;
    const probs={};options.forEach(k=>{probs[k]=Math.sqrt(((h.filter(x=>x===k).length+.5)/(h.length+4.5))*((a.filter(x=>x===k).length+.5)/(a.length+4.5)))});
    const sum=Object.values(probs).reduce((x,y)=>x+y,0);options.forEach(k=>probs[k]=sum?probs[k]/sum*100:0);
-   return {match:m,probs,h:h.length,a:a.length};
+   return {match:m,probs,h:homeDirect.length,a:awayDirect.length,fallback:h===homeDirect&&a===awayDirect?"Takım verisi":h===leagueHome[lid]&&a===leagueAway[lid]?"Lig verisi":"Genel veri"};
   }).filter(Boolean);
   upcoming.forEach(x=>successRecordIYMS(x.match,x.probs));
   const days=[...new Set(upcoming.map(x=>x.match.date))];
@@ -1952,7 +1961,7 @@ async function iymsBaslat(){
    return list.map(x=>{
     const ranked=options.map(k=>({k,p:x.probs[k]})).sort((a,b)=>b.p-a.p);
     const top=ranked[0],confidence=top.p>=35&&x.h+x.a>=18?"Orta":top.p>=25&&x.h+x.a>=12?"Orta":"Riskli",alarm=ranked[1]&&ranked[1].p>=top.p*.82;
-    return "<div class='panel'><b>"+x.match.date+" · "+(x.match.time||"")+"</b><br><small>"+(x.match.league||"")+"</small><br><b>"+x.match.home+" - "+x.match.away+"</b><br>⭐ En güçlü İY/MS: <b>"+top.k+" (%"+top.p.toFixed(1)+")</b> · Güven: <b>"+confidence+"</b><br><small>Ev verisi: "+x.h+" · Deplasman verisi: "+x.a+" · Veri kalitesi: "+(x.h+x.a>=18?"İyi":x.h+x.a>=10?"Orta":"Sınırlı")+"</small>"+(alarm?"<br><span style='color:#ff9b6b;font-weight:bold'>⚠️ Sürpriz alarmı: "+ranked[1].k+" seçeneği de güçlü (%"+ranked[1].p.toFixed(1)+").</span>":"")+"<div class='predictions'>"+ranked.slice(0,4).map(y=>"<div class='pred'><b>"+y.k+"</b><br><span class='pred-value'>%"+y.p.toFixed(1)+"</span></div>").join("")+"</div><small>İY/MS geçmiş dağılımı ve ev/deplasman örneklemi birlikte değerlendirildi.</small></div>";
+    return "<div class='panel'><b>"+x.match.date+" · "+(x.match.time||"")+"</b><br><small>"+(x.match.league||"")+"</small><br><b>"+x.match.home+" - "+x.match.away+"</b><br>⭐ En güçlü İY/MS: <b>"+top.k+" (%"+top.p.toFixed(1)+")</b> · Güven: <b>"+confidence+"</b><br><small>Ev verisi: "+x.h+" · Deplasman verisi: "+x.a+" · Takım geçmişi: "+(x.h+x.a)+" maç · Kaynak: "+x.fallback+"</small>"+(alarm?"<br><span style='color:#ff9b6b;font-weight:bold'>⚠️ Sürpriz alarmı: "+ranked[1].k+" seçeneği de güçlü (%"+ranked[1].p.toFixed(1)+").</span>":"")+"<div class='predictions'>"+ranked.slice(0,4).map(y=>"<div class='pred'><b>"+y.k+"</b><br><span class='pred-value'>%"+y.p.toFixed(1)+"</span></div>").join("")+"</div><small>İY/MS geçmiş dağılımı ve ev/deplasman örneklemi birlikte değerlendirildi.</small></div>";
    }).join("");
   }
   const listEl=$("iymsFutureList"),leagueEl=$("iymsLeague");

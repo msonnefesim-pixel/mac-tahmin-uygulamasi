@@ -313,36 +313,99 @@ body{background:radial-gradient(ellipse at 50% -15%,#202936 0%,#101216 54%);colo
 button{transition:filter .15s ease,transform .15s ease}button:active{transform:scale(.98)}
 @media(max-width:380px){body{padding:7px}.tab-button{padding:8px 10px;font-size:10px}.filter-fold .prediction-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}.filter-fold .prediction-chip{min-height:30px;font-size:9px}}
 
+
+/* V238 - ana sayfa genel tasarım yenilemesi */
+.brand-banner{min-height:0;padding:9px 12px 10px;margin:0 0 9px;border:1px solid #493039;border-radius:13px;background:radial-gradient(ellipse at 50% 0%,#48202a 0%,#211317 58%,#171313 100%);box-shadow:0 7px 22px #0006}
+.brand-topline{display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:3px;color:#d9aeb5;font-size:8px;font-weight:900;letter-spacing:1.7px}
+.brand-live-dot{width:6px;height:6px;border-radius:50%;background:#f5c400;box-shadow:0 0 8px #f5c400}
+.brand-wordmark{font-size:clamp(24px,6.5vw,29px);line-height:1}
+.brand-y img{width:36px;height:36px;top:-28px}
+.brand-analysis{font-size:9px;letter-spacing:4px;margin-top:2px}
+.brand-tagline{font-size:8px;letter-spacing:.7px}
+.tabbar{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;padding:3px 1px 8px;margin:0 0 12px;scrollbar-width:none;scroll-snap-type:x mandatory}
+.tabbar::-webkit-scrollbar{display:none}
+.tab-button{flex:0 0 auto;width:auto;min-width:92px;padding:10px 12px;border-radius:10px;font-size:11px;white-space:nowrap;scroll-snap-align:start;background:#202024;border:1px solid #3b3437}
+.tab-button.active{background:linear-gradient(135deg,#f8d64b,#d7a900);color:#211600;border-color:#ffe878;box-shadow:0 4px 13px #e7bd2838}
+.home-welcome{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:112px;padding:17px 16px;margin:0 0 10px;overflow:hidden;border:1px solid #4b2830;border-radius:15px;background:radial-gradient(circle at 88% 50%,#5a1d2b 0%,#321820 35%,#1c1719 78%);box-shadow:0 8px 22px #0005}
+.home-welcome:after{content:"";position:absolute;width:145px;height:145px;right:-55px;top:-75px;border:1px solid #f5c40025;border-radius:50%;box-shadow:0 0 0 18px #f5c40008,0 0 0 38px #f5c40006}
+.home-welcome-copy{position:relative;z-index:1;max-width:290px}
+.home-eyebrow{display:block;color:#e6c64e;font-size:9px;font-weight:900;letter-spacing:1.45px}
+.home-welcome h1{margin:7px 0 5px;color:#fff;font-size:clamp(20px,5.5vw,25px);line-height:1.12;letter-spacing:-.5px}
+.home-welcome p{margin:0;color:#c8bfc0;font-size:11px;line-height:1.45;max-width:255px}
+.home-ball{position:relative;z-index:1;flex:0 0 58px;width:58px;height:58px;display:grid;place-items:center;border:1px solid #f5c4005c;border-radius:50%;background:#f5c40012;font-size:31px;box-shadow:0 0 24px #f5c40018}
+.home-status-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:center;padding:12px;margin:0 0 16px;border:1px solid #3c3932;border-radius:12px;background:linear-gradient(135deg,#242321,#171717);box-shadow:0 5px 15px #0004}
+.home-status-main{min-width:0}
+.home-status-label{display:flex;align-items:center;gap:6px;margin-bottom:5px;color:#b9aa7c;font-size:8px;font-weight:900;letter-spacing:1.2px}
+.home-status-label i{width:6px;height:6px;border-radius:50%;background:#e3bd37;box-shadow:0 0 7px #e3bd37}
+.home-status-main #durum{font-size:13px;font-weight:900;color:#f4e6b4;line-height:1.35}
+.home-status-main #sayilar{margin-top:3px;font-size:10px;color:#aaa;line-height:1.35}
+.home-status-card .status-refresh{grid-column:2;grid-row:1;width:auto;min-width:76px;padding:9px 10px;margin:0;border-radius:8px;font-size:11px;background:#e5bd36;color:#211800}
+.home-odds-refresh{grid-column:1/-1;width:100%;margin:0;padding:9px 10px;border:1px solid #533943;border-radius:8px;background:#291b20;color:#e8c8ce;font-size:11px;font-weight:800}
+.home-section-heading{display:flex;align-items:center;justify-content:space-between;margin:2px 1px 8px}
+.home-section-heading>div{min-width:0}
+.home-section-heading .home-eyebrow{font-size:8px;color:#b9a66b}
+.home-section-heading h2.home-section-title{margin:3px 0 0;color:#fff;font-size:19px;letter-spacing:-.3px}
+.home-heading-icon{width:32px;height:32px;display:grid;place-items:center;border-radius:9px;background:#302329;border:1px solid #59343e;color:#f5c400;font-size:22px}
+.quick-guide{margin:0 0 9px;border:1px solid #37312d;border-radius:9px;background:#1b1a19}
+.quick-guide summary{padding:10px 12px;color:#d9cda9;font-size:11px;font-weight:700}
+.filter-panel{padding:7px;margin:0 0 12px;border:1px solid #393331;border-radius:13px;background:linear-gradient(160deg,#211f1e,#171717);box-shadow:0 6px 17px #0004}
+.filter-fold{margin:4px 0;border:1px solid #393332;border-radius:9px;background:#1c1b1b;overflow:hidden}
+.filter-fold>summary{min-height:43px;padding:12px 13px;color:#f0e4c6;font-size:12px;font-weight:900;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.filter-fold>summary::-webkit-details-marker{display:none}
+.filter-fold>summary:after{content:"＋";color:#e7c447;font-size:15px}
+.filter-fold[open]>summary{background:#302326;color:#ffe16a;border-bottom:1px solid #54323a}
+.filter-fold[open]>summary:after{content:"−"}
+.filter-fold-content{padding:10px}
+.football-calendar-fold>summary{color:#ffe16a}
+.filter-tools{gap:8px}
+.filter-field label{font-size:10px;color:#c8bda4}
+.filter-field input,.filter-field select{border-radius:8px;background:#111;border-color:#4b4140}
+.league-manage-button{border-radius:8px}
+@media(max-width:380px){.home-welcome{min-height:105px;padding:14px 12px}.home-ball{width:48px;height:48px;flex-basis:48px;font-size:26px}.home-welcome h1{font-size:20px}.tab-button{min-width:86px;padding:9px 10px}.home-status-card{padding:10px}}
 </style>
 <!-- V232: Kompakt takvim ve görünür filtre tasarımı -->
 </head>
 <body>
 
 <header class="brand-banner" aria-label="YaPaYCiN Analiz">
+ <div class="brand-topline"><span class="brand-live-dot"></span> FUTBOL VERİ & ANALİZ MERKEZİ</div>
  <div class="brand-wordmark"><span class="brand-y">Y<img src="./genie.svg?v=99" alt=""></span><span>aPaYCiN</span></div>
- <div class="brand-analysis">ANALİZ</div>
- <div class="brand-tagline">Bağımsız maç tahmin ve analiz sistemi</div>
+ <div class="brand-analysis">MAÇ ANALİZ</div>
+ <div class="brand-tagline">Veriye dayalı maç değerlendirmeleri</div>
 </header>
 
-<div class="tabbar">
+<nav class="tabbar" aria-label="Analiz bölümleri">
  <button id="futbolButon" class="tab-button active" onclick="sekmeAc('futbol')">⚽ FUTBOL</button>
  <button id="iymsButon" class="tab-button" onclick="sekmeAc('iyms')">🎯 İY/MS</button>
- <button id="couponButon" class="tab-button" onclick="sekmeAc('coupons')">🎟️ HAZIR KUPONLAR</button>
+ <button id="couponButon" class="tab-button" onclick="sekmeAc('coupons')">🎟️ KUPONLAR</button>
  <button id="halfBothButon" class="tab-button" onclick="sekmeAc('halfBoth')">⚽ EVET/EVET</button>
  <button id="sporTotoButon" class="tab-button" onclick="sekmeAc('sporToto')">🏆 SPOR TOTO</button>
- <button id="successButon" class="tab-button" onclick="sekmeAc('success')">📊 BAŞARI KARNESİ</button>
- <button id="iddaaButon" class="tab-button" onclick="sekmeAc('iddaa')">💹 İDDAA ORANLARI</button>
-</div>
+ <button id="successButon" class="tab-button" onclick="sekmeAc('success')">📊 BAŞARI</button>
+ <button id="iddaaButon" class="tab-button" onclick="sekmeAc('iddaa')">💹 İDDAA</button>
+</nav>
 
 <section id="futbolBolumu">
- <div class="panel compact-status">
-  <div class="status-copy"><div id="durum">Veriler yükleniyor...</div><div id="sayilar" class="small"></div></div>
+ <section class="home-welcome">
+  <div class="home-welcome-copy">
+   <span class="home-eyebrow">BUGÜNÜN FUTBOL GÜNDEMİ</span>
+   <h1>Maçını seç, analizi keşfet.</h1>
+   <p>Fikstürü incele, ligini belirle ve ilgilendiğin tahminleri tek ekrandan görüntüle.</p>
+  </div>
+  <div class="home-ball" aria-hidden="true">⚽</div>
+ </section>
+ <div class="home-status-card">
+  <div class="home-status-main">
+   <span class="home-status-label"><i></i> SİSTEM DURUMU</span>
+   <div id="durum">Veriler yükleniyor...</div>
+   <div id="sayilar" class="small"></div>
+  </div>
   <button class="status-refresh" onclick="baslat(true)">↻ Yenile</button>
+  <button type="button" id="footballOddsRefresh" class="home-odds-refresh" onclick="iddaaBaslat(true)">💹 İddaa oranlarını yenile</button>
  </div>
- <div class="football-odds-refresh-wrap">
-  <button type="button" id="footballOddsRefresh" class="secondary football-odds-refresh" onclick="iddaaBaslat(true)">💹 İddaa Oranlarını Yenile</button>
+ <div class="home-section-heading">
+  <div><span class="home-eyebrow">KİŞİSEL MAÇ LİSTEN</span><h2 class="home-section-title">Maçları keşfet</h2></div>
+  <span class="home-heading-icon">⌕</span>
  </div>
- <h2 class="home-section-title">Maçları keşfet</h2>
  <details class="quick-guide"><summary>👋 İlk kez mi kullanıyorsun? Kısa kullanım rehberi</summary><ol><li><b>Tarih:</b> Bir veya birkaç gün seç; maçlar otomatik listelenir.</li><li><b>Ligler:</b> İstediğin ülke veya ligi seçebilir, istemediklerini gizleyebilirsin.</li><li><b>Tahmin türü:</b> Görmek istediğin analizleri filtrele.</li></ol><p>Yüzdeler tahmini olasılıklardır; kesin sonuç veya kazanç garantisi değildir.</p></details>
  <div id="matchFilters" class="filter-panel">
   <details class="filter-fold football-calendar-fold">

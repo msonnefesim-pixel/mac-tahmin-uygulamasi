@@ -1029,18 +1029,21 @@ function footballAllMarketCandidates(fixture){
 }
 function matchCard(m,t,past=false,rank=0,adjusted=null){
  const finalPrediction=!past?(adjusted||iddaaAdjustedPrediction(m,t)):t;
- // Ana bahis önerisi yalnızca aynı maçın doğrulanmış İddaa market ve oranlarından seçilir.
- // Model olasılıkları ayrı analizde kalır; oranı açılmamış seçeneği bahis önerisi gibi göstermeyiz.
+ // Önce doğrulanmış açık İddaa marketleri seçilir; yoksa ham model tahminlerinin en güçlüsü kullanılır.
  const marketCandidates=footballAllMarketCandidates(m),main=marketCandidates.sort((a,b)=>b.prob-a.prob)[0];
- const mainLabel=main?liveEsc(main.label)+" · İddaa oranı "+Number(main.odds).toFixed(2):"Bu maç için doğrulanmış açık İddaa marketi bulunamadı";
- const mainPercent=main?pct(main.prob):"";
- const mainTitle=main?"YAPAYCİN EN GÜÇLÜ TEK TAHMİN":"İDDAA ORANI / MARKETİ BULUNAMADI";
+ const modelCandidates=(!past&&!main)?footballPickCandidates(t):[];
+ const modelFallback=modelCandidates[0]||(!past&&!main?footballModelFavorite(t):null);
+ const useModelFallback=!main&&!!modelFallback;
+ const chosen=main||modelFallback;
+ const mainLabel=main?liveEsc(main.label)+" · İddaa oranı "+Number(main.odds).toFixed(2):useModelFallback?liveEsc(modelFallback.label)+" · Model tahmini":"Modelde yeterli veri yok";
+ const mainPercent=chosen?pct(chosen.prob):"";
+ const mainTitle=main?"YAPAYCİN EN GÜÇLÜ TEK TAHMİN":useModelFallback?"MODELİN EN GÜÇLÜ TEK TAHMİN":"TAHMİN OLUŞTURULAMADI";
  return `<article class="match pro-match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}`}>
  <div class="pro-match-head"><div class="pro-league">${leagueView(m)}</div>${!past?`<span class="rank">${rank?(main?"#"+rank:"Analiz"):"Tahmin"}</span>`:"<span class='pro-past-label'>TAMAMLANDI</span>"}</div>
   <div class="pro-teams"><div class="pro-team pro-home"><span class="pro-team-name">${m.home}</span>${past?"":recentTeamPanel(m.home,m.league_id,m.date)}<span class="pro-team-side">EV SAHİBİ</span></div><div class="pro-vs">VS</div><div class="pro-team pro-away"><span class="pro-team-name">${m.away}</span>${past?"":recentTeamPanel(m.away,m.league_id,m.date)}<span class="pro-team-side">DEPLASMAN</span></div></div>
  <div class="pro-match-foot"><span class="pro-kickoff">🕒 ${m.time||"Saat açıklanmadı"}</span>${past?`<span class="pro-result">SONUÇ ${m.ft_home}-${m.ft_away}</span>`:""}</div>
  
- ${past?"":`<div class="pro-prediction"><div class="pro-prediction-title">⭐ ${mainTitle}</div><div class="pro-prediction-value">${mainLabel}</div>${mainPercent?`<div class="pro-prediction-percent">${mainPercent} olasılık</div>`:"<div class='pro-prediction-percent'>Belirgin favori yok</div>"}${!main?"<small>Oran bülteninde bu maçla eşleşen, geçerli oranı bulunan market doğrulanamadığı için bahis önerisi gösterilmedi. Model yüzdeleri aşağıdaki analiz bölümünde ayrı sunulur.</small>":""}</div>${matchQuickMarkets(finalPrediction)}${matchIddaaSpecialMarkets(m)}
+ ${past?"":`<div class="pro-prediction"><div class="pro-prediction-title">⭐ ${mainTitle}</div><div class="pro-prediction-value">${mainLabel}</div>${mainPercent?`<div class="pro-prediction-percent">${mainPercent} olasılık</div>`:"<div class='pro-prediction-percent'>Belirgin favori yok</div>"}${useModelFallback?"<small>Doğrulanmış açık İddaa marketi bulunamadı. Bu seçim, aşağıdaki Model Tahminleri bölümündeki olasılıklar arasından seçildi; İddaa oranı değildir.</small>":!main?"<small>İddaa marketi doğrulanamadı ve modelde kullanılabilir tahmin verisi yok.</small>":""}</div>${matchQuickMarkets(finalPrediction)}${matchIddaaSpecialMarkets(m)}
  <details class="all-predictions"><summary>📊 TÜM TAHMİNLERİ VE OLASILIKLARI GÖSTER</summary>${predictionVisual(finalPrediction)}</details>${matchInsight(m,finalPrediction)}`}
  </article>`;
 }
@@ -2895,7 +2898,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=255",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=257",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

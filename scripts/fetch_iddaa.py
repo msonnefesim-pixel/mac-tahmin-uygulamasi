@@ -56,6 +56,7 @@ def fetch_event_detail(event):
     now = time.time()
     # Detailed markets are requested for matches starting in the next 36 hours.
     if not event.get("i") or event_time <= now or event_time - now > 36 * 3600:
+        event["_detail_status"] = "not_required"
         return event, False
     url = BASE + "/event/" + str(event["i"])
     try:
@@ -66,9 +67,11 @@ def fetch_event_detail(event):
         markets = data.get("m") if isinstance(data, dict) else None
         if payload.get("isSuccess") and isinstance(markets, list) and markets:
             event["m"] = markets
+            event["_detail_status"] = "ok"
             return event, True
     except Exception as exc:
         print(f"Detay market alınamadı ({event.get('i')}): {exc}")
+    event["_detail_status"] = "failed"
     return event, False
 
 def main():

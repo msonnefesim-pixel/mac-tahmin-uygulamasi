@@ -987,6 +987,13 @@ function matchIddaaSpecialMarkets(fixture){
 function footballAllMarketCandidates(fixture){
  const event=iddaaFindEventForFixture(fixture);
  if(!event)return [];
+ // Son başarılı sunucu bülteni 15 dakikadan eskiyse oranı güncel kabul etme.
+ const bulletinAt=Date.parse(iddaaSourceUpdatedAt);
+ if(!Number.isFinite(bulletinAt)||Date.now()-bulletinAt>15*60*1000||bulletinAt>Date.now()+60*1000)return [];
+ // Yakın maçlarda ayrıntılı market çağrısı başarısızsa temel listedeki oranları bahis önerisine sokma.
+ const eventAt=iddaaEventTimestamp(event),nowAt=Date.now();
+ if(eventAt&&eventAt>nowAt&&eventAt-nowAt<=36*3600*1000&&event._detail_status!=="ok")return [];
+ if(event._detail_status==="failed")return [];
  // Oranlari yalnizca ayni tarih ve iki takim da yuksek guvenle eslesen etkinlikten al.
  // Bir gun kaymis veya benzer isimli baska maclardan market tasinmasini engelle.
  const fixtureDate=iddaaFixtureDateKey(fixture),eventDate=iddaaDateKey(event);

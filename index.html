@@ -1080,7 +1080,7 @@ function matchCard(m,t,past=false,rank=0,adjusted=null){
   <div class="pro-teams"><div class="pro-team pro-home"><span class="pro-team-name">${m.home}</span>${past?"":recentTeamPanel(m.home,m.league_id,m.date)}<span class="pro-team-side">EV SAHİBİ</span></div><div class="pro-vs">VS</div><div class="pro-team pro-away"><span class="pro-team-name">${m.away}</span>${past?"":recentTeamPanel(m.away,m.league_id,m.date)}<span class="pro-team-side">DEPLASMAN</span></div></div>
  <div class="pro-match-foot"><span class="pro-kickoff">🕒 ${m.time||"Saat açıklanmadı"}</span>${past?`<span class="pro-result">SONUÇ ${m.ft_home}-${m.ft_away}</span>`:""}</div>
  
- ${past?"":`<div class="pro-prediction"><div class="pro-prediction-title">⭐ ${mainTitle}</div><div class="pro-prediction-value">${mainLabel}</div>${mainPercent?`<div class="pro-prediction-percent">${mainPercent} olasılık</div>`:"<div class='pro-prediction-percent'>Belirgin favori yok</div>"}${useModelFallback?"<small>Doğrulanmış açık İddaa marketi bulunamadı. Bu seçim, modelin hesapladığı geçerli olasılıklar içinden en yüksek olanıdır; güçlü seçim eşiğinin altında kalabilir ve Piyasa oranı değildir.</small>":!main?"<small>İddaa marketi doğrulanamadı ve modelde kullanılabilir tahmin verisi yok.</small>":""}</div>${matchQuickMarkets(finalPrediction)}${matchIddaaSpecialMarkets(m)}
+ ${past?"":`<div class="pro-prediction"><div class="pro-prediction-title">⭐ ${mainTitle}</div><div class="pro-prediction-value">${mainLabel}</div>${mainPercent?`<div class="pro-prediction-percent">${mainPercent} olasılık</div>`:"<div class='pro-prediction-percent'>Belirgin favori yok</div>"}${useModelFallback?"<small>Doğrulanmış açık piyasa seçeneği bulunamadı. Bu seçim, modelin hesapladığı geçerli olasılıklar içinden en yüksek olanıdır; güçlü seçim eşiğinin altında kalabilir ve Piyasa oranı değildir.</small>":!main?"<small>Piyasa seçeneği doğrulanamadı ve modelde kullanılabilir tahmin verisi yok.</small>":""}</div>${matchQuickMarkets(finalPrediction)}${matchIddaaSpecialMarkets(m)}
  <details class="all-predictions"><summary>📊 TÜM TAHMİNLERİ VE OLASILIKLARI GÖSTER</summary>${predictionVisual(finalPrediction)}</details>${matchInsight(m,finalPrediction)}`}
  </article>`;
 }
@@ -1822,7 +1822,7 @@ function surprizAvcisiRender(force=false){
  }
  cards.innerHTML=selected.map((x,i)=>{
   const m=x.m;
-  return "<article class='surprise-card'><div class='surprise-card-top'><b>"+(i+1)+". "+liveEsc(m.home)+" – "+liveEsc(m.away)+"</b><span class='rank'>"+liveEsc(m.time||"")+"</span></div><div class='meta'>"+liveEsc(m.date)+" · "+liveEsc(m.league||"Lig bilgisi yok")+"</div><div class='surprise-pick'><span style='font-size:10px;font-weight:800;letter-spacing:.7px'>TEK SÜRPRİZ TAHMİNİ</span><strong>"+liveEsc(x.pick)+" · "+liveEsc(x.label)+"</strong><span style='font-size:12px'>İddaa oranı: <b>"+x.odd.toFixed(2)+"</b></span></div><div class='surprise-stats'><div class='surprise-stat'><b>%"+(x.prob*100).toFixed(1)+"</b><span>Temkinli olasılık</span></div><div class='surprise-stat'><b>"+x.odd.toFixed(2)+"</b><span>Oran</span></div><div class='surprise-stat'><b>%"+x.edge.toFixed(1)+"</b><span>Dengelenmiş değer farkı*</span></div></div><div class='surprise-reason'>Analiz: "+(x.quality==="İyi"?"Veri kalitesi iyi":x.quality==="Orta"?"Veri kalitesi orta":"Veri kapsamı sınırlı")+" · Geçmiş örneklem: "+x.homeSamples+" / "+x.awaySamples+" maç.</div></article>";
+  return "<article class='surprise-card'><div class='surprise-card-top'><b>"+(i+1)+". "+liveEsc(m.home)+" – "+liveEsc(m.away)+"</b><span class='rank'>"+liveEsc(m.time||"")+"</span></div><div class='meta'>"+liveEsc(m.date)+" · "+liveEsc(m.league||"Lig bilgisi yok")+"</div><div class='surprise-pick'><span style='font-size:10px;font-weight:800;letter-spacing:.7px'>TEK SÜRPRİZ TAHMİNİ</span><strong>"+liveEsc(x.pick)+" · "+liveEsc(x.label)+"</strong><span style='font-size:12px'>Piyasa oranı: <b>"+x.odd.toFixed(2)+"</b></span></div><div class='surprise-stats'><div class='surprise-stat'><b>%"+(x.prob*100).toFixed(1)+"</b><span>Temkinli olasılık</span></div><div class='surprise-stat'><b>"+x.odd.toFixed(2)+"</b><span>Oran</span></div><div class='surprise-stat'><b>%"+x.edge.toFixed(1)+"</b><span>Dengelenmiş değer farkı*</span></div></div><div class='surprise-reason'>Analiz: "+(x.quality==="İyi"?"Veri kalitesi iyi":x.quality==="Orta"?"Veri kalitesi orta":"Veri kapsamı sınırlı")+" · Geçmiş örneklem: "+x.homeSamples+" / "+x.awaySamples+" maç.</div></article>";
  }).join("")+"<div class='small'>*Olasılık, model tahmini ile oranlardan çıkan piyasa olasılığı arasında veri kalitesine göre dengelenir. Aşırı model farkları ve zayıf veri elenir; yine de kazanç garantisi değildir.</div>";
 }
 function sekmeAc(name){
@@ -2094,7 +2094,7 @@ async function sporTotoYukle(force=false){
     if(cached){const data=await cached.clone().json();if(data&&Array.isArray(data.matches)&&data.matches.length===15){sporTotoData=data;sporTotoSecimleriOku(data);sporTotoRender();$("sporTotoDurum").textContent=sporTotoDurumMetni(data)+" · kayıtlı listeden açıldı";}}
    }catch(_){}
   }
-  $("sporTotoDurum").textContent=sporTotoData?"Liste açıldı · güncel bülten kontrol ediliyor…":"Spor Toto bülteni yükleniyor…";
+  $("sporTotoDurum").textContent=sporTotoData?"Liste açıldı · güncel bülten kontrol ediliyor…":"Maç listesi yükleniyor…";
   const response=await fetch("./spor-toto.json?v="+Date.now(),{cache:"no-store"});
   if(!response.ok)throw new Error("Bülten dosyası alınamadı ("+response.status+")");
   const data=await response.json();
@@ -2105,7 +2105,7 @@ async function sporTotoYukle(force=false){
   const updated=data.updated_at?new Date(data.updated_at).toLocaleString("tr-TR"):"";
   $("sporTotoDurum").textContent=sporTotoDurumMetni(data)+(updated?" · Güncelleme: "+updated:"");
  }catch(e){
-  $("sporTotoDurum").textContent=sporTotoData?"Kayıtlı bülten gösteriliyor · güncel liste alınamadı":"Spor Toto yükleme hatası: "+e.message;
+  $("sporTotoDurum").textContent=sporTotoData?"Kayıtlı bülten gösteriliyor · güncel liste alınamadı":"Liste yükleme hatası: "+e.message;
  }finally{sporTotoLoading=false}
 }
 
@@ -2576,7 +2576,7 @@ function iddaaCard(e){
  iddaaReadableMarkets(e).filter(m=>selectedMarket==="all"||(selectedMarket==="category:corners"&&iddaaMarketCategory(m)==="corners")||(selectedMarket==="category:cards"&&iddaaMarketCategory(m)==="cards")||iddaaMarketKey(m)===selectedMarket)
   .forEach(m=>{html+=iddaaMarketHtml(iddaaMarketTitle(m),m,e)});
  if(p){
-  html+="<div class='analysis-box'><b>YaPaYCiN – İDDAA karşılaştırması</b><div class='small'>Marjı çıkarılmış piyasa olasılığı ile YaPaYCiN model olasılığı arasındaki fark yüzde puan olarak gösterilir. Bu fark kesin kazanç veya bahis önerisi değildir.</div>";
+  html+="<div class='analysis-box'><b>YaPaYCiN – Piyasa karşılaştırması</b><div class='small'>Marjı çıkarılmış piyasa olasılığı ile YaPaYCiN model olasılığı arasındaki fark yüzde puan olarak gösterilir. Bu fark kesin kazanç veya bahis önerisi değildir.</div>";
   const market1=[["1",p.one,["1","Ev sahibi","Home"]],["X",p.draw,["X","0","Beraberlik","Beraber","Draw"]],["2",p.two,["2","Deplasman","Away"]]].map(([k,v,a])=>iddaaCompareCell(k,v,iddaaFairProbability(m1,a)));
   const marketOver=iddaaFairProbability(ou,["Üst","Over"]);
   const marketBtts=iddaaFairProbability(bttsM,["Var","Evet","Yes","Karşılıklı Gol Var"]);
@@ -2879,7 +2879,7 @@ function kuponlariGoster(){
  if(!$("couponCards"))return;const date=$("couponTarih")?.value||today(),day=cArchive()[date]||{};let total=0,done=0,hits=0,html="";$("couponDate").textContent=date+" · Her kupon 5 farklı maçtan oluşur; güçlü maçlarda iki ayrı tahmin olabilir.";
  COUPON_TYPES.forEach(type=>{const id=type[0],name=type[1],items=day[id]||[];total+=items.length;const oddsList=[];const cardKey=date+"|"+id,isOpen=couponOpenCards.has(cardKey);html+="<div class=\"coupon-card\"><button type=\"button\" class=\"coupon-heading\" aria-expanded=\""+isOpen+"\" aria-controls=\"couponBody_"+id+"\" onclick=\"couponToggleCard('"+id+"')\"><span>"+name+" · "+items.length+"/5 maç</span><span class=\"coupon-arrow\">"+(isOpen?"▲ Açık":"▼ Aç")+"</span></button><div class=\"coupon-card-body\" id=\"couponBody_"+id+"\""+(isOpen?"":" hidden")+">";if(!items.length)html+="<p>Bu kategori için yeterli veriye sahip maç bulunamadı. Zayıf tahmin eklenmedi.</p>";
   items.forEach((x,i)=>{const result=cResult(x);if(result!==null){done++;if(result)hits++}const oddsInfo=couponIddaaOdds(x);oddsList.push(oddsInfo);let status="<span class=\"coupon-status pending\">◷ BEKLİYOR</span>";if(result===true)status="<span class=\"coupon-status hit\">✓ TUTTU</span>";if(result===false)status="<span class=\"coupon-status miss\">✕ YATTI</span>";const confidence=x.risk==="Düşük"?"Güvenli":x.risk==="Orta"?"Orta":"Riskli";html+="<div class=\"coupon-match\"><div class=\"match-top\"><b>"+(i+1)+". "+x.home+" - "+x.away+"</b>"+status+"</div><div class=\"coupon-pick\"><span class='coupon-pick-label'>🎯 TAHMİN</span><b class='coupon-pick-value'>"+x.pick+"</b></div><div class=\"coupon-meta\">"+x.league+" · "+x.time+" · Olasılık: <b>%"+(x.prob*100).toFixed(1)+"</b> · Güven: <b>"+confidence+"</b><br>Analiz: "+x.reason+" · Veri: "+x.quality+"</div><div class=\"coupon-odds\">🇹🇷 İDDAA ORANI: "+(oddsInfo.missing?"Oran bulunamadı":oddsInfo.odd.toFixed(2))+"</div></div>"});
-  if(items.length){if(!iddaaYuklendi)html+="<div class=\"coupon-total\">Toplam oran: Piyasa verileri bekleniyor...</div>";else if(oddsList.length&&oddsList.every(x=>!x.missing))html+="<div class=\"coupon-total\">TOPLAM İDDAA ORANI: "+oddsList.reduce((n,v)=>n*v.odd,1).toFixed(2)+"</div>";else html+="<div class=\"coupon-total\">Toplam oran hesaplanamadı: tüm seçimlerde eşleşen oran bulunamadı.</div>"}html+="</div></div>"});
+  if(items.length){if(!iddaaYuklendi)html+="<div class=\"coupon-total\">Toplam oran: Piyasa verileri bekleniyor...</div>";else if(oddsList.length&&oddsList.every(x=>!x.missing))html+="<div class=\"coupon-total\">TOPLAM PİYASA ORANI: "+oddsList.reduce((n,v)=>n*v.odd,1).toFixed(2)+"</div>";else html+="<div class=\"coupon-total\">Toplam oran hesaplanamadı: tüm seçimlerde eşleşen oran bulunamadı.</div>"}html+="</div></div>"});
  $("couponCards").innerHTML=html;$("couponStats").innerHTML="Toplam seçim: <b>"+total+"</b> · Sonuçlanan: <b>"+done+"</b> · Tutan: <b>"+hits+"</b> · Başarı: <b>"+(done?(hits/done*100).toFixed(1):"0.0")+"%</b>";
 }
 function liveEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}

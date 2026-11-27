@@ -1067,7 +1067,7 @@ function matchCard(m,t,past=false,rank=0,adjusted=null){
  const modelFallback=modelCandidates[0]||null;
  const useModelFallback=!main&&!!modelFallback;
  const chosen=main||modelFallback;
- const mainLabel=main?liveEsc(main.label)+" · İddaa oranı "+Number(main.odds).toFixed(2):useModelFallback?liveEsc(modelFallback.label)+" · Model tahmini":"Modelde yeterli veri yok";
+ const mainLabel=main?liveEsc(main.label)+" · İddaa oranı "+Number(main.odds).toFixed(2):useModelFallback?liveEsc(modelFallback.label):"Modelde yeterli veri yok";
  const mainPercent=chosen?pct(chosen.prob):"";
  const mainTitle=main?"YAPAYCİN EN GÜÇLÜ TEK TAHMİN":useModelFallback?"MODELİN EN GÜÇLÜ TEK TAHMİN":"TAHMİN OLUŞTURULAMADI";
  return `<article class="match pro-match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}`}>

@@ -984,15 +984,38 @@ function matchIddaaSpecialMarkets(fixture){
   return boxes.length?"<div class='special-market-summary'>"+boxes.join("")+"</div>":"";
  }catch(error){console.warn("Kart/korner piyasa alanı gösterilemedi:",error);return "";}
 }
+function footballAllMarketCandidates(fixture){
+ const event=iddaaFindEventForFixture(fixture);
+ if(!event)return [];
+ const picks=[];
+ for(const market of iddaaMarkets(event)){
+  const outcomes=(market.o||[]).map(o=>({o,odd:iddaaOdds(o)})).filter(x=>x.odd);
+  if(outcomes.length<2)continue;
+  const inverseTotal=outcomes.reduce((sum,x)=>sum+1/x.odd,0);
+  if(!Number.isFinite(inverseTotal)||inverseTotal<=0)continue;
+  const rawTitle=iddaaMarketTitle(market);
+  const title=rawTitle||('Diğer İddaa bahsi '+String(market.t??'')+'/'+String(market.st??''));
+  const line=market.sov!==undefined&&market.sov!==null&&String(market.sov).trim()!==''?' · '+String(market.sov).trim():'';
+  for(const item of outcomes){
+   const o=item.o;
+   const labels=[o&&o.name,o&&o.n,o&&o.no].filter(v=>v!==undefined&&v!==null&&String(v).trim()!=='');
+   const readable=labels.find(v=>typeof v==='string'&&!/^\\d+(?:[.,]\\d+)?$/.test(v.trim()));
+   const outcome=String(readable??labels[0]??'Seçim').trim();
+   if(!outcome)continue;
+   picks.push({label:title+line+' · '+outcome,prob:(1/item.odd)/inverseTotal,odds:item.odd,key:'iddaaMarket'});
+  }
+ }
+ return picks;
+}
 function matchCard(m,t,past=false,rank=0,adjusted=null){
  const finalPrediction=!past?(adjusted||iddaaAdjustedPrediction(m,t)):t;
- const candidates=footballPickCandidates(finalPrediction),main=candidates[0],favorite=footballModelFavorite(finalPrediction);
+ const candidates=footballPickCandidates(finalPrediction),marketCandidates=footballAllMarketCandidates(m),main=[...candidates,...marketCandidates].sort((a,b)=>b.prob-a.prob)[0],favorite=footballModelFavorite(finalPrediction);
  const resultOptions=[["1 · Ev sahibi",finalPrediction?.one],["X · Beraberlik",finalPrediction?.draw],["2 · Deplasman",finalPrediction?.two],["2,5 Üst",finalPrediction?.over25],["3,5 Üst",finalPrediction?.over35],["6+ Gol",finalPrediction?.six],["KG Var",finalPrediction?.btts],["KG Yok",Number.isFinite(finalPrediction?.btts)?1-finalPrediction.btts:null],["İlk Yarı KG",finalPrediction?.first],["İkinci Yarı KG",finalPrediction?.second],["İY 1,5 Üst",finalPrediction?.firstOver15]].filter(x=>Number.isFinite(x[1])&&x[1]>=0&&x[1]<=1).sort((a,b)=>b[1]-a[1]);
  const fallback=resultOptions[0]?{label:resultOptions[0][0],prob:resultOptions[0][1]}:null;
  const fallbackUsed=!main&&!favorite&&!!fallback;
- const mainLabel=main?main.label:(favorite?favorite.label:(fallback?fallback.label:"Veri bulunamadı"));
+ const mainLabel=main?liveEsc(main.label):(favorite?favorite.label:(fallback?fallback.label:"Veri bulunamadı"));
  const mainPercent=main?pct(main.prob):(favorite?pct(favorite.prob):(fallback?pct(fallback.prob):""));
- const mainTitle=main?"YAPAYCİN ÖNE ÇIKAN TAHMİN":(favorite?"YAPAYCİN MODEL TERCİHİ":(fallback?"YAPAYCİN EN YÜKSEK OLASILIKLI SONUÇ":"VERİ DURUMU"));
+ const mainTitle=main?"YAPAYCİN EN GÜÇLÜ TEK TAHMİN":(favorite?"YAPAYCİN MODEL TERCİHİ":(fallback?"YAPAYCİN EN YÜKSEK OLASILIKLI SONUÇ":"VERİ DURUMU"));
  return `<article class="match pro-match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}`}>
  <div class="pro-match-head"><div class="pro-league">${leagueView(m)}</div>${!past?`<span class="rank">${rank?(main?"#"+rank:"Analiz"):"Tahmin"}</span>`:"<span class='pro-past-label'>TAMAMLANDI</span>"}</div>
   <div class="pro-teams"><div class="pro-team pro-home"><span class="pro-team-name">${m.home}</span>${past?"":recentTeamPanel(m.home,m.league_id,m.date)}<span class="pro-team-side">EV SAHİBİ</span></div><div class="pro-vs">VS</div><div class="pro-team pro-away"><span class="pro-team-name">${m.away}</span>${past?"":recentTeamPanel(m.away,m.league_id,m.date)}<span class="pro-team-side">DEPLASMAN</span></div></div>
@@ -2853,7 +2876,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=251",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=252",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

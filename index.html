@@ -1248,7 +1248,23 @@ async function successLoadIYMS(){
  return successIYMSLoading;
 }
 function successEvaluate(record,market,fullResults,iymsResults){
- const id=successFixtureId(record),half=iymsResults.get(id);
+ const id=successFixtureId(record);
+ let half=iymsResults.get(id);
+ // Avrupa kupaları gibi farklı kaynaklarda takım adları farklı yazılabiliyor.
+ // Tam eşleşme bulunamazsa tarih ve iki takım adına göre tekil yakın eşleşme ara.
+ let historyMatch=null;
+ const findHistory=()=>{if(historyMatch!==null)return historyMatch;historyMatch=cFindNear(HISTORY,record,"home","away")||false;return historyMatch||null};
+ if(!half&&["iyms","first","second","firstOver15"].includes(market.key)){
+  const m=findHistory();
+  if(m){
+   const get=keys=>{for(const k of keys)if(m[k]!==undefined&&m[k]!==null&&m[k]!==""&&Number.isFinite(Number(m[k])))return Number(m[k]);return null};
+   const htHome=get(["ht_home","home_ht","halftime_home"]),htAway=get(["ht_away","away_ht","halftime_away"]),ftHome=get(["ft_home","home_ft","home_score"]),ftAway=get(["ft_away","away_ft","away_score"]);
+   if([htHome,htAway,ftHome,ftAway].every(v=>v!==null)){
+    const outcome=(a,b)=>a>b?"1":a<b?"2":"X";
+    half={code:outcome(htHome,htAway)+"/"+outcome(ftHome,ftAway),htHome,htAway,ftHome,ftAway};
+   }
+  }
+ }
  if(market.key==="iyms")return half?half.code===market.pick:null;
  if(["first","second","firstOver15"].includes(market.key)){
   if(!half)return null;
@@ -1257,7 +1273,15 @@ function successEvaluate(record,market,fullResults,iymsResults){
   if(market.key==="second")return second;
   return half.htHome+half.htAway>=2;
  }
- const score=fullResults.get(id);if(!score)return null;
+ let score=fullResults.get(id);
+ if(!score){
+  const m=findHistory();
+  if(m&&m.ft_home!==undefined&&m.ft_home!==null&&m.ft_home!==""&&m.ft_away!==undefined&&m.ft_away!==null&&m.ft_away!==""){
+   const h=Number(m.ft_home),a=Number(m.ft_away);
+   if(Number.isFinite(h)&&Number.isFinite(a))score={h,a};
+  }
+ }
+ if(!score)return null;
  const h=score.h,a=score.a,total=h+a;
  if(market.key==="result")return (h>a?"1":h<a?"2":"X")===market.pick;
  if(market.key==="over25")return total>=3;

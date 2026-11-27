@@ -1696,7 +1696,8 @@ function surprizAvcisiRender(force=false){
   if(sixOdd)options.push({pick:"6+ Gol",label:"6+ Gol",prob:Number(t.six),odd:sixOdd});
   const iymsCodes=["1/1","1/X","1/2","X/1","X/X","X/2","2/1","2/X","2/2"];
   const iymsGroups=iymsCodes.map(k=>[k,k.replace(/X/g,"0")]);
-  const iymsMarket=surprizStrictMarket(event,2,90,iymsGroups)||iddaaMarkets(event).filter(mm=>iymsCodes.every(k=>mm.o.some(o=>[o.n,o.name].some(v=>[k,k.replace(/X/g,"0")].map(iddaaNorm).includes(iddaaNorm(v||"")))))).length===1?iddaaMarkets(event).filter(mm=>iymsCodes.every(k=>mm.o.some(o=>[o.n,o.name].some(v=>[k,k.replace(/X/g,"0")].map(iddaaNorm).includes(iddaaNorm(v||""))))))[0]:null;
+  const iymsCandidates=iddaaMarkets(event).filter(mm=>iymsCodes.every(k=>mm.o.some(o=>[o.n,o.name].some(v=>[k,k.replace(/X/g,"0")].map(iddaaNorm).includes(iddaaNorm(v||""))))));
+  const iymsMarket=surprizStrictMarket(event,2,90,iymsGroups)||(iymsCandidates.length===1?iymsCandidates[0]:null);
   if(iymsMarket){
    for(const o of surprizIYMSOlasiliklari(m,couponIYMSRows)){
     const aliases=[o.pick,o.pick.replace(/X/g,"0")];

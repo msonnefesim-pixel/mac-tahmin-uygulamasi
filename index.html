@@ -994,12 +994,20 @@ function footballAllMarketCandidates(fixture){
  if(iddaaNameSimilarity(fixture.home,event.hn)<.94||iddaaNameSimilarity(fixture.away,event.an)<.94)return [];
  const picks=[];
  for(const market of iddaaMarkets(event)){
+  // Sadece adı uygulamada açıkça tanımlı marketleri kullan; bilinmeyen marketlerden tahmin türetme.
+  const rawTitle=iddaaMarketTitle(market);
+  if(!rawTitle)continue;
+  // Maç toplam gol alt/üstte yalnızca bültende kullandığımız 2.5 ve 3.5 çizgileri geçerli.
+  // 5.5 gibi doğrulanmamış çizgileri ana tahmine sokma.
+  if(String(market.t)==="2"&&String(market.st)==="101"){
+   const line=String(market.sov??"").replace(",",".");
+   if(!["2.5","3.5"].includes(line))continue;
+  }
   const outcomes=(market.o||[]).map(o=>({o,odd:iddaaOdds(o)})).filter(x=>x.odd);
   if(outcomes.length<2)continue;
   const inverseTotal=outcomes.reduce((sum,x)=>sum+1/x.odd,0);
   if(!Number.isFinite(inverseTotal)||inverseTotal<=0)continue;
-  const rawTitle=iddaaMarketTitle(market);
-  const title=rawTitle||('Diğer İddaa bahsi '+String(market.t??'')+'/'+String(market.st??''));
+  const title=rawTitle;
   const line=market.sov!==undefined&&market.sov!==null&&String(market.sov).trim()!==''?' · '+String(market.sov).trim():'';
   for(const item of outcomes){
    const o=item.o;

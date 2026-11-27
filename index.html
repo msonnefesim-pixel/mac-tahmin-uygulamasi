@@ -1637,6 +1637,21 @@ function surprizIYMSOlasiliklari(m,rows){
  const sum=values.reduce((n,x)=>n+x.prob,0);
  return sum?values.map(x=>({...x,prob:x.prob/sum,homeSamples:h.length,awaySamples:a.length})):[];
 }
+// Sürpriz Avcısı oranlarını yalnızca marketin kendi görünen sonuç adlarıyla eşleştir.
+function surprizStrictOutcome(m,aliases){
+ if(!m||!Array.isArray(m.o))return null;
+ const keys=aliases.map(iddaaNorm);
+ const matches=m.o.filter(o=>[o.n,o.name].some(v=>v!==undefined&&v!==null&&keys.includes(iddaaNorm(v))));
+ if(matches.length!==1)return null;
+ return iddaaOdds(matches[0]);
+}
+function surprizStrictMarket(event,t,st,requiredGroups){
+ const matches=iddaaMarkets(event).filter(m=>
+  String(m.t)===String(t)&&String(m.st)===String(st)&&
+  requiredGroups.every(group=>m.o.some(o=>[o.n,o.name].some(v=>v!==undefined&&v!==null&&group.map(iddaaNorm).includes(iddaaNorm(v)))))
+ );
+ return matches.length===1?matches[0]:null;
+}
 function surprizAvcisiRender(force=false){
  const rangeEl=$("surpriseRange"),status=$("surpriseStatus"),cards=$("surpriseCards");
  if(!rangeEl||!status||!cards)return;
@@ -1668,22 +1683,24 @@ function surprizAvcisiRender(force=false){
   const event=couponIddaaEventForFixture(m);
   if(!event)continue;
   const options=[];
-  const resultMarket=iddaaMarket(event,1,1);
+  const resultGroups=[["1","Ev sahibi","Home"],["X","0","Beraberlik","Beraber","Draw"],["2","Deplasman","Away"]];
+  const resultMarket=surprizStrictMarket(event,1,1,resultGroups);
   const resultOptions=[
-   {pick:"1",label:"Ev sahibi kazanır",prob:Number(t.one),aliases:["1","Ev sahibi","Home"]},
-   {pick:"X",label:"Beraberlik",prob:Number(t.draw),aliases:["X","0","Beraberlik","Beraber","Draw"]},
-   {pick:"2",label:"Deplasman kazanır",prob:Number(t.two),aliases:["2","Deplasman","Away"]}
+   {pick:"1",label:"Ev sahibi kazanır",prob:Number(t.one),aliases:resultGroups[0]},
+   {pick:"X",label:"Beraberlik",prob:Number(t.draw),aliases:resultGroups[1]},
+   {pick:"2",label:"Deplasman kazanır",prob:Number(t.two),aliases:resultGroups[2]}
   ];
-  for(const o of resultOptions){const odd=couponOddsOutcome(resultMarket,o.aliases);if(odd)options.push({...o,odd})}
-  const sixMarket=iddaaMarket(event,2,4);
-  const sixOdd=couponOddsOutcome(sixMarket,["6+","6 +","6+ Gol","6 ve üzeri","6 veya daha fazla"]);
+  for(const o of resultOptions){const odd=surprizStrictOutcome(resultMarket,o.aliases);if(odd)options.push({...o,odd})}
+  const sixMarket=surprizStrictMarket(event,2,4,[["6+","6 +","6+ Gol","6 ve üzeri","6 veya daha fazla"]]);
+  const sixOdd=surprizStrictOutcome(sixMarket,["6+","6 +","6+ Gol","6 ve üzeri","6 veya daha fazla"]);
   if(sixOdd)options.push({pick:"6+ Gol",label:"6+ Gol",prob:Number(t.six),odd:sixOdd});
   const iymsCodes=["1/1","1/X","1/2","X/1","X/X","X/2","2/1","2/X","2/2"];
-  const iymsMarket=iddaaMarket(event,2,90)||iddaaMarkets(event).find(mm=>iymsCodes.filter(k=>mm.o.some(o=>[o.n,o.name,o.no].some(v=>iddaaNorm(v||"")===iddaaNorm(k)))).length>=7);
+  const iymsGroups=iymsCodes.map(k=>[k,k.replace(/X/g,"0")]);
+  const iymsMarket=surprizStrictMarket(event,2,90,iymsGroups)||iddaaMarkets(event).filter(mm=>iymsCodes.every(k=>mm.o.some(o=>[o.n,o.name].some(v=>[k,k.replace(/X/g,"0")].map(iddaaNorm).includes(iddaaNorm(v||"")))))).length===1?iddaaMarkets(event).filter(mm=>iymsCodes.every(k=>mm.o.some(o=>[o.n,o.name].some(v=>[k,k.replace(/X/g,"0")].map(iddaaNorm).includes(iddaaNorm(v||""))))))[0]:null;
   if(iymsMarket){
    for(const o of surprizIYMSOlasiliklari(m,couponIYMSRows)){
     const aliases=[o.pick,o.pick.replace(/X/g,"0")];
-    const odd=couponOddsOutcome(iymsMarket,aliases);
+    const odd=surprizStrictOutcome(iymsMarket,aliases);
     if(odd)options.push({pick:o.pick,label:"İlk Yarı / Maç Sonucu",prob:o.prob,odd,homeSamples:o.homeSamples,awaySamples:o.awaySamples});
    }
   }

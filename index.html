@@ -917,6 +917,17 @@ function footballPickCandidates(t){
  add("İY 1,5 Üst",t.firstOver15,"firstOver15");add("İlk Yarı KG",t.first,"first");add("İkinci Yarı KG",t.second,"second");
  return picks.sort((a,b)=>b.prob-a.prob);
 }
+function footballModelFallbackCandidates(t){
+ if(!t||t.marketOnly)return [];
+ const picks=[];
+ const add=(label,prob,key)=>{if(Number.isFinite(prob)&&prob>=0&&prob<=1)picks.push({label,prob,key})};
+ const result=[["1",t.one],["X",t.draw],["2",t.two]].filter(x=>Number.isFinite(x[1])&&x[1]>=0&&x[1]<=1).sort((a,b)=>b[1]-a[1])[0];
+ if(result)add(result[0],result[1],"result");
+ add("2,5 Üst",t.over25,"over25");add("3,5 Üst",t.over35,"over35");add("6+ Gol",t.six,"six");
+ if(Number.isFinite(t.btts)&&t.btts>=0&&t.btts<=1)add(t.btts>=.5?"KG Var":"KG Yok",Math.max(t.btts,1-t.btts),"btts");
+ add("İY 1,5 Üst",t.firstOver15,"firstOver15");add("İlk Yarı KG",t.first,"first");add("İkinci Yarı KG",t.second,"second");
+ return picks.sort((a,b)=>b.prob-a.prob);
+}
 function matchInsight(m,t){
  if(!t)return "";
  if(t.marketOnly)return "<div class='analysis-box'><b>📊 İddaa piyasa verisi</b><br><small>Bu maçta model için yeterli geçmiş karşılaşma bulunmadığından tahminler, İddaa oranlarının marjı çıkarılarak hesaplanan piyasa olasılıklarıdır. Model tahmini değildir.</small></div>";
@@ -1052,7 +1063,7 @@ function matchCard(m,t,past=false,rank=0,adjusted=null){
  const finalPrediction=!past?(adjusted||iddaaAdjustedPrediction(m,t)):t;
  // Önce doğrulanmış açık İddaa marketleri seçilir; yoksa ham model tahminlerinin en güçlüsü kullanılır.
  const marketCandidates=footballAllMarketCandidates(m),main=marketCandidates.sort((a,b)=>b.prob-a.prob)[0];
- const modelCandidates=(!past&&!main)?footballPickCandidates(t).filter(x=>x.key!=="doubleChance"):[]; 
+ const modelCandidates=(!past&&!main)?footballModelFallbackCandidates(t):[]; 
  const modelFallback=modelCandidates[0]||null;
  const useModelFallback=!main&&!!modelFallback;
  const chosen=main||modelFallback;
@@ -1064,7 +1075,7 @@ function matchCard(m,t,past=false,rank=0,adjusted=null){
   <div class="pro-teams"><div class="pro-team pro-home"><span class="pro-team-name">${m.home}</span>${past?"":recentTeamPanel(m.home,m.league_id,m.date)}<span class="pro-team-side">EV SAHİBİ</span></div><div class="pro-vs">VS</div><div class="pro-team pro-away"><span class="pro-team-name">${m.away}</span>${past?"":recentTeamPanel(m.away,m.league_id,m.date)}<span class="pro-team-side">DEPLASMAN</span></div></div>
  <div class="pro-match-foot"><span class="pro-kickoff">🕒 ${m.time||"Saat açıklanmadı"}</span>${past?`<span class="pro-result">SONUÇ ${m.ft_home}-${m.ft_away}</span>`:""}</div>
  
- ${past?"":`<div class="pro-prediction"><div class="pro-prediction-title">⭐ ${mainTitle}</div><div class="pro-prediction-value">${mainLabel}</div>${mainPercent?`<div class="pro-prediction-percent">${mainPercent} olasılık</div>`:"<div class='pro-prediction-percent'>Belirgin favori yok</div>"}${useModelFallback?"<small>Doğrulanmış açık İddaa marketi bulunamadı. Bu seçim, aşağıdaki Model Tahminleri bölümündeki olasılıklar arasından seçildi; İddaa oranı değildir.</small>":!main?"<small>İddaa marketi doğrulanamadı ve modelde kullanılabilir tahmin verisi yok.</small>":""}</div>${matchQuickMarkets(finalPrediction)}${matchIddaaSpecialMarkets(m)}
+ ${past?"":`<div class="pro-prediction"><div class="pro-prediction-title">⭐ ${mainTitle}</div><div class="pro-prediction-value">${mainLabel}</div>${mainPercent?`<div class="pro-prediction-percent">${mainPercent} olasılık</div>`:"<div class='pro-prediction-percent'>Belirgin favori yok</div>"}${useModelFallback?"<small>Doğrulanmış açık İddaa marketi bulunamadı. Bu seçim, modelin hesapladığı geçerli olasılıklar içinden en yüksek olanıdır; güçlü seçim eşiğinin altında kalabilir ve İddaa oranı değildir.</small>":!main?"<small>İddaa marketi doğrulanamadı ve modelde kullanılabilir tahmin verisi yok.</small>":""}</div>${matchQuickMarkets(finalPrediction)}${matchIddaaSpecialMarkets(m)}
  <details class="all-predictions"><summary>📊 TÜM TAHMİNLERİ VE OLASILIKLARI GÖSTER</summary>${predictionVisual(finalPrediction)}</details>${matchInsight(m,finalPrediction)}`}
  </article>`;
 }
@@ -2919,7 +2930,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=258",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=259",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

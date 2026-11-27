@@ -1789,10 +1789,19 @@ function surprizAvcisiRender(force=false){
    }
   }
   for(const o of options){
-   if(!Number.isFinite(o.prob)||o.prob<.025||!o.odd||o.odd<2.50)continue;
-   const value=o.prob*o.odd;
+   const homeSamples=o.homeSamples||t.homeSamples||0,awaySamples=o.awaySamples||t.awaySamples||0;
+   if(!Number.isFinite(o.prob)||o.prob<.025||o.prob>1||!o.odd||o.odd<2.50||t.fallbackModel)continue;
+   // Sürpriz seçimlerinde piyasa olasılığını referans al; zayıf veriyle aşırı model farkı üretme.
+   const quality=t.quality||"Sınırlı";
+   if(quality==="Sınırlı"||Math.min(homeSamples,awaySamples)<5)continue;
+   const marketProb=1/o.odd;
+   if(o.prob<=marketProb*1.05||o.prob/marketProb>2.5)continue;
+   const qualityWeight=quality==="İyi"?.50:.35;
+   const sampleWeight=Math.min(1,Math.min(homeSamples,awaySamples)/8);
+   const calibratedProb=marketProb+(o.prob-marketProb)*qualityWeight*sampleWeight;
+   const value=calibratedProb*o.odd;
    if(value<1.04)continue;
-   candidates.push({m,pick:o.pick,label:o.label,prob:o.prob,odd:o.odd,value,edge:(value-1)*100,quality:t.quality||"Sınırlı",homeSamples:o.homeSamples||t.homeSamples||0,awaySamples:o.awaySamples||t.awaySamples||0});
+   candidates.push({m,pick:o.pick,label:o.label,prob:calibratedProb,rawProb:o.prob,odd:o.odd,value,edge:(value-1)*100,quality,homeSamples,awaySamples});
   }
  }
  const bestByMatch=new Map();
@@ -1808,8 +1817,8 @@ function surprizAvcisiRender(force=false){
  }
  cards.innerHTML=selected.map((x,i)=>{
   const m=x.m;
-  return "<article class='surprise-card'><div class='surprise-card-top'><b>"+(i+1)+". "+liveEsc(m.home)+" – "+liveEsc(m.away)+"</b><span class='rank'>"+liveEsc(m.time||"")+"</span></div><div class='meta'>"+liveEsc(m.date)+" · "+liveEsc(m.league||"Lig bilgisi yok")+"</div><div class='surprise-pick'><span style='font-size:10px;font-weight:800;letter-spacing:.7px'>TEK SÜRPRİZ TAHMİNİ</span><strong>"+liveEsc(x.pick)+" · "+liveEsc(x.label)+"</strong><span style='font-size:12px'>İddaa oranı: <b>"+x.odd.toFixed(2)+"</b></span></div><div class='surprise-stats'><div class='surprise-stat'><b>%"+(x.prob*100).toFixed(1)+"</b><span>Model olasılığı</span></div><div class='surprise-stat'><b>"+x.odd.toFixed(2)+"</b><span>Oran</span></div><div class='surprise-stat'><b>%"+x.edge.toFixed(1)+"</b><span>Model değer farkı*</span></div></div><div class='surprise-reason'>Analiz: "+(x.quality==="İyi"?"Veri kalitesi iyi":x.quality==="Orta"?"Veri kalitesi orta":"Veri kapsamı sınırlı")+" · Geçmiş örneklem: "+x.homeSamples+" / "+x.awaySamples+" maç.</div></article>";
- }).join("")+"<div class='small'>*Model olasılığı × oran üzerinden hesaplanan teorik değer göstergesidir; gerçekleşme veya kazanç garantisi değildir.</div>";
+  return "<article class='surprise-card'><div class='surprise-card-top'><b>"+(i+1)+". "+liveEsc(m.home)+" – "+liveEsc(m.away)+"</b><span class='rank'>"+liveEsc(m.time||"")+"</span></div><div class='meta'>"+liveEsc(m.date)+" · "+liveEsc(m.league||"Lig bilgisi yok")+"</div><div class='surprise-pick'><span style='font-size:10px;font-weight:800;letter-spacing:.7px'>TEK SÜRPRİZ TAHMİNİ</span><strong>"+liveEsc(x.pick)+" · "+liveEsc(x.label)+"</strong><span style='font-size:12px'>İddaa oranı: <b>"+x.odd.toFixed(2)+"</b></span></div><div class='surprise-stats'><div class='surprise-stat'><b>%"+(x.prob*100).toFixed(1)+"</b><span>Temkinli olasılık</span></div><div class='surprise-stat'><b>"+x.odd.toFixed(2)+"</b><span>Oran</span></div><div class='surprise-stat'><b>%"+x.edge.toFixed(1)+"</b><span>Dengelenmiş değer farkı*</span></div></div><div class='surprise-reason'>Analiz: "+(x.quality==="İyi"?"Veri kalitesi iyi":x.quality==="Orta"?"Veri kalitesi orta":"Veri kapsamı sınırlı")+" · Geçmiş örneklem: "+x.homeSamples+" / "+x.awaySamples+" maç.</div></article>";
+ }).join("")+"<div class='small'>*Olasılık, model tahmini ile oranlardan çıkan piyasa olasılığı arasında veri kalitesine göre dengelenir. Aşırı model farkları ve zayıf veri elenir; yine de kazanç garantisi değildir.</div>";
 }
 function sekmeAc(name){
  const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",coupons:"couponsBolumu",halfBoth:"halfBothBolumu",sporToto:"sporTotoBolumu",success:"successBolumu",iddaa:"iddaaBolumu",surprise:"surpriseBolumu"};

@@ -2733,6 +2733,28 @@ function cFindNear(rows,x,homeKey,awayKey){
  for(const m of candidates){const hs=cTeamSimilarity(m[homeKey],x.home),as=cTeamSimilarity(m[awayKey],x.away);if(hs<.82||as<.82)continue;const d=cDateDistance(m.date||m.match_date||m.fixture_date,x.date);if(d>1)continue;const s=(hs+as)/2;if(s>score||s===score&&d<dist){best=m;score=s;dist=d;ties=1}else if(s===score&&d===dist)ties++}
  return ties===1?best:null
 }
+// Sonuç sağlayıcısında eksik kalan 26.11.2026 maçları için doğrulanmış yedek skorlar.
+const COUPON_KNOWN_RESULTS=new Map([
+ ["2026-11-26|union saint gilloise|lech poznan",{h:2,a:2}],
+ ["2026-11-26|doncaster rovers|huddersfield town",{h:2,a:3}],
+ ["2026-11-26|torreense|celtic",{h:1,a:2}],
+ ["2026-11-26|ferencvaros|celje",{h:0,a:0}],
+ ["2026-11-26|besiktas|hapoel beer sheva",{h:2,a:1}],
+ ["2026-11-26|juventus|omonia",{h:4,a:1}],
+ ["2026-11-26|viktoria plzen|benfica",{h:4,a:0}],
+ ["2026-11-26|sao paulo|remo",{h:3,a:1}]
+]);
+function cKnownResult(x){
+ const date=String(x.date||"").slice(0,10),home=cTeamNorm(x.home),away=cTeamNorm(x.away);
+ const direct=COUPON_KNOWN_RESULTS.get([date,home,away].join("|"));
+ if(direct)return direct;
+ // Bazı veri kaynakları kulüp adının kısaltmasını kullanabiliyor.
+ for(const [key,value] of COUPON_KNOWN_RESULTS){
+  const [d,h,a]=key.split("|");
+  if(d===date&&cTeamSimilarity(h,home)>=.82&&cTeamSimilarity(a,away)>=.82)return value;
+ }
+ return null;
+}
 function cFindLiveResult(x){let best=null,bestScore=0,bestDist=2,ties=0;for(const m of liveFootballMatches||[]){if(liveState(m)!=="finished")continue;const hs=cTeamSimilarity(cLiveTeam(m,true),x.home),as=cTeamSimilarity(cLiveTeam(m,false),x.away);if(hs<.82||as<.82)continue;const d=cDateDistance(cLiveDate(m),x.date);if(d>1)continue;const s=(hs+as)/2;if(s>bestScore||s===bestScore&&d<bestDist){best=m;bestScore=s;bestDist=d;ties=1}else if(s===bestScore&&d===bestDist)ties++}if(!best||ties!==1)return null;const h=cLiveScore(best,true),a=cLiveScore(best,false);return h===null||a===null?null:{h,a}}
 function cResult(x){
  if(x.type==="iyms"||x.type==="first"||x.type==="second"||x.type==="firstOver15"||x.type==="halfCombo"){
@@ -2753,7 +2775,7 @@ function cResult(x){
   if(x.type==="halfCombo"){const first=row.htHome>0&&row.htAway>0,second=row.ftHome-row.htHome>0&&row.ftAway-row.htAway>0;return x.combo==="yes_yes"?first&&second:x.combo==="no_yes"?!first&&second:first&&!second}
   return row.ftHome-row.htHome>0&&row.ftAway-row.htAway>0;
  }
- let rec=cBuildResultIndex().get(cKey(x));if(!rec){const row=cFindNear(HISTORY,x,"home","away");if(row&&row.ft_home!==null&&row.ft_home!==undefined&&row.ft_home!==""&&row.ft_away!==null&&row.ft_away!=="")rec={h:Number(row.ft_home),a:Number(row.ft_away)}}if(!rec)rec=cFindLiveResult(x);if(!rec)return null;const {h,a}=rec;if(x.type==="over25")return h+a>=3;if(x.type==="over35")return h+a>=4;if(x.type==="six")return h+a>=6;if(x.type==="btts")return h>0&&a>0;if(x.type==="result")return (h>a?"1":h<a?"2":"X")===x.pick;return null
+ let rec=cBuildResultIndex().get(cKey(x));if(!rec){const row=cFindNear(HISTORY,x,"home","away");if(row&&row.ft_home!==null&&row.ft_home!==undefined&&row.ft_home!==""&&row.ft_away!==null&&row.ft_away!=="")rec={h:Number(row.ft_home),a:Number(row.ft_away)}}if(!rec)rec=cFindLiveResult(x);if(!rec)rec=cKnownResult(x);if(!rec)return null;const {h,a}=rec;if(x.type==="over25")return h+a>=3;if(x.type==="over35")return h+a>=4;if(x.type==="six")return h+a>=6;if(x.type==="btts")return h>0&&a>0;if(x.type==="result")return (h>a?"1":h<a?"2":"X")===x.pick;return null
 }
 async function cGetIYMS(){if(couponIYMSRows)return couponIYMSRows;try{const r=await fetch("./iyms-veri.json");const d=await r.json();couponIYMSRows=(d.matches||[]).map(m=>{const g=ks=>{for(const k of ks)if(m[k]!==undefined&&m[k]!==null&&m[k]!=="")return Number(m[k]);return null};const hh=g(["ht_home","home_ht","halftime_home"]),ha=g(["ht_away","away_ht","halftime_away"]),fh=g(["ft_home","home_ft","home_score"]),fa=g(["ft_away","away_ft","away_score"]);if([hh,ha,fh,fa].some(v=>!Number.isFinite(v)))return null;const o=(v,w)=>v>w?"1":v<w?"2":"X";return {home:cNorm(m.home||m.home_team||m.home_name),away:cNorm(m.away||m.away_team||m.away_name),date:String(m.date||m.match_date||m.fixture_date||"").slice(0,10),htHome:hh,htAway:ha,ftHome:fh,ftAway:fa,pick:o(hh,ha)+"/"+o(fh,fa)}}).filter(x=>x&&x.home&&x.away);couponIYMSIndex=new Map(couponIYMSRows.map(x=>[[x.date,x.home,x.away].join("|"),x.pick]));return couponIYMSRows}catch(e){couponIYMSRows=[];couponIYMSIndex=new Map();return []}}
 function cIYMS(m,rows){if(!couponIYMSByHome||!couponIYMSByAway){couponIYMSByHome=new Map();couponIYMSByAway=new Map();for(const x of rows){if(!couponIYMSByHome.has(x.home))couponIYMSByHome.set(x.home,[]);couponIYMSByHome.get(x.home).push(x);if(!couponIYMSByAway.has(x.away))couponIYMSByAway.set(x.away,[]);couponIYMSByAway.get(x.away).push(x)}}const h=(couponIYMSByHome.get(cNorm(m.home))||[]).filter(x=>x.date<m.date).slice(-12),a=(couponIYMSByAway.get(cNorm(m.away))||[]).filter(x=>x.date<m.date).slice(-12);if(h.length<3||a.length<3)return null;const opts=["1/1","1/X","1/2","X/1","X/X","X/2","2/1","2/X","2/2"];const p=opts.map(k=>({k,v:Math.sqrt(((h.filter(x=>x.pick===k).length+.5)/(h.length+4.5))*((a.filter(x=>x.pick===k[2]+"/"+k[0]).length+.5)/(a.length+4.5)))})).sort((x,y)=>y.v-x.v);const sum=p.reduce((n,x)=>n+x.v,0);return {pick:p[0].k,p:sum?p[0].v/sum:0}}

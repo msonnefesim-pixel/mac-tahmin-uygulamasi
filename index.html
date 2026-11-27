@@ -2707,6 +2707,7 @@ async function iddaaBaslat(force=false){
 
 const COUPON_TYPES=[["safe1","SAĞLAM KUPON 1","safe"],["safe2","SAĞLAM KUPON 2","safe"],["surprise1","SÜRPRİZ KUPON 1","surprise"],["surprise2","SÜRPRİZ KUPON 2","surprise"],["mixed1","KARIŞIK KUPON 1","mixed"],["mixed2","KARIŞIK KUPON 2","mixed"]];
 let couponIYMSRows=null,couponIYMSIndex=null,couponResultIndex=null,couponHistoryByHome=null,couponIYMSByHome=null,couponIYMSByAway=null,couponIYMSLoading=false;
+const couponNearResultCache=new Map();
 function cNorm(v){return String(v||"").toLocaleLowerCase("tr").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ")}
 function cKey(m){return [String(m.date||"").slice(0,10),cNorm(m.home),cNorm(m.away)].join("|")}
 function cArchive(){try{return JSON.parse(localStorage.getItem("yapaycinCouponArchiveV2")||"{}")}catch(e){return {}}}
@@ -2719,6 +2720,9 @@ function cLiveScore(m,home){const keys=home?["home_score","homeScore","score_hom
 function cLiveDate(m){const fixture=m.fixture&&typeof m.fixture==="object"?m.fixture:{};const raw=m.start_time||m.kickoff||m.date||m.match_date||m.fixture_date||fixture.date||fixture.timestamp||m.time||"";if(typeof raw==="number")return new Date(raw<1e12?raw*1000:raw).toISOString().slice(0,10);return String(raw).slice(0,10)}
 function cDateDistance(a,b){const x=Date.parse(String(a||"").slice(0,10)+"T00:00:00Z"),y=Date.parse(String(b||"").slice(0,10)+"T00:00:00Z");return Number.isFinite(x)&&Number.isFinite(y)?Math.abs(x-y)/86400000:99}
 function cFindNear(rows,x,homeKey,awayKey){
+ const cacheable=rows===HISTORY||rows===couponIYMSRows;
+ const cacheKey=(rows===HISTORY?"H|": "I|")+[String(x.date||"").slice(0,10),cTeamNorm(x.home),cTeamNorm(x.away)].join("|");
+ if(cacheable&&couponNearResultCache.has(cacheKey)){const cached=couponNearResultCache.get(cacheKey);return cached||null}
  let candidates=rows;
  if(rows===HISTORY){
   if(!couponHistoryByHome){couponHistoryByHome=new Map();for(const m of rows){const k=cTeamNorm(m[homeKey]);if(!k)continue;if(!couponHistoryByHome.has(k))couponHistoryByHome.set(k,[]);couponHistoryByHome.get(k).push(m)}}
@@ -2731,7 +2735,9 @@ function cFindNear(rows,x,homeKey,awayKey){
  }
  let best=null,score=0,dist=2,ties=0;
  for(const m of candidates){const hs=cTeamSimilarity(m[homeKey],x.home),as=cTeamSimilarity(m[awayKey],x.away);if(hs<.82||as<.82)continue;const d=cDateDistance(m.date||m.match_date||m.fixture_date,x.date);if(d>1)continue;const s=(hs+as)/2;if(s>score||s===score&&d<dist){best=m;score=s;dist=d;ties=1}else if(s===score&&d===dist)ties++}
- return ties===1?best:null
+ const result=ties===1?best:null;
+ if(cacheable){if(couponNearResultCache.size>5000)couponNearResultCache.clear();couponNearResultCache.set(cacheKey,result||false)}
+ return result;
 }
 // Sonuç sağlayıcısında eksik kalan 26.11.2026 maçları için doğrulanmış yedek skorlar.
 const COUPON_KNOWN_RESULTS=new Map([

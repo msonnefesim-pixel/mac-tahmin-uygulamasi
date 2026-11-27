@@ -987,6 +987,11 @@ function matchIddaaSpecialMarkets(fixture){
 function footballAllMarketCandidates(fixture){
  const event=iddaaFindEventForFixture(fixture);
  if(!event)return [];
+ // Oranlari yalnizca ayni tarih ve iki takim da yuksek guvenle eslesen etkinlikten al.
+ // Bir gun kaymis veya benzer isimli baska maclardan market tasinmasini engelle.
+ const fixtureDate=iddaaFixtureDateKey(fixture),eventDate=iddaaDateKey(event);
+ if(!fixtureDate||!eventDate||iddaaDateDistance(fixtureDate,eventDate)!==0)return [];
+ if(iddaaNameSimilarity(fixture.home,event.hn)<.94||iddaaNameSimilarity(fixture.away,event.an)<.94)return [];
  const picks=[];
  for(const market of iddaaMarkets(event)){
   const outcomes=(market.o||[]).map(o=>({o,odd:iddaaOdds(o)})).filter(x=>x.odd);
@@ -1013,7 +1018,7 @@ function matchCard(m,t,past=false,rank=0,adjusted=null){
  const resultOptions=[["1 · Ev sahibi",finalPrediction?.one],["X · Beraberlik",finalPrediction?.draw],["2 · Deplasman",finalPrediction?.two],["2,5 Üst",finalPrediction?.over25],["3,5 Üst",finalPrediction?.over35],["6+ Gol",finalPrediction?.six],["KG Var",finalPrediction?.btts],["KG Yok",Number.isFinite(finalPrediction?.btts)?1-finalPrediction.btts:null],["İlk Yarı KG",finalPrediction?.first],["İkinci Yarı KG",finalPrediction?.second],["İY 1,5 Üst",finalPrediction?.firstOver15]].filter(x=>Number.isFinite(x[1])&&x[1]>=0&&x[1]<=1).sort((a,b)=>b[1]-a[1]);
  const fallback=resultOptions[0]?{label:resultOptions[0][0],prob:resultOptions[0][1]}:null;
  const fallbackUsed=!main&&!favorite&&!!fallback;
- const mainLabel=main?liveEsc(main.label):(favorite?favorite.label:(fallback?fallback.label:"Veri bulunamadı"));
+ const mainLabel=main?liveEsc(main.label)+(main.odds?" · İddaa oranı "+Number(main.odds).toFixed(2):""):(favorite?favorite.label:(fallback?fallback.label:"Veri bulunamadı"));
  const mainPercent=main?pct(main.prob):(favorite?pct(favorite.prob):(fallback?pct(fallback.prob):""));
  const mainTitle=main?"YAPAYCİN EN GÜÇLÜ TEK TAHMİN":(favorite?"YAPAYCİN MODEL TERCİHİ":(fallback?"YAPAYCİN EN YÜKSEK OLASILIKLI SONUÇ":"VERİ DURUMU"));
  return `<article class="match pro-match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}`}>

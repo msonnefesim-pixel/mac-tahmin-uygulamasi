@@ -911,11 +911,7 @@ function footballPickCandidates(t){
  const add=(label,prob,key)=>{if(Number.isFinite(prob)&&prob>=FOOTBALL_PICK_LIMITS[key])picks.push({label,prob,key})};
  const result=[["1",t.one],["X",t.draw],["2",t.two]].filter(x=>Number.isFinite(x[1])).sort((a,b)=>b[1]-a[1])[0];
  if(result)add(result[0],result[1],"result");
- // Dengeli maçlarda en yüksek olasılıklı çifte şansı göster.
- if(result&&result[1]<FOOTBALL_PICK_LIMITS.result){
-  const doubles=[["1X",t.one+t.draw],["12",t.one+t.two],["X2",t.draw+t.two]].filter(x=>Number.isFinite(x[1])).sort((a,b)=>b[1]-a[1]);
-  if(doubles[0]&&doubles[0][1]>=.70)picks.push({label:doubles[0][0]+" · Çifte Şans",prob:doubles[0][1],key:"doubleChance"});
- }
+ // Çifte şans, model ana tahmininde otomatik yükseltilmez; gerçek tekil market olarak doğrulanırsa ayrı değerlendirilir.
  add("2,5 Üst",t.over25,"over25");add("3,5 Üst",t.over35,"over35");add("6+ Gol",t.six,"six");
  if(Number.isFinite(t.btts)){if(t.btts>=FOOTBALL_PICK_LIMITS.btts)add("KG Var",t.btts,"btts");else if(1-t.btts>=FOOTBALL_PICK_LIMITS.btts)add("KG Yok",1-t.btts,"btts")}
  add("İY 1,5 Üst",t.firstOver15,"firstOver15");add("İlk Yarı KG",t.first,"first");add("İkinci Yarı KG",t.second,"second");
@@ -984,45 +980,70 @@ function matchIddaaSpecialMarkets(fixture){
   return boxes.length?"<div class='special-market-summary'>"+boxes.join("")+"</div>":"";
  }catch(error){console.warn("Kart/korner piyasa alanı gösterilemedi:",error);return "";}
 }
+function footballMainMarketDefinition(market){
+ if(!market)return null;
+ const key=String(market.t??"")+"/"+String(market.st??"");
+ // Yalnızca adı, sonuç yapısı ve seçenekleri uygulamada açıkça tanımlanmış marketler.
+ // Tanınmayan market kodları (ör. 2/729) ana tahmine kesinlikle giremez.
+ const defs={
+  "1/1":{title:"Maç Sonucu",kind:"result"},
+  "2/101":{title:"Maç Toplam Gol (Alt / Üst)",kind:"total"},
+  "2/89":{title:"Karşılıklı Gol",kind:"yesno"},
+  "2/720":{title:"İlk Yarı Karşılıklı Gol",kind:"yesno"},
+  "2/69":{title:"İlk Yarı Karşılıklı Gol",kind:"yesno"},
+  "2/72":{title:"İkinci Yarı Karşılıklı Gol",kind:"yesno"},
+  "2/4":{title:"Toplam Gol Sayısı",kind:"goalcount"},
+  "2/88":{title:"İlk Yarı Sonucu",kind:"result"},
+  "2/90":{title:"İlk Yarı / Maç Sonucu",kind:"halfresult"},
+  "2/60":{title:"İlk Yarı Alt / Üst",kind:"total"}
+ };
+ return defs[key]||null;
+}
+function footballMainOutcomeLabel(outcome,kind){
+ const raw=[outcome&&outcome.name,outcome&&outcome.n].find(v=>typeof v==="string"&&v.trim());
+ if(!raw)return null;
+ const label=String(raw).trim().toLocaleLowerCase("tr-TR").replace(/ı/g,"i").replace(/İ/g,"i").replace(/ş/g,"s").replace(/ğ/g,"g").replace(/ü/g,"u").replace(/ö/g,"o").replace(/ç/g,"c").replace(/\\s+/g," ");
+ const sets={
+  result:["1","x","2","ev sahibi","beraberlik","deplasman","home","draw","away"],
+  total:["alt","ust","under","over"],
+  yesno:["var","yok","evet","hayir","yes","no"],
+  halfresult:["1/1","1/x","1/2","x/1","x/x","x/2","2/1","2/x","2/2"],
+  goalcount:["0","1","2","3","4","5","6","6+","6 ve uzeri","6 veya daha fazla"]
+ };
+ if(!(sets[kind]||[]).includes(label))return null;
+ return String(raw).trim();
+}
 function footballAllMarketCandidates(fixture){
  const event=iddaaFindEventForFixture(fixture);
  if(!event)return [];
- // Son başarılı sunucu bülteni 15 dakikadan eskiyse oranı güncel kabul etme.
  const bulletinAt=Date.parse(iddaaSourceUpdatedAt);
  if(!Number.isFinite(bulletinAt)||Date.now()-bulletinAt>15*60*1000||bulletinAt>Date.now()+60*1000)return [];
- // Yakın maçlarda ayrıntılı market çağrısı başarısızsa temel listedeki oranları bahis önerisine sokma.
  const eventAt=iddaaEventTimestamp(event),nowAt=Date.now();
  if(eventAt&&eventAt>nowAt&&eventAt-nowAt<=36*3600*1000&&event._detail_status!=="ok")return [];
  if(event._detail_status==="failed")return [];
- // Oranlari yalnizca ayni tarih ve iki takim da yuksek guvenle eslesen etkinlikten al.
- // Bir gun kaymis veya benzer isimli baska maclardan market tasinmasini engelle.
  const fixtureDate=iddaaFixtureDateKey(fixture),eventDate=iddaaDateKey(event);
  if(!fixtureDate||!eventDate||iddaaDateDistance(fixtureDate,eventDate)!==0)return [];
  if(iddaaNameSimilarity(fixture.home,event.hn)<.94||iddaaNameSimilarity(fixture.away,event.an)<.94)return [];
  const picks=[];
  for(const market of iddaaMarkets(event)){
-  // İddaa bülteninde gerçekten bulunan tüm marketleri denetle.
-  // Henüz adı eşleştirilmemiş marketleri de atlama; kodunu görünür kıl.
-  const rawTitle=iddaaMarketTitle(market)||("İddaa marketi "+String(market.t??"")+"/"+String(market.st??""));
-  // Maç toplam gol alt/üstte yalnızca bültende kullandığımız 2.5 ve 3.5 çizgileri geçerli.
-  // 5.5 gibi doğrulanmamış çizgileri ana tahmine sokma.
-  if(String(market.t)==="2"&&String(market.st)==="101"){
+  const def=footballMainMarketDefinition(market);
+  if(!def)continue;
+  if((String(market.t)==="2"&&String(market.st)==="101")||String(market.st)==="60"){
    const line=String(market.sov??"").replace(",",".");
-   if(!["2.5","3.5"].includes(line))continue;
+   if(!["0.5","1.5","2.5","3.5","4.5"].includes(line))continue;
+   if(String(market.st)==="101"&&!["2.5","3.5"].includes(line))continue;
   }
-  const outcomes=(market.o||[]).map(o=>({o,odd:iddaaOdds(o)})).filter(x=>x.odd);
-  if(outcomes.length<2)continue;
+  const outcomes=(market.o||[]).map(o=>({o,odd:iddaaOdds(o),label:footballMainOutcomeLabel(o,def.kind)})).filter(x=>x.odd&&x.label);
+  const unique=new Set(outcomes.map(x=>x.label.toLocaleLowerCase("tr-TR")));
+  if(outcomes.length<2||unique.size!==outcomes.length)continue;
+  if(def.kind==="result"&&!["1","x","2"].every(k=>outcomes.some(x=>x.label.toLocaleLowerCase("tr-TR")===k)))continue;
+  if(def.kind==="yesno"&&!["var","yok"].every(k=>outcomes.some(x=>x.label.toLocaleLowerCase("tr-TR")===k)))continue;
+  if(def.kind==="halfresult"&&outcomes.length!==9)continue;
   const inverseTotal=outcomes.reduce((sum,x)=>sum+1/x.odd,0);
   if(!Number.isFinite(inverseTotal)||inverseTotal<=0)continue;
-  const title=rawTitle;
-  const line=market.sov!==undefined&&market.sov!==null&&String(market.sov).trim()!==''?' · '+String(market.sov).trim():'';
+  const line=market.sov!==undefined&&market.sov!==null&&String(market.sov).trim()!==""?" · "+String(market.sov).trim():"";
   for(const item of outcomes){
-   const o=item.o;
-   const labels=[o&&o.name,o&&o.n,o&&o.no].filter(v=>v!==undefined&&v!==null&&String(v).trim()!=='');
-   const readable=labels.find(v=>typeof v==='string'&&!/^\\d+(?:[.,]\\d+)?$/.test(v.trim()));
-   const outcome=String(readable??labels[0]??'Seçim').trim();
-   if(!outcome)continue;
-   picks.push({label:title+line+' · '+outcome,prob:(1/item.odd)/inverseTotal,odds:item.odd,key:'iddaaMarket'});
+   picks.push({label:def.title+line+" · "+item.label,prob:(1/item.odd)/inverseTotal,odds:item.odd,key:"iddaaMarket"});
   }
  }
  return picks;
@@ -1031,8 +1052,8 @@ function matchCard(m,t,past=false,rank=0,adjusted=null){
  const finalPrediction=!past?(adjusted||iddaaAdjustedPrediction(m,t)):t;
  // Önce doğrulanmış açık İddaa marketleri seçilir; yoksa ham model tahminlerinin en güçlüsü kullanılır.
  const marketCandidates=footballAllMarketCandidates(m),main=marketCandidates.sort((a,b)=>b.prob-a.prob)[0];
- const modelCandidates=(!past&&!main)?footballPickCandidates(t):[];
- const modelFallback=modelCandidates[0]||(!past&&!main?footballModelFavorite(t):null);
+ const modelCandidates=(!past&&!main)?footballPickCandidates(t).filter(x=>x.key!=="doubleChance"):[]; 
+ const modelFallback=modelCandidates[0]||null;
  const useModelFallback=!main&&!!modelFallback;
  const chosen=main||modelFallback;
  const mainLabel=main?liveEsc(main.label)+" · İddaa oranı "+Number(main.odds).toFixed(2):useModelFallback?liveEsc(modelFallback.label)+" · Model tahmini":"Modelde yeterli veri yok";
@@ -2898,7 +2919,7 @@ baslat();
 </script>
 <script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=257",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=258",{updateViaCache:"none"}).catch(e=>console.error("Uygulama kaydı:",e)));
 }
 </script>
 

@@ -156,7 +156,7 @@ th{color:var(--yellow)}
 .pro-match .analysis-box{margin:10px 11px 11px}
 .pro-match .rank{background:#302600;border:1px solid #806800;border-radius:20px;padding:5px 8px;color:#ffdc42;font-size:10px;font-weight:800;white-space:nowrap}
 @media(max-width:360px){.pro-teams{gap:5px;padding:13px 9px}.pro-team-name{font-size:14px}.pro-prediction-value{font-size:18px}}
-.quick-guide{margin:8px 0 12px;padding:11px 12px;background:#1b1b1b;border:1px solid #4b3c18;border-left:4px solid #f5c400;border-radius:10px}.quick-guide summary{font-weight:900;color:#f5c400;cursor:pointer;padding:3px 0}.quick-guide ol{margin:9px 0 2px;padding-left:20px;color:#eee;font-size:12px;line-height:1.7}.quick-guide li{padding:2px 0}.quick-guide b{color:#ffe16a}
+.surprise-warning{border-color:#8b6b17;border-left-color:#f5c400;background:linear-gradient(145deg,#28210d,#1b1b1b)}.surprise-warning>b{color:#f5c400}.surprise-warning p{font-size:11px;line-height:1.5}.surprise-warning summary{color:#f5d45b;font-size:11px;font-weight:800;cursor:pointer}.surprise-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.surprise-head button{width:auto;flex:0 0 auto;padding:8px 10px;margin:0;font-size:11px}.surprise-card{background:linear-gradient(145deg,#241b0d,#171717);border:1px solid #80651a;border-left:4px solid #f5c400;border-radius:12px;padding:12px;margin:10px 0}.surprise-card-top{display:flex;justify-content:space-between;align-items:center;gap:8px}.surprise-pick{margin:10px 0;padding:12px;text-align:center;background:#302600;border:1px solid #a48613;border-radius:9px;color:#ffe16a}.surprise-pick strong{display:block;font-size:23px;color:#fff;margin:4px}.surprise-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:9px}.surprise-stat{background:#202020;border:1px solid #48413a;border-radius:8px;padding:8px 4px;text-align:center}.surprise-stat b{display:block;color:#f5c400;font-size:15px}.surprise-stat span{display:block;color:#aaa;font-size:9px;margin-top:3px}.surprise-reason{font-size:11px;color:#ccc;line-height:1.5;margin-top:8px}.surprise-empty{padding:14px;text-align:center;color:#bbb;background:#1b1b1b;border:1px dashed #66551b;border-radius:10px;font-size:12px}.quick-guide{margin:8px 0 12px;padding:11px 12px;background:#1b1b1b;border:1px solid #4b3c18;border-left:4px solid #f5c400;border-radius:10px}.quick-guide summary{font-weight:900;color:#f5c400;cursor:pointer;padding:3px 0}.quick-guide ol{margin:9px 0 2px;padding-left:20px;color:#eee;font-size:12px;line-height:1.7}.quick-guide li{padding:2px 0}.quick-guide b{color:#ffe16a}
 .featured-section{margin:10px 0 14px;padding:10px;background:#191919;border:1px solid #695512;border-left:4px solid #f5c400;border-radius:11px}.featured-heading{margin:0 0 4px;color:#f5c400;font-size:16px;font-weight:900}.featured-note{margin:0 0 8px;color:#aaa;font-size:11px;line-height:1.4}.featured-list{display:grid;gap:7px}.featured-match{padding:9px 10px;background:linear-gradient(120deg,#302600,#1d1a10);border:1px solid #806800;border-radius:9px}.featured-top{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#d9c77c;font-size:10px;font-weight:800}.featured-number{color:#171000;background:#f5c400;border-radius:12px;padding:3px 7px;white-space:nowrap}.featured-teams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:7px;align-items:center;margin:8px 0;font-size:13px;font-weight:900;color:#fff}.featured-teams span:last-child{text-align:right}.featured-vs{color:#f5c400;font-size:10px}.featured-pick{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;background:#111;border:1px solid #574600;border-radius:7px}.featured-pick small{display:block;color:#b9a85d;font-size:9px;font-weight:800}.featured-pick strong{display:block;color:#ffe16a;font-size:13px}.featured-percent{color:#f5c400;font-size:13px;font-weight:900;white-space:nowrap}@media(max-width:360px){.featured-teams{font-size:12px}.featured-match{padding:8px}}
 
 .multi-date-picker{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px;align-items:start;margin:5px 0 9px}.multi-date-picker>input{min-width:0;margin:0}.multi-date-picker>button{width:auto;margin:0;padding:10px 12px;white-space:nowrap}.selected-dates{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin:3px 0}.date-chip{display:inline-flex;align-items:center;gap:7px;padding:6px 9px;background:#302600;border:1px solid #806800;border-radius:18px;color:#ffe16a;font-size:12px;font-weight:700}.date-chip button{width:auto;margin:0;padding:0 2px;background:transparent;color:#fff;font-size:16px;line-height:1}.multi-date-picker .small{grid-column:1/-1;margin:0}
@@ -457,6 +457,7 @@ button{transition:filter .15s ease,transform .15s ease}button:active{transform:s
  <button id="sporTotoButon" class="tab-button" aria-pressed="false" onclick="sekmeAc('sporToto')"><span class="tab-icon">🏆</span><span class="tab-label">Spor Toto</span></button>
  <button id="successButon" class="tab-button" aria-pressed="false" onclick="sekmeAc('success')"><span class="tab-icon">📊</span><span class="tab-label">Başarı</span></button>
  <button id="iddaaButon" class="tab-button" aria-pressed="false" onclick="sekmeAc('iddaa')"><span class="tab-icon">💹</span><span class="tab-label">İddaa</span></button>
+ <button id="surpriseButon" class="tab-button" aria-pressed="false" onclick="sekmeAc('surprise')"><span class="tab-icon">🎯</span><span class="tab-label">Sürpriz Avcısı</span></button>
 </nav>
 
 <section id="futbolBolumu">
@@ -623,6 +624,22 @@ button{transition:filter .15s ease,transform .15s ease}button:active{transform:s
   </div>
  </div>
  <div id="successContent"><div class="panel">Başarı karnesi hazırlanıyor...</div></div>
+</section>
+
+<section id="surpriseBolumu" class="hidden">
+ <h2>🎯 SÜRPRİZ AVCISI</h2>
+ <div class="panel surprise-warning">
+  <b>⚠️ Önemli Bilgilendirme</b>
+  <p>Bu bölümdeki tahminler istatistiksel veriler ve algoritmik analizler doğrultusunda oluşturulur. Kesin sonuç veya kazanç garantisi vermez. Bahis kararları kullanıcıya aittir. Uygulama ve geliştiricisi, yürürlükteki mevzuatın izin verdiği ölçüde, tahminlere dayanılarak alınan kararlardan doğabilecek maddi kayıplardan sorumlu tutulamaz.</p>
+  <details><summary>Bilgilendirmeyi oku</summary><p>Futbol karşılaşmalarının sonucu; sakatlık, kadro tercihi, oyun içi gelişmeler ve öngörülemeyen birçok etkene bağlıdır. Gösterilen oranlar ve olasılıklar değişebilir. Yalnızca kendi değerlendirmeni yaparak ve sorumlu davranarak karar ver.</p></details>
+ </div>
+ <div class="panel">
+  <div class="surprise-head"><b>🔎 Cuma · Cumartesi · Pazar Taraması</b><button type="button" class="secondary" onclick="surprizAvcisiRender(true)">↻ Yenile</button></div>
+  <div id="surpriseRange" class="small">Hafta sonu maçları taranıyor...</div>
+  <div id="surpriseStatus" class="small" aria-live="polite">Veriler hazırlanıyor...</div>
+ </div>
+ <div id="surpriseCards"></div>
+ <p class="small">Yalnızca tek maç sonucu (1 / X / 2) gösterilir. En fazla 10 seçim listelenir; kriterleri karşılamayan maç eklenmez.</p>
 </section>
 
 <script>
@@ -1593,13 +1610,77 @@ async function baslat(force=false){
  }catch(e){$("durum").textContent="Futbol veri hatası: "+e.message}
  finally{footballRefreshBusy=false}
 }
+function surprizHaftaSonuAraligi(){
+ const now=new Date(),start=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+ const day=start.getDay(),offset=day===5?0:(5-day+7)%7;
+ start.setDate(start.getDate()+offset);
+ const end=new Date(start);end.setDate(end.getDate()+2);
+ const fmt=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+ return {start:fmt(start),end:fmt(end)};
+}
+function surprizAvcisiRender(force=false){
+ const rangeEl=$("surpriseRange"),status=$("surpriseStatus"),cards=$("surpriseCards");
+ if(!rangeEl||!status||!cards)return;
+ if(!FIXTURES.length){status.textContent="Futbol maç verileri henüz hazır değil.";cards.innerHTML="<div class='surprise-empty'>Maç verileri yüklenince hafta sonu taraması yapılacak.</div>";return}
+ const range=surprizHaftaSonuAraligi();
+ rangeEl.textContent="Taranan tarih: "+range.start+" – "+range.end+" · Yalnızca 1 / X / 2";
+ if(!iddaaYuklendi){
+  status.textContent="Güncel İddaa oranları bekleniyor; oran olmadan yüksek oranlı seçim üretilmez.";
+  cards.innerHTML="<div class='surprise-empty'>Oran bülteni yükleniyor. Birazdan otomatik taranacak.</div>";
+  if(!iddaaLoading)iddaaBaslat(force);
+  return;
+ }
+ const fixtures=FIXTURES.filter(m=>{
+  const d=String(m.date||"").slice(0,10);
+  return d>=range.start&&d<=range.end&&/^\d{1,2}:\d{2}$/.test(String(m.time||""))&&!macBasladiMi(m);
+ });
+ const candidates=[];
+ for(const m of fixtures){
+  const key=[m.date,m.time,m.home,m.away].join("|");
+  let t=predictionCache.get(key);
+  if(t===undefined){t=predictFootball(m);predictionCache.set(key,t)}
+  if(!t)continue;
+  const options=[
+   {pick:"1",label:"Ev sahibi kazanır",prob:Number(t.one),aliases:["1","Ev sahibi","Home"]},
+   {pick:"X",label:"Beraberlik",prob:Number(t.draw),aliases:["X","0","Beraberlik","Beraber","Draw"]},
+   {pick:"2",label:"Deplasman kazanır",prob:Number(t.two),aliases:["2","Deplasman","Away"]}
+  ];
+  const event=couponIddaaEventForFixture(m);
+  if(!event)continue;
+  const market=iddaaMarket(event,1,1);
+  for(const o of options){
+   if(!Number.isFinite(o.prob)||o.prob<.16)continue;
+   const odd=couponOddsOutcome(market,o.aliases);
+   if(!odd||odd<2.50)continue;
+   const value=o.prob*odd;
+   if(value<1.04)continue;
+   candidates.push({m,pick:o.pick,label:o.label,prob:o.prob,odd,value,edge:(value-1)*100,quality:t.quality||"Sınırlı",homeSamples:t.homeSamples||0,awaySamples:t.awaySamples||0});
+  }
+ }
+ const bestByMatch=new Map();
+ for(const c of candidates){
+  const k=[c.m.date,c.m.home,c.m.away].join("|"),old=bestByMatch.get(k);
+  if(!old||c.value>old.value)bestByMatch.set(k,c);
+ }
+ const selected=[...bestByMatch.values()].sort((a,b)=>b.value-a.value||b.odd-a.odd).slice(0,10);
+ status.textContent=fixtures.length+" hafta sonu maçı tarandı · "+selected.length+" güçlü sürpriz adayı bulundu.";
+ if(!selected.length){
+  cards.innerHTML="<div class='surprise-empty'>Bu hafta sonu yüksek oran ve model değer avantajı kriterlerini birlikte karşılayan maç bulunamadı. Zayıf tahmin eklenmedi.</div>";
+  return;
+ }
+ cards.innerHTML=selected.map((x,i)=>{
+  const m=x.m;
+  return "<article class='surprise-card'><div class='surprise-card-top'><b>"+(i+1)+". "+liveEsc(m.home)+" – "+liveEsc(m.away)+"</b><span class='rank'>"+liveEsc(m.time||"")+"</span></div><div class='meta'>"+liveEsc(m.date)+" · "+liveEsc(m.league||"Lig bilgisi yok")+"</div><div class='surprise-pick'><span style='font-size:10px;font-weight:800;letter-spacing:.7px'>TEK SÜRPRİZ TAHMİNİ</span><strong>"+x.pick+" · "+x.label+"</strong><span style='font-size:12px'>İddaa oranı: <b>"+x.odd.toFixed(2)+"</b></span></div><div class='surprise-stats'><div class='surprise-stat'><b>%"+(x.prob*100).toFixed(1)+"</b><span>Model olasılığı</span></div><div class='surprise-stat'><b>"+x.odd.toFixed(2)+"</b><span>Oran</span></div><div class='surprise-stat'><b>%"+x.edge.toFixed(1)+"</b><span>Model değer farkı*</span></div></div><div class='surprise-reason'>Analiz: "+(x.quality==="İyi"?"Veri kalitesi iyi":x.quality==="Orta"?"Veri kalitesi orta":"Veri kapsamı sınırlı")+" · Ev sahibi geçmişi: "+x.homeSamples+" maç · Deplasman geçmişi: "+x.awaySamples+" maç.</div></article>";
+ }).join("")+"<div class='small'>*Model olasılığı × oran üzerinden hesaplanan teorik değer göstergesidir; gerçekleşme veya kazanç garantisi değildir.</div>";
+}
+
 function sekmeAc(name){
- const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",coupons:"couponsBolumu",halfBoth:"halfBothBolumu",sporToto:"sporTotoBolumu",success:"successBolumu",iddaa:"iddaaBolumu"};
+ const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",coupons:"couponsBolumu",halfBoth:"halfBothBolumu",sporToto:"sporTotoBolumu",success:"successBolumu",iddaa:"iddaaBolumu",surprise:"surpriseBolumu"};
  // Zaten acik olan sekmeye tekrar basildiysa pahali liste/analiz cizimini tekrarlama.
  if(activeTabName===name)return;
  activeTabName=name;
  Object.keys(ids).forEach(k=>$(ids[k]).classList.toggle("hidden",k!==name));
- const tabButtons={futbol:"futbolButon",iyms:"iymsButon",coupons:"couponButon",halfBoth:"halfBothButon",sporToto:"sporTotoButon",success:"successButon",iddaa:"iddaaButon"};
+ const tabButtons={futbol:"futbolButon",iyms:"iymsButon",coupons:"couponButon",halfBoth:"halfBothButon",sporToto:"sporTotoButon",success:"successButon",iddaa:"iddaaButon",surprise:"surpriseButon"};
  Object.keys(tabButtons).forEach(k=>{const b=$(tabButtons[k]),active=k===name;b.classList.toggle("active",active);b.setAttribute("aria-pressed",String(active))});
  // Önce görünür sekmeyi değiştir; içerik çizimini ilk ekrandan sonraya bırak.
  requestAnimationFrame(()=>{
@@ -1607,6 +1688,7 @@ function sekmeAc(name){
   if(activeTabName!==name)return;
   if(name==="halfBoth")halfBothRender();
   if(name==="success")successRender();
+  if(name==="surprise")surprizAvcisiRender();
   if(name==="coupons"){
    kuponlariGoster();
    const couponDate=$("couponTarih")?.value||today();
@@ -2436,6 +2518,7 @@ async function iddaaBaslat(force=false){
   if($("couponsBolumu")&&!$("couponsBolumu").classList.contains("hidden"))kuponlariGoster();
   // Oranlar yüklendiğinde mevcut futbol listesini yeniden çiz; kartlar piyasa verisini de kullansın.
   if(FIXTURES.length){try{listele()}catch(renderError){console.warn("İddaa sonrası futbol listesi yenilenemedi:",renderError)}}
+  if(activeTabName==="surprise")surprizAvcisiRender();
  }catch(e){
   status.innerHTML="Sunucu oran dosyası okunamadı: "+String(e.message||e)+
    "<br><span class='small'>Sunucu bülteni 15 dakikada bir yenilenir. Önceki oran verileri varsa korunur.</span>";

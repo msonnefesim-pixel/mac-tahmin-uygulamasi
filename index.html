@@ -1612,7 +1612,7 @@ async function baslat(force=false){
 }
 function surprizHaftaSonuAraligi(){
  const now=new Date(),start=new Date(now.getFullYear(),now.getMonth(),now.getDate());
- const day=start.getDay(),offset=day===5?0:(5-day+7)%7;
+ const day=start.getDay(),offset=day===5?0:day===6?-1:day===0?-2:(5-day+7)%7;
  start.setDate(start.getDate()+offset);
  const end=new Date(start);end.setDate(end.getDate()+2);
  const fmt=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");

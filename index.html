@@ -994,9 +994,9 @@ function footballAllMarketCandidates(fixture){
  if(iddaaNameSimilarity(fixture.home,event.hn)<.94||iddaaNameSimilarity(fixture.away,event.an)<.94)return [];
  const picks=[];
  for(const market of iddaaMarkets(event)){
-  // Sadece adı uygulamada açıkça tanımlı marketleri kullan; bilinmeyen marketlerden tahmin türetme.
-  const rawTitle=iddaaMarketTitle(market);
-  if(!rawTitle)continue;
+  // İddaa bülteninde gerçekten bulunan tüm marketleri denetle.
+  // Henüz adı eşleştirilmemiş marketleri de atlama; kodunu görünür kıl.
+  const rawTitle=iddaaMarketTitle(market)||("İddaa marketi "+String(market.t??"")+"/"+String(market.st??""));
   // Maç toplam gol alt/üstte yalnızca bültende kullandığımız 2.5 ve 3.5 çizgileri geçerli.
   // 5.5 gibi doğrulanmamış çizgileri ana tahmine sokma.
   if(String(market.t)==="2"&&String(market.st)==="101"){
@@ -1022,19 +1022,18 @@ function footballAllMarketCandidates(fixture){
 }
 function matchCard(m,t,past=false,rank=0,adjusted=null){
  const finalPrediction=!past?(adjusted||iddaaAdjustedPrediction(m,t)):t;
- const candidates=footballPickCandidates(finalPrediction),marketCandidates=footballAllMarketCandidates(m),main=[...candidates,...marketCandidates].sort((a,b)=>b.prob-a.prob)[0],favorite=footballModelFavorite(finalPrediction);
- const resultOptions=[["1 · Ev sahibi",finalPrediction?.one],["X · Beraberlik",finalPrediction?.draw],["2 · Deplasman",finalPrediction?.two],["2,5 Üst",finalPrediction?.over25],["3,5 Üst",finalPrediction?.over35],["6+ Gol",finalPrediction?.six],["KG Var",finalPrediction?.btts],["KG Yok",Number.isFinite(finalPrediction?.btts)?1-finalPrediction.btts:null],["İlk Yarı KG",finalPrediction?.first],["İkinci Yarı KG",finalPrediction?.second],["İY 1,5 Üst",finalPrediction?.firstOver15]].filter(x=>Number.isFinite(x[1])&&x[1]>=0&&x[1]<=1).sort((a,b)=>b[1]-a[1]);
- const fallback=resultOptions[0]?{label:resultOptions[0][0],prob:resultOptions[0][1]}:null;
- const fallbackUsed=!main&&!favorite&&!!fallback;
- const mainLabel=main?liveEsc(main.label)+(main.odds?" · İddaa oranı "+Number(main.odds).toFixed(2):""):(favorite?favorite.label:(fallback?fallback.label:"Veri bulunamadı"));
- const mainPercent=main?pct(main.prob):(favorite?pct(favorite.prob):(fallback?pct(fallback.prob):""));
- const mainTitle=main?"YAPAYCİN EN GÜÇLÜ TEK TAHMİN":(favorite?"YAPAYCİN MODEL TERCİHİ":(fallback?"YAPAYCİN EN YÜKSEK OLASILIKLI SONUÇ":"VERİ DURUMU"));
+ // Ana bahis önerisi yalnızca aynı maçın doğrulanmış İddaa market ve oranlarından seçilir.
+ // Model olasılıkları ayrı analizde kalır; oranı açılmamış seçeneği bahis önerisi gibi göstermeyiz.
+ const marketCandidates=footballAllMarketCandidates(m),main=marketCandidates.sort((a,b)=>b.prob-a.prob)[0];
+ const mainLabel=main?liveEsc(main.label)+" · İddaa oranı "+Number(main.odds).toFixed(2):"Bu maç için doğrulanmış açık İddaa marketi bulunamadı";
+ const mainPercent=main?pct(main.prob):"";
+ const mainTitle=main?"YAPAYCİN EN GÜÇLÜ TEK TAHMİN":"İDDAA ORANI / MARKETİ BULUNAMADI";
  return `<article class="match pro-match"${past?"":` data-auto-hide="1" data-match-date="${m.date||""}" data-match-time="${m.time||""}" data-match-home="${encodeURIComponent(m.home||"")}" data-match-away="${encodeURIComponent(m.away||"")}`}>
  <div class="pro-match-head"><div class="pro-league">${leagueView(m)}</div>${!past?`<span class="rank">${rank?(main?"#"+rank:"Analiz"):"Tahmin"}</span>`:"<span class='pro-past-label'>TAMAMLANDI</span>"}</div>
   <div class="pro-teams"><div class="pro-team pro-home"><span class="pro-team-name">${m.home}</span>${past?"":recentTeamPanel(m.home,m.league_id,m.date)}<span class="pro-team-side">EV SAHİBİ</span></div><div class="pro-vs">VS</div><div class="pro-team pro-away"><span class="pro-team-name">${m.away}</span>${past?"":recentTeamPanel(m.away,m.league_id,m.date)}<span class="pro-team-side">DEPLASMAN</span></div></div>
  <div class="pro-match-foot"><span class="pro-kickoff">🕒 ${m.time||"Saat açıklanmadı"}</span>${past?`<span class="pro-result">SONUÇ ${m.ft_home}-${m.ft_away}</span>`:""}</div>
  
- ${past?"":`<div class="pro-prediction"><div class="pro-prediction-title">⭐ ${mainTitle}</div><div class="pro-prediction-value">${mainLabel}</div>${mainPercent?`<div class="pro-prediction-percent">${mainPercent} olasılık</div>`:"<div class='pro-prediction-percent'>Belirgin favori yok</div>"}${fallbackUsed?"<small>Güçlü seçim eşiği aşılmadı; 1-X-2 arasındaki en yüksek olasılıklı sonuç gösteriliyor. Kesin tahmin değildir.</small>":(!main&&favorite?"<small>Güçlü seçim eşiği aşılmadı; bu gösterim kesin tahmin değildir.</small>":"")}</div>${matchQuickMarkets(finalPrediction)}${matchIddaaSpecialMarkets(m)}
+ ${past?"":`<div class="pro-prediction"><div class="pro-prediction-title">⭐ ${mainTitle}</div><div class="pro-prediction-value">${mainLabel}</div>${mainPercent?`<div class="pro-prediction-percent">${mainPercent} olasılık</div>`:"<div class='pro-prediction-percent'>Belirgin favori yok</div>"}${!main?"<small>Oran bülteninde bu maçla eşleşen, geçerli oranı bulunan market doğrulanamadığı için bahis önerisi gösterilmedi. Model yüzdeleri aşağıdaki analiz bölümünde ayrı sunulur.</small>":""}</div>${matchQuickMarkets(finalPrediction)}${matchIddaaSpecialMarkets(m)}
  <details class="all-predictions"><summary>📊 TÜM TAHMİNLERİ VE OLASILIKLARI GÖSTER</summary>${predictionVisual(finalPrediction)}</details>${matchInsight(m,finalPrediction)}`}
  </article>`;
 }

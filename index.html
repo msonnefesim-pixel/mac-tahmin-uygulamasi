@@ -1231,7 +1231,7 @@ function successRecordIYMS(m,probs){
  if(!m||!probs||!m.date||String(m.date).slice(0,10)<today())return;
  const ranked=Object.entries(probs).filter(x=>Number.isFinite(Number(x[1]))).sort((a,b)=>Number(b[1])-Number(a[1]));
  if(!ranked.length)return;
- successStore({type:"iyms",date:String(m.date).slice(0,10),league:String(m.league||""),home:String(m.home||""),away:String(m.away||""),markets:[{key:"iyms",label:"İY/MS",pick:ranked[0][0],prob:Number(ranked[0][1])/100}]});
+ successStore({type:"iyms",date:String(m.date).slice(0,10),league:String(m.league||""),league_id:String(m.league_id||""),home:String(m.home||""),away:String(m.away||""),markets:[{key:"iyms",label:"İY/MS",pick:ranked[0][0],prob:Number(ranked[0][1])/100}]});
 }
 async function successLoadIYMS(){
  if(successIYMSIndex)return successIYMSIndex;
@@ -1345,6 +1345,11 @@ function successCouponArchiveHtml(){
  }
  return html+"</div>";
 }
+function successLeagueLabel(name,leagueId){
+ const source=leagueId?{league_id:leagueId}:successRead().find(r=>String(r.league||"").trim()===String(name||"").trim()&&r.league_id)?{league_id:successRead().find(r=>String(r.league||"").trim()===String(name||"").trim()&&r.league_id).league_id}:{};
+ const info=countryInfo(source);
+ return info.flag+" "+info.name+" · "+leagueTR(name);
+}
 function successRenderNow(){
  if(!couponIYMSRows&&!successCouponIYMSLoading){successCouponIYMSLoading=true;cGetIYMS().then(()=>{successCouponIYMSLoading=false;if(activeTabName==="success")successRender()})}
  const area=$("successContent");if(!area)return;
@@ -1383,7 +1388,7 @@ function successRenderNow(){
  const leagueStats={football:new Map(),iyms:new Map()};
  for(const rec of rows){
   const type=rec.type==="iyms"?"iyms":"football",name=String(rec.league||"Lig bilgisi yok").trim()||"Lig bilgisi yok";
-  if(!leagueStats[type].has(name))leagueStats[type].set(name,{name,played:0,ok:0,pending:0,fixtures:new Set()});
+  if(!leagueStats[type].has(name))leagueStats[type].set(name,{name,league_id:String(rec.league_id||""),played:0,ok:0,pending:0,fixtures:new Set()});
   const ls=leagueStats[type].get(name);ls.fixtures.add(successFixtureId(rec));
   for(const market of rec.markets||[]){
    const outcome=successEvaluate(rec,market,fullResults,iymsResults);
@@ -1398,7 +1403,7 @@ function successRenderNow(){
    out+="<div style='overflow-x:auto'><table class='success-table'><thead><tr><th>Lig</th><th>Maç</th><th>Tahmin</th><th>Doğru</th><th>Başarı</th><th>Bekleyen</th></tr></thead><tbody>";
    for(const x of list){
     const rate=x.played?x.ok/x.played*100:0;
-    out+="<tr><td>"+liveEsc(x.name)+"</td><td>"+x.fixtures.size+"</td><td>"+x.played+"</td><td class='success-good'>"+x.ok+"</td><td>"+(x.played?"%"+rate.toFixed(1):"—")+"</td><td class='success-pending'>"+x.pending+"</td></tr>";
+    out+="<tr><td>"+liveEsc(successLeagueLabel(x.name,x.league_id))+"</td><td>"+x.fixtures.size+"</td><td>"+x.played+"</td><td class='success-good'>"+x.ok+"</td><td>"+(x.played?"%"+rate.toFixed(1):"—")+"</td><td class='success-pending'>"+x.pending+"</td></tr>";
    }
    out+="</tbody></table></div>";
    const chartList=list.filter(x=>x.played>=3).sort((a,b)=>(b.ok/b.played)-(a.ok/a.played)||b.played-a.played).slice(0,8);
@@ -1406,7 +1411,7 @@ function successRenderNow(){
     out+="<div class='success-chart'><div class='success-chart-title'>📊 En az 3 sonuçlanmış tahmini olan ligler · İlk 8</div>";
     for(const x of chartList){
      const rate=x.ok/x.played*100;
-     out+="<div class='success-chart-row'><div class='success-chart-label'><span>"+liveEsc(x.name)+"</span><b>%"+rate.toFixed(1)+"</b></div><div class='success-chart-track'><div class='success-chart-fill' style='width:"+Math.max(0,Math.min(100,rate)).toFixed(1)+"%'></div></div><div class='success-chart-count'>"+x.ok+" doğru / "+x.played+" sonuçlanmış tahmin</div></div>";
+     out+="<div class='success-chart-row'><div class='success-chart-label'><span>"+liveEsc(successLeagueLabel(x.name,x.league_id))+"</span><b>%"+rate.toFixed(1)+"</b></div><div class='success-chart-track'><div class='success-chart-fill' style='width:"+Math.max(0,Math.min(100,rate)).toFixed(1)+"%'></div></div><div class='success-chart-count'>"+x.ok+" doğru / "+x.played+" sonuçlanmış tahmin</div></div>";
     }
     out+="</div>";
    }
@@ -1415,7 +1420,7 @@ function successRenderNow(){
   return out+"</div>";
  };
  const pct=graded?(wins/graded*100).toFixed(1):"0.0",losses=graded-wins;
- let html="<div class='panel'><b>🔎 LİG SEÇEREK MAÇLARI İNCELE</b><p class='small'>Bir lig seç; o ligde kaydedilmiş maçların tüm model analizleri ve sonuçları aşağıda listelensin.</p><select style='width:100%;padding:12px;border-radius:10px;background:#171717;color:#fff;border:1px solid #555' onchange='successSetLeague(this.value)'><option value='__ALL__' "+(successSelectedLeague==="__ALL__"?"selected":"")+">Tüm ligler</option>"+leagueOptions.map(name=>"<option value='"+liveEsc(name)+"' "+(successSelectedLeague===name?"selected":"")+">"+liveEsc(name)+"</option>").join("")+"</select></div><div class='success-grid'><div class='success-stat'><b>"+graded+"</b><span>Değerlendirilen tahmin</span></div><div class='success-stat'><b class='success-good'>"+wins+"</b><span>Doğru</span></div><div class='success-stat'><b>%"+pct+"</b><span>Başarı oranı</span></div></div>";
+ let html="<div class='panel'><b>🔎 LİG SEÇEREK MAÇLARI İNCELE</b><p class='small'>Bir lig seç; o ligde kaydedilmiş maçların tüm model analizleri ve sonuçları aşağıda listelensin.</p><select style='width:100%;padding:12px;border-radius:10px;background:#171717;color:#fff;border:1px solid #555' onchange='successSetLeague(this.value)'><option value='__ALL__' "+(successSelectedLeague==="__ALL__"?"selected":"")+">Tüm ligler</option>"+leagueOptions.map(name=>"<option value='"+liveEsc(name)+"' "+(successSelectedLeague===name?"selected":"")+">"+liveEsc(successLeagueLabel(name))+"</option>").join("")+"</select></div><div class='success-grid'><div class='success-stat'><b>"+graded+"</b><span>Değerlendirilen tahmin</span></div><div class='success-stat'><b class='success-good'>"+wins+"</b><span>Doğru</span></div><div class='success-stat'><b>%"+pct+"</b><span>Başarı oranı</span></div></div>";
  html+="<div class='success-grid'><div class='success-stat'><b>"+losses+"</b><span>Yanlış</span></div><div class='success-stat'><b class='success-pending'>"+pendingMatches+"</b><span>Sonucu beklenen maç</span></div><div class='success-stat'><b>"+rows.length+"</b><span>Kaydedilen maç</span></div></div>";
  const dailyStats=new Map();
  for(const rec of rows){

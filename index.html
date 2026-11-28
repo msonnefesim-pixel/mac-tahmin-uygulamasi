@@ -1146,7 +1146,8 @@ function buildFixtureResultIndex(){
 
 /* BAŞARI KARNESİ — tahminler üretildikleri andaki değerleriyle cihazda saklanır. */
 const SUCCESS_ARCHIVE_KEY="yapaycinPredictionArchiveV1";
-let successRangeDays=30,successIYMSIndex=null,successIYMSLoading=null;
+let successRangeDays=30,successIYMSIndex=null,successIYMSLoading=null,successSelectedLeague='__ALL__';
+function successSetLeague(value){successSelectedLeague=String(value||'__ALL__');successRender()}
 function successNorm(v){return fixtureTeamNorm(v)}
 function successFixtureId(m){return [String(m.date||"").slice(0,10),successNorm(m.home),successNorm(m.away)].join("|")}
 function successRead(){try{const x=JSON.parse(localStorage.getItem(SUCCESS_ARCHIVE_KEY)||"[]");return Array.isArray(x)?x:[]}catch(e){return []}}
@@ -1213,13 +1214,13 @@ function successRecordFootball(m,p){
  const markets=[],add=(key,label,prob,pick)=>{if(Number.isFinite(prob))markets.push({key,label,prob:Number(prob),pick})};
  const result=[["1",p.one],["X",p.draw],["2",p.two]].filter(x=>Number.isFinite(x[1])).sort((a,b)=>b[1]-a[1])[0];
  if(result)add("result","Maç Sonucu",result[1],result[0]);
- if(Number.isFinite(p.over25)&&p.over25>=FOOTBALL_PICK_LIMITS.over25)add("over25","2,5 Üst",p.over25,"over");
- if(Number.isFinite(p.over35)&&p.over35>=FOOTBALL_PICK_LIMITS.over35)add("over35","3,5 Üst",p.over35,"over");
- if(Number.isFinite(p.six)&&p.six>=FOOTBALL_PICK_LIMITS.six)add("six","6+ Gol",p.six,"yes");
- if(Number.isFinite(p.btts)){if(p.btts>=FOOTBALL_PICK_LIMITS.btts)add("bttsYes","KG Var",p.btts,"yes");else if(1-p.btts>=FOOTBALL_PICK_LIMITS.btts)add("bttsNo","KG Yok",1-p.btts,"no")}
- if(Number.isFinite(p.first)&&p.first>=FOOTBALL_PICK_LIMITS.first)add("first","İlk Yarı KG",p.first,"yes");
- if(Number.isFinite(p.second)&&p.second>=FOOTBALL_PICK_LIMITS.second)add("second","İkinci Yarı KG",p.second,"yes");
- if(Number.isFinite(p.firstOver15)&&p.firstOver15>=FOOTBALL_PICK_LIMITS.firstOver15)add("firstOver15","İY 1,5 Üst",p.firstOver15,"over");
+ if(Number.isFinite(p.over25))add("over25",p.over25>=.5?"2,5 Üst":"2,5 Alt",Math.max(p.over25,1-p.over25),p.over25>=.5?"over":"under");
+ if(Number.isFinite(p.over35))add("over35",p.over35>=.5?"3,5 Üst":"3,5 Alt",Math.max(p.over35,1-p.over35),p.over35>=.5?"over":"under");
+ if(Number.isFinite(p.six))add("six",p.six>=.5?"6+ Gol Var":"6+ Gol Yok",Math.max(p.six,1-p.six),p.six>=.5?"yes":"no");
+ if(Number.isFinite(p.btts))add(p.btts>=.5?"bttsYes":"bttsNo",p.btts>=.5?"KG Var":"KG Yok",Math.max(p.btts,1-p.btts),p.btts>=.5?"yes":"no");
+ if(Number.isFinite(p.first))add("first",p.first>=.5?"İlk Yarı KG Var":"İlk Yarı KG Yok",Math.max(p.first,1-p.first),p.first>=.5?"yes":"no");
+ if(Number.isFinite(p.second))add("second",p.second>=.5?"İkinci Yarı KG Var":"İkinci Yarı KG Yok",Math.max(p.second,1-p.second),p.second>=.5?"yes":"no");
+ if(Number.isFinite(p.firstOver15))add("firstOver15",p.firstOver15>=.5?"İY 1,5 Üst":"İY 1,5 Alt",Math.max(p.firstOver15,1-p.firstOver15),p.firstOver15>=.5?"over":"under");
  if(!markets.length)return;
  successStore({type:"football",date:String(m.date).slice(0,10),league:String(m.league||""),league_id:String(m.league_id||""),home:String(m.home||""),away:String(m.away||""),markets});
 }
@@ -1269,9 +1270,9 @@ function successEvaluate(record,market,fullResults,iymsResults){
  if(["first","second","firstOver15"].includes(market.key)){
   if(!half)return null;
   const first=half.htHome>0&&half.htAway>0,second=half.ftHome-half.htHome>0&&half.ftAway-half.htAway>0;
-  if(market.key==="first")return first;
-  if(market.key==="second")return second;
-  return half.htHome+half.htAway>=2;
+  if(market.key==="first")return market.pick==="no"?!first:first;
+  if(market.key==="second")return market.pick==="no"?!second:second;
+  return market.pick==="under"?half.htHome+half.htAway<2:half.htHome+half.htAway>=2;
  }
  let score=fullResults.get(id);
  if(!score){
@@ -1284,9 +1285,9 @@ function successEvaluate(record,market,fullResults,iymsResults){
  if(!score)return null;
  const h=score.h,a=score.a,total=h+a;
  if(market.key==="result")return (h>a?"1":h<a?"2":"X")===market.pick;
- if(market.key==="over25")return total>=3;
- if(market.key==="over35")return total>=4;
- if(market.key==="six")return total>=6;
+ if(market.key==="over25")return market.pick==="under"?total<=2:total>=3;
+ if(market.key==="over35")return market.pick==="under"?total<=3:total>=4;
+ if(market.key==="six")return market.pick==="no"?total<6:total>=6;
  if(market.key==="bttsYes")return h>0&&a>0;
  if(market.key==="bttsNo")return h===0||a===0;
  return null;
@@ -1332,7 +1333,9 @@ function successRender(){
  }
  const fullResults=successFullResultsCache;
  const all=successRead(),cutoff=successRangeDays?dateAdd(today(),-(successRangeDays-1)):"0000-00-00";
- const rows=all.filter(x=>!successRangeDays||x.date>=cutoff);
+ const leagueOptions=[...new Set(all.filter(x=>x.type==="football").map(x=>String(x.league||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"tr"));
+ if(successSelectedLeague!=="__ALL__"&&!leagueOptions.includes(successSelectedLeague))successSelectedLeague="__ALL__";
+ const rows=all.filter(x=>(!successRangeDays||x.date>=cutoff)&&(successSelectedLeague==="__ALL__"||String(x.league||"")===successSelectedLeague));
  const stats=new Map(),types={football:[],iyms:[]};let pendingMatches=0,graded=0,wins=0;
  for(const rec of rows){
   let recPending=false;
@@ -1380,7 +1383,7 @@ function successRender(){
   return out+"</div>";
  };
  const pct=graded?(wins/graded*100).toFixed(1):"0.0",losses=graded-wins;
- let html="<div class='success-grid'><div class='success-stat'><b>"+graded+"</b><span>Değerlendirilen tahmin</span></div><div class='success-stat'><b class='success-good'>"+wins+"</b><span>Doğru</span></div><div class='success-stat'><b>%"+pct+"</b><span>Başarı oranı</span></div></div>";
+ let html="<div class='panel'><b>🔎 LİG SEÇEREK MAÇLARI İNCELE</b><p class='small'>Bir lig seç; o ligde kaydedilmiş maçların tüm model analizleri ve sonuçları aşağıda listelensin.</p><select style='width:100%;padding:12px;border-radius:10px;background:#171717;color:#fff;border:1px solid #555' onchange='successSetLeague(this.value)'><option value='__ALL__' "+(successSelectedLeague==="__ALL__"?"selected":"")+">Tüm ligler</option>"+leagueOptions.map(name=>"<option value='"+liveEsc(name)+"' "+(successSelectedLeague===name?"selected":"")+">"+liveEsc(name)+"</option>").join("")+"</select></div><div class='success-grid'><div class='success-stat'><b>"+graded+"</b><span>Değerlendirilen tahmin</span></div><div class='success-stat'><b class='success-good'>"+wins+"</b><span>Doğru</span></div><div class='success-stat'><b>%"+pct+"</b><span>Başarı oranı</span></div></div>";
  html+="<div class='success-grid'><div class='success-stat'><b>"+losses+"</b><span>Yanlış</span></div><div class='success-stat'><b class='success-pending'>"+pendingMatches+"</b><span>Sonucu beklenen maç</span></div><div class='success-stat'><b>"+rows.length+"</b><span>Kaydedilen maç</span></div></div>";
  const dailyStats=new Map();
  for(const rec of rows){
@@ -1425,6 +1428,23 @@ function successRender(){
  html+=leagueSection("football","⚽ FUTBOL · LİGLERE GÖRE");
  html+=leagueSection("iyms","🎯 İY/MS · LİGLERE GÖRE");
  html+=successCouponArchiveHtml();
+ // Seçilen ligdeki her maçın kayıtlı analizlerini ve sonuçlarını göster.
+ const detailRows=rows.filter(r=>r.type==="football").sort((a,b)=>b.date.localeCompare(a.date));
+ html+="<div class='panel'><b>⚽ SEÇİLEN LİGİN MAÇ ANALİZLERİ</b>";
+ if(!detailRows.length)html+="<p class='small'>Bu lig ve tarih aralığında henüz kaydedilmiş maç yok. Tahminler üretildikçe burada birikir; eski maçlar geriye dönük oluşturulmaz.</p>";
+ for(const rec of detailRows){
+  const score=fullResults.get(successFixtureId(rec))||(()=>{const m=cFindNear(HISTORY,rec,"home","away");if(m&&m.ft_home!==undefined&&m.ft_home!==null&&m.ft_home!==""&&m.ft_away!==undefined&&m.ft_away!==null&&m.ft_away!=="")return {h:Number(m.ft_home),a:Number(m.ft_away)};return null})();
+  const validScore=score&&Number.isFinite(score.h)&&Number.isFinite(score.a);
+  html+="<div style='border:1px solid #444;border-radius:10px;padding:11px;margin:10px 0;background:#171717'><div style='display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap'><b>"+liveEsc(rec.home)+" – "+liveEsc(rec.away)+"</b><span class='small'>"+liveEsc(rec.date)+"</span></div>";
+  html+="<div class='small' style='margin:5px 0 8px'>Gerçek skor: <b>"+(validScore?score.h+" - "+score.a:"Sonuç bekleniyor")+"</b></div>";
+  html+="<div style='display:grid;grid-template-columns:1fr auto auto;gap:7px;align-items:center;font-size:.88rem'>";
+  for(const market of rec.markets||[]){
+   const outcome=successEvaluate(rec,market,fullResults,iymsResults),status=outcome===null?"BEKLİYOR":outcome?"TUTTU":"YATTI",color=outcome===null?"#e5b94b":outcome?"#42c982":"#ff7474";
+   html+="<span>"+liveEsc(market.label)+"</span><span>"+(Number.isFinite(Number(market.prob))?"%"+(Number(market.prob)*100).toFixed(1):"—")+"</span><b style='color:"+color+"'>"+status+"</b>";
+  }
+  html+="</div></div>";
+ }
+ html+="</div>";
  html+="<div class='small' style='padding:8px'>Kayıtlar yalnızca bu telefondaki tarayıcıda saklanır. Sonuç verisi henüz gelmeyen maçlar başarı yüzdesine dahil edilmez. Eski tahminler geriye dönük uydurulmaz.</div>";
  area.innerHTML=html;
 }

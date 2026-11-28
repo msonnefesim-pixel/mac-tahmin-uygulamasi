@@ -1816,6 +1816,47 @@ function surprizStrictMarket(event,t,st,requiredGroups){
  );
  return matches.length===1?matches[0]:null;
 }
+const SURPRISE_ARCHIVE_KEY="yapaycinSurpriseArchiveV1";
+function surprizArsivOku(){try{const v=JSON.parse(localStorage.getItem(SURPRISE_ARCHIVE_KEY)||"[]");return Array.isArray(v)?v:[]}catch(e){return []}}
+function surprizArsivKaydet(rows){
+ const archive=surprizArsivOku(),map=new Map(archive.map(x=>[successFixtureId(x),x]));
+ for(const x of rows){const m=x.m,rec={date:String(m.date||"").slice(0,10),time:m.time||"",home:m.home||"",away:m.away||"",league:m.league||"",pick:x.pick,label:x.label,odd:x.odd,prob:x.prob,edge:x.edge,quality:x.quality,homeSamples:x.homeSamples,awaySamples:x.awaySamples,savedAt:Date.now()};map.set(successFixtureId(rec),rec)}
+ const cutoff=dateAdd(today(),-120),kept=[...map.values()].filter(x=>String(x.date||"")>=cutoff).sort((a,b)=>String(a.date).localeCompare(String(b.date))).slice(-300);
+ try{localStorage.setItem(SURPRISE_ARCHIVE_KEY,JSON.stringify(kept))}catch(e){}
+}
+function surprizArsivSkor(rec){
+ let r=successIYMSIndex&&successIYMSIndex.get(successFixtureId(rec));
+ if(!r){const m=cFindNear(HISTORY,rec,"home","away");if(m){
+  const get=keys=>{for(const k of keys){const v=m[k];if(v!==undefined&&v!==null&&v!==""&&Number.isFinite(Number(v)))return Number(v)}return null};
+  const hh=get(["ht_home","home_ht","halftime_home"]),ha=get(["ht_away","away_ht","halftime_away"]),fh=get(["ft_home","home_ft","home_score"]),fa=get(["ft_away","away_ft","away_score"]);
+  if([hh,ha,fh,fa].every(v=>v!==null))r={htHome:hh,htAway:ha,ftHome:fh,ftAway:fa};
+ }}
+ if(!r)return null;
+ const hh=Number(r.htHome),ha=Number(r.htAway),fh=Number(r.ftHome),fa=Number(r.ftAway);
+ if(![hh,ha,fh,fa].every(Number.isFinite))return null;
+ const secondHome=fh-hh,secondAway=fa-ha,total=fh+fa;
+ const outcome=(a,b)=>a>b?"1":a<b?"2":"X",iyms=outcome(hh,ha)+"/"+outcome(fh,fa);
+ let won=null;
+ if(["1","X","2"].includes(rec.pick))won=outcome(fh,fa)===rec.pick;
+ else if(String(rec.pick||"").includes("/"))won=iyms===String(rec.pick).replace(/0/g,"X");
+ else if(String(rec.pick||"").includes("6+"))won=total>=6;
+ return {hh,ha,secondHome,secondAway,fh,fa,iyms,won};
+}
+function surprizArsivHtml(){
+ const rows=surprizArsivOku().sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.time).localeCompare(String(a.time)));
+ if(!rows.length)return "<div class='panel'><b>📋 SÜRPRİZ AVCISI · SONUÇ ARŞİVİ</b><p class='small'>Seçilen sürpriz maçlar burada saklanır; maçlar tamamlandıkça ilk yarı ve ikinci yarı skorları eklenir.</p></div>";
+ if(!successIYMSIndex)successLoadIYMS().then(()=>{if(activeTabName==="surprise")surprizAvcisiRender()}).catch(()=>{});
+ let done=0,won=0,lost=0,html="<div class='panel'><b>📋 SÜRPRİZ AVCISI · MAÇ SONUÇLARI</b><p class='small'>Arşivlenen sürpriz tahminler ve gerçekleşen devre skorları.</p>";
+ for(const rec of rows.slice(0,100)){
+  const score=surprizArsivSkor(rec),state=!score?"BEKLİYOR":score.won===null?"SONUÇLANDI":score.won?"TUTTU":"YATTI";
+  const cls=state==="TUTTU"?"success-good":state==="YATTI"?"success-bad":"success-pending";
+  if(score&&score.won!==null){done++;if(score.won)won++;else lost++}
+  const scoreText=score?"İY: <b>"+score.hh+"-"+score.ha+"</b> · 2Y: <b>"+score.secondHome+"-"+score.secondAway+"</b> · MS: <b>"+score.fh+"-"+score.fa+"</b>":"İlk yarı / ikinci yarı skoru bekleniyor";
+  html+="<div style='border-top:1px solid var(--line,#444);padding:9px 0'><div style='display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap'><b>"+liveEsc(rec.home)+" – "+liveEsc(rec.away)+"</b><b class='"+cls+"'>"+state+"</b></div><div class='small'>"+liveEsc(rec.date)+" · "+liveEsc(rec.league||"Lig bilgisi yok")+"</div><div class='small'>Tahmin: <b>"+liveEsc(rec.pick)+"</b> · Oran: <b>"+Number(rec.odd||0).toFixed(2)+"</b> · "+scoreText+"</div></div>";
+ }
+ html+="<div class='small' style='padding-top:8px'>Sonuçlanan: "+done+" · Tutan: "+won+" · Yatan: "+lost+" · Bekleyen: "+(rows.length-done-lost-won)+"</div></div>";
+ return html;
+}
 function surprizAvcisiRender(force=false){
  const rangeEl=$("surpriseRange"),status=$("surpriseStatus"),cards=$("surpriseCards");
  if(!rangeEl||!status||!cards)return;
@@ -1891,15 +1932,13 @@ function surprizAvcisiRender(force=false){
   if(!old||c.value>old.value)bestByMatch.set(k,c);
  }
  const selected=[...bestByMatch.values()].sort((a,b)=>b.value-a.value||b.odd-a.odd).slice(0,10);
+ surprizArsivKaydet(selected);
  status.textContent=fixtures.length+" hafta sonu maçı tarandı · "+selected.length+" güçlü sürpriz adayı bulundu.";
- if(!selected.length){
-  cards.innerHTML="<div class='surprise-empty'>Bu hafta sonu yüksek oran ve model değer avantajı kriterlerini birlikte karşılayan maç bulunamadı. Zayıf tahmin eklenmedi.</div>";
-  return;
- }
- cards.innerHTML=selected.map((x,i)=>{
+ const currentHtml=!selected.length?"<div class='surprise-empty'>Bu hafta sonu yüksek oran ve model değer avantajı kriterlerini birlikte karşılayan maç bulunamadı. Zayıf tahmin eklenmedi.</div>":selected.map((x,i)=>{
   const m=x.m;
   return "<article class='surprise-card'><div class='surprise-card-top'><b>"+(i+1)+". "+liveEsc(m.home)+" – "+liveEsc(m.away)+"</b><span class='rank'>"+liveEsc(m.time||"")+"</span></div><div class='meta'>"+liveEsc(m.date)+" · "+liveEsc(m.league||"Lig bilgisi yok")+"</div><div class='surprise-pick'><span style='font-size:10px;font-weight:800;letter-spacing:.7px'>TEK SÜRPRİZ TAHMİNİ</span><strong>"+liveEsc(x.pick)+" · "+liveEsc(x.label)+"</strong><span style='font-size:12px'>Piyasa oranı: <b>"+x.odd.toFixed(2)+"</b></span></div><div class='surprise-stats'><div class='surprise-stat'><b>%"+(x.prob*100).toFixed(1)+"</b><span>Temkinli olasılık</span></div><div class='surprise-stat'><b>"+x.odd.toFixed(2)+"</b><span>Oran</span></div><div class='surprise-stat'><b>%"+x.edge.toFixed(1)+"</b><span>Dengelenmiş değer farkı*</span></div></div><div class='surprise-reason'>Analiz: "+(x.quality==="İyi"?"Veri kalitesi iyi":x.quality==="Orta"?"Veri kalitesi orta":"Veri kapsamı sınırlı")+" · Geçmiş örneklem: "+x.homeSamples+" / "+x.awaySamples+" maç.</div></article>";
  }).join("")+"<div class='small'>*Olasılık, model tahmini ile oranlardan çıkan piyasa olasılığı arasında veri kalitesine göre dengelenir. Aşırı model farkları ve zayıf veri elenir; yine de kazanç garantisi değildir.</div>";
+ cards.innerHTML=currentHtml+surprizArsivHtml();
 }
 function sekmeAc(name){
  const ids={futbol:"futbolBolumu",iyms:"iymsBolumu",coupons:"couponsBolumu",halfBoth:"halfBothBolumu",sporToto:"sporTotoBolumu",success:"successBolumu",iddaa:"iddaaBolumu",surprise:"surpriseBolumu"};

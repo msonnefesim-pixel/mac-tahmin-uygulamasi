@@ -620,10 +620,10 @@ button{transition:filter .15s ease,transform .15s ease}button:active{transform:s
   </div>
   <input id="successBackupFile" type="file" accept=".json,application/json" style="display:none" onchange="successBackupImport(this)">
   <div id="successBackupStatus" class="small" aria-live="polite"></div>
-  <div class="predictions" style="margin-top:10px">
-   <button type="button" class="secondary" onclick="successSetRange(7)">Son 7 gün</button>
-   <button type="button" class="secondary" onclick="successSetRange(30)">Son 30 gün</button>
-   <button type="button" class="secondary" onclick="successSetRange(0)">Tüm kayıtlar</button>
+  <div id="successRangeControls" class="predictions" style="margin-top:10px">
+   <button type="button" class="secondary" data-days="7" aria-pressed="false" onclick="successSetRange(7)">Son 7 gün</button>
+   <button type="button" class="secondary active" data-days="30" aria-pressed="true" onclick="successSetRange(30)">Son 30 gün</button>
+   <button type="button" class="secondary" data-days="0" aria-pressed="false" onclick="successSetRange(0)">Tüm kayıtlar</button>
   </div>
  </div>
  <div id="successContent"><div class="panel">Başarı karnesi hazırlanıyor...</div></div>
@@ -1312,7 +1312,21 @@ function iymsHistoryRender(){
  html+="<div class='small' style='padding-top:8px'>Sonuçlanan: "+done+" · Tutan: "+won+" · Yatan: "+lost+" · Bekleyen: "+(rows.length-done)+"</div></div>";
  el.innerHTML=html;
 }
-function successSetRange(days){successRangeDays=days;successRender()}
+let successRenderTimer=null,successRenderQueued=false;
+function successRender(){
+ if(successRenderTimer)clearTimeout(successRenderTimer);
+ if(successRenderQueued)return;
+ successRenderQueued=true;
+ successRenderTimer=setTimeout(()=>{successRenderQueued=false;successRenderTimer=null;successRenderNow()},60);
+}
+function successSetRange(days){
+ successRangeDays=Number(days)||0;
+ document.querySelectorAll("#successRangeControls button").forEach(b=>{
+  const active=Number(b.dataset.days)===successRangeDays;
+  b.setAttribute("aria-pressed",String(active));b.classList.toggle("active",active);
+ });
+ successRender();
+}
 let successCouponIYMSLoading=false;
 function successCouponArchiveHtml(){
  const archive=cArchive(),groups=[];
@@ -1333,7 +1347,7 @@ function successCouponArchiveHtml(){
  }
  return html+"</div>";
 }
-function successRender(){
+function successRenderNow(){
  if(!couponIYMSRows&&!successCouponIYMSLoading){successCouponIYMSLoading=true;cGetIYMS().then(()=>{successCouponIYMSLoading=false;if(activeTabName==="success")successRender()})}
  const area=$("successContent");if(!area)return;
  area.innerHTML="<div class='panel'>Başarı karnesi hazırlanıyor...</div>";
@@ -2927,17 +2941,19 @@ function halfBothRender(){
   html+="</div></div>";
  }
  el.innerHTML=html;
- const history=$("halfBothHistory"),yesYes=archive.pools.yes_yes||[];
+ const history=$("halfBothHistory");
  if(history){
-  if(!yesYes.length)history.innerHTML="<div class='panel'><b>⚽ EVET / EVET · KUPON SONUÇ GEÇMİŞİ</b><p class='small'>Henüz EVET / EVET kuponu kaydı yok.</p></div>";
-  else{
-   const results=yesYes.map(x=>cResult(x)),done=results.filter(x=>x!==null).length,won=results.filter(x=>x===true).length,lost=results.filter(x=>x===false).length;
-   let out="<div class='panel'><b>⚽ EVET / EVET · KUPON SONUÇLARI</b><p class='small'>Bu kuponda hangi maçların tuttuğu ve yattığı.</p>";
-   yesYes.forEach((x,i)=>{const r=results[i],label=r===true?"✓ TUTTU":r===false?"✕ YATTI":"◷ BEKLİYOR",cls=r===true?"success-good":r===false?"success-bad":"success-pending";out+="<div style='border-top:1px solid var(--line,#444);padding:8px 0'><div style='display:flex;justify-content:space-between;gap:8px'><b>"+(i+1)+". "+liveEsc(x.home)+" – "+liveEsc(x.away)+"</b><b class='"+cls+"'>"+label+"</b></div><div class='small'>"+liveEsc(x.date||"")+" · "+liveEsc(x.league||"")+" · İlk yarı KG Var / İkinci yarı KG Var</div></div>"});
-   const state=done<yesYes.length?"BEKLİYOR":lost?"YATTI":"TUTTU",cls=state==="TUTTU"?"success-good":state==="YATTI"?"success-bad":"success-pending";
-   out+="<div style='border-top:1px solid var(--line,#444);padding-top:8px'><b>Kupon durumu: <span class='"+cls+"'>"+state+"</span></b><div class='small'>Sonuçlanan: "+done+" · Tutan: "+won+" · Yatan: "+lost+" · Bekleyen: "+(yesYes.length-done)+"</div></div></div>";
-   history.innerHTML=out;
+  const defs=[["yes_yes","EVET / EVET","İlk yarı KG Var / İkinci yarı KG Var"],["no_yes","HAYIR / EVET","İlk yarı KG Yok / İkinci yarı KG Var"],["yes_no","EVET / HAYIR","İlk yarı KG Var / İkinci yarı KG Yok"]];
+  let out="";
+  for(const [key,name,desc] of defs){
+   const items=archive.pools[key]||[],results=items.map(x=>cResult(x)),done=results.filter(x=>x!==null).length,won=results.filter(x=>x===true).length,lost=results.filter(x=>x===false).length;
+   const state=!items.length?"KAYIT YOK":done<items.length?"BEKLİYOR":lost?"YATTI":"TUTTU",cls=state==="TUTTU"?"success-good":state==="YATTI"?"success-bad":"success-pending";
+   out+="<div class='panel'><b>⚽ "+name+" · KUPON SONUÇLARI</b><p class='small'>"+desc+"</p>";
+   if(!items.length)out+="<p class='small'>Bu türde henüz arşivlenmiş kupon yok.</p>";
+   items.forEach((x,i)=>{const r=results[i],label=r===true?"✓ TUTTU":r===false?"✕ YATTI":"◷ BEKLİYOR",rowCls=r===true?"success-good":r===false?"success-bad":"success-pending";out+="<div style='border-top:1px solid var(--line,#444);padding:8px 0'><div style='display:flex;justify-content:space-between;gap:8px'><b>"+(i+1)+". "+liveEsc(x.home)+" – "+liveEsc(x.away)+"</b><b class='"+rowCls+"'>"+label+"</b></div><div class='small'>"+liveEsc(x.date||"")+" · "+liveEsc(x.league||"")+" · "+desc+"</div></div>"});
+   out+="<div style='border-top:1px solid var(--line,#444);padding-top:8px'><b>Kupon durumu: <span class='"+cls+"'>"+state+"</span></b><div class='small'>Sonuçlanan: "+done+" · Tutan: "+won+" · Yatan: "+lost+" · Bekleyen: "+(items.length-done)+"</div></div></div>";
   }
+  history.innerHTML=out;
  }
 }
 async function halfBothBuild(force){

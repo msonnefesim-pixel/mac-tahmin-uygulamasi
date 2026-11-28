@@ -1312,12 +1312,10 @@ function iymsHistoryRender(){
  html+="<div class='small' style='padding-top:8px'>Sonuçlanan: "+done+" · Tutan: "+won+" · Yatan: "+lost+" · Bekleyen: "+(rows.length-done)+"</div></div>";
  el.innerHTML=html;
 }
-let successRenderTimer=null,successRenderQueued=false;
+let successRenderTimer=null;
 function successRender(){
- if(successRenderTimer)clearTimeout(successRenderTimer);
- if(successRenderQueued)return;
- successRenderQueued=true;
- successRenderTimer=setTimeout(()=>{successRenderQueued=false;successRenderTimer=null;successRenderNow()},60);
+ if(successRenderTimer)return;
+ successRenderTimer=setTimeout(()=>{successRenderTimer=null;successRenderNow()},60);
 }
 function successSetRange(days){
  successRangeDays=Number(days)||0;
